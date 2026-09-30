@@ -98,3 +98,17 @@ test('rates: the job keeps latest rates for recurring foreign items, and survive
   const [e] = down.rows('entries');
   assert.deepEqual([e.gbpPence, e.gbpStatus], [null, 'estimated']);
 });
+
+test('recurring: an item due on the 1st is added once it is the 1st in the time zone setting', async () => {
+  // 30 Sep 2026, 18:15 UTC: 19:15 on the 30th in London, 02:15 on the 1st in Singapore.
+  const w = makeWorker({ now: Date.UTC(2026, 8, 30, 18, 15, 0) });
+  await w.call('PUT', '/recurring/r1', { body: phone });
+  await w.scheduled();
+  assert.equal(w.rows('entries').length, 0);
+
+  await w.call('PUT', '/settings/timeZone', { body: { value: 'Asia/Singapore' } });
+  await w.scheduled();
+  const [e] = w.rows('entries');
+  assert.deepEqual([e.date, e.occurrenceDate], ['2026-10-01', '2026-10-01']);
+  assert.equal(w.rows('recurring')[0].nextDate, '2026-11-01');
+});

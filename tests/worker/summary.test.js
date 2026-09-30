@@ -28,3 +28,26 @@ test('summary: needs the token', async () => {
   const w = makeWorker({ now: SUNDAY });
   assert.equal((await w.call('GET', '/summary', { token: null })).status, 401);
 });
+
+test('summary: a Sunday-evening run from Singapore covers the week just ended there', async () => {
+  // Sunday 4 Oct 2026, 19:00 in Singapore (12:00 in London).
+  const w = makeWorker({ now: Date.UTC(2026, 9, 4, 11, 0, 0) });
+  await w.call('PUT', '/entries/e1', { body: manualEntry({ date: '2026-09-28', amountMinor: 1000 }) });
+  await w.call('POST', '/applepay', { body: applePay({ amount: '£3.00', timestamp: '2026-10-04T18:30:00+08:00' }) });
+  await w.call('PUT', '/entries/e2', { body: manualEntry({ date: '2026-09-27', amountMinor: 999 }) });
+  const res = await w.call('POST', '/summary', { body: { timestamp: '2026-10-04T19:00:00+08:00' } });
+  assert.equal(res.status, 200);
+  assert.match(res.body, /^Week of 28 Sep: £13\.00,/);
+});
+
+test('summary: the phone’s date decides the week, even when London is still on Saturday', async () => {
+  // Sunday 4 Oct, 06:30 in Singapore is Saturday 3 Oct, 23:30 in London.
+  const w = makeWorker({ now: Date.UTC(2026, 9, 3, 22, 30, 0) });
+  assert.match((await w.call('GET', '/summary')).body, /^Week of 21 Sep:/);
+  assert.match((await w.call('POST', '/summary', { body: { timestamp: '2026-10-04T06:30:00+08:00' } })).body, /^Week of 28 Sep:/);
+});
+
+test('summary: without a usable time it falls back to the time zone setting', async () => {
+  const w = makeWorker({ now: SUNDAY });
+  assert.match((await w.call('POST', '/summary', { body: {} })).body, /^Week of 28 Sep:/);
+});

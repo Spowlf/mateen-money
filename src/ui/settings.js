@@ -1,5 +1,5 @@
 // Settings, opened from the header: categories, payment methods and fees, trips, term dates,
-// the allowance, backup and export, and the backend connection.
+// the allowance, the time zone, backup and export, and the backend connection.
 // Rarely touched, so it's a screen of its own rather than a tab. Every edit happens in a sheet.
 
 import { h, fill, chips, field, sheet, toast, icon } from './dom.js';
@@ -8,7 +8,7 @@ import { openRecurringSheet } from './plan.js';
 import { exportBackup, exportCsv, importBackup } from './backup.js';
 import {
   today, gbp, formatDay, formatMoney, syncedPhrase, moveCategory, nextSort, percentToBps, bpsToPercent, checkTerms,
-  yearRange, termYearOf, yearTerms, replaceYearTerms, termLabel,
+  yearRange, termYearOf, yearTerms, replaceYearTerms, termLabel, partsInZone, validTimeZone, zoneName, DEFAULT_TIME_ZONE,
 } from '../engine/index.js';
 import { OfflineError } from '../errors.js';
 
@@ -310,6 +310,55 @@ function allowanceSection(repo) {
     }, 'Plan your yearly allowance')));
 }
 
+// Time zone
+
+const phoneZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+async function saveTimeZone(repo, timeZone) {
+  const before = repo.setting('timeZone', DEFAULT_TIME_ZONE);
+  if (!(await runAction(() => repo.setSetting('timeZone', timeZone)))) return false;
+  toast(`Changed to ${zoneName(timeZone)} time`, { label: 'Undo', run: () => runAction(() => repo.setSetting('timeZone', before)) });
+  return true;
+}
+
+function openTimeZoneSheet(repo) {
+  const current = repo.setting('timeZone', DEFAULT_TIME_ZONE);
+  const zones = [...new Set([current, ...(Intl.supportedValuesOf?.('timeZone') ?? [])])].filter(validTimeZone).sort();
+  const select = h('select', { class: 'select', onchange: () => renderSave() },
+    zones.map((z) => h('option', { value: z, selected: z === current }, z.replace(/_/g, ' '))));
+  const save = h('button', { type: 'button', class: 'button primary' });
+  const renderSave = () => {
+    save.disabled = select.value === current;
+    save.textContent = select.value === current ? 'Pick another time zone' : `Use ${zoneName(select.value)}`;
+  };
+  const s = sheet('Time zone', h('div', { class: 'sheet-form' },
+    field('Time zone', select, 'Listed by region, then city.'),
+    h('div', { class: 'sheet-actions' }, save)));
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    if (await saveTimeZone(repo, select.value)) s.close();
+    else renderSave();
+  });
+  renderSave();
+}
+
+function timeZoneSection(repo) {
+  const current = repo.setting('timeZone', DEFAULT_TIME_ZONE);
+  const phone = phoneZone();
+  const differs = validTimeZone(phone) && phone !== current;
+  return h('section', { class: 'section' },
+    h('h2', { class: 'subhead' }, 'Time zone'),
+    h('p', { class: 'reason' }, 'The date here decides when recurring items are added and which week you review.'),
+    h('ul', { class: 'list' }, h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openTimeZoneSheet(repo) },
+      h('span', { class: 'list-main' },
+        h('span', { class: 'list-title' }, zoneName(current)),
+        h('span', { class: 'list-sub' }, `${current.replace(/_/g, ' ')}, ${partsInZone(Date.now(), current).time} there now`))))),
+    differs
+      ? h('div', {}, h('button', { type: 'button', class: 'button secondary', onclick: () => saveTimeZone(repo, phone) }, 'Use this phone’s time zone'))
+      : h('p', { class: 'field-hint' }, 'This phone is on the same time zone.'),
+    differs && h('p', { class: 'field-hint' }, `This phone is on ${zoneName(phone)} time.`));
+}
+
 // Backup and export
 
 function backupSection(repo) {
@@ -384,6 +433,7 @@ export function renderSettings(root, { repo, onConnected }) {
       tripsSection(repo),
       termsSection(repo),
       allowanceSection(repo),
+      timeZoneSection(repo),
       backupSection(repo),
       backendSection(repo, onConnected)));
   }

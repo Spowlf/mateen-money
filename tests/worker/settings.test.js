@@ -137,3 +137,12 @@ test('restore: a damaged backup changes nothing at all', async () => {
   assert.deepEqual(w.rows('entries', 'deletedAt IS NULL').map((e) => e.id), ['keep']);
   assert.equal((await w.call('POST', '/restore', { body: { app: 'other' } })).body.error, 'Nothing changed: this isn’t a Mateen Money backup.');
 });
+
+test('settings: the time zone starts as London and takes only a real time zone', async () => {
+  const w = makeWorker();
+  const sync = (await w.call('GET', '/sync?since=0')).body;
+  assert.equal(sync.changes.settings.find((s) => s.id === 'timeZone').value, 'Europe/London');
+  assert.equal((await w.call('PUT', '/settings/timeZone', { body: { value: 'Mars/Olympus' } })).status, 400);
+  assert.equal((await w.call('PUT', '/settings/timeZone', { body: { value: 'Asia/Singapore' } })).status, 200);
+  assert.equal((await w.call('GET', '/sync?since=0')).body.today, '2026-10-01');
+});

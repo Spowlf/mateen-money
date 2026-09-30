@@ -8,10 +8,11 @@
 //   POST   /restore               replace everything with a backup file's contents
 //   POST   /applepay              the Shortcut's payment; replies with one line of text
 //   GET    /summary               the weekly summary, as text
+//   POST   /summary               the same, for the week just ended where the phone is: { timestamp }
 //
 // Every route needs "Authorization: Bearer <API_TOKEN>". Writes reply { rev, changes }.
 
-import { partsInZone, weekSummary, weeklyText, readBackup, BACKUP_TABLES } from '../../src/engine/index.js';
+import { partsInZone, partsFromIso, validTimeZone, DEFAULT_TIME_ZONE, weekSummary, weeklyText, readBackup, BACKUP_TABLES } from '../../src/engine/index.js';
 import { TABLES } from './tables.js';
 import { createStore } from './store.js';
 import { HttpError, json, text, withCors, authorised, readJson, refuse } from './http.js';
@@ -21,11 +22,15 @@ import { addRecurring, refreshRates } from './jobs.js';
 
 const TEXT_ROUTES = new Set(['applepay', 'summary']);
 
-function context(env, deps) {
+/** The request's store and clock. "today" is in the synced time zone setting (London until it's set). */
+async function context(env, deps) {
   const now = deps.now ?? Date.now();
-  const timeZone = env.TIME_ZONE || 'Europe/London';
+  const store = createStore(env.DB);
+  await ensureSeeded(store, now);
+  const setting = await store.get('settings', 'timeZone');
+  const timeZone = setting && !setting.deletedAt && validTimeZone(setting.value) ? setting.value : DEFAULT_TIME_ZONE;
   return {
-    store: createStore(env.DB),
+    store,
     now,
     timeZone,
     today: partsInZone(now, timeZone).date,
@@ -43,9 +48,11 @@ async function route(request, ctx) {
     const since = Math.max(0, Number(url.searchParams.get('since')) || 0);
     return json({ ...(await ctx.store.since(since)), today: ctx.today });
   }
-  if (method === 'GET' && first === 'summary' && !id) {
+  if ((method === 'GET' || method === 'POST') && first === 'summary' && !id) {
+    // The Shortcut sends the phone's time with its offset, so the week is the one just ended where you are.
+    const sent = method === 'POST' ? partsFromIso((await readJson(request)).timestamp) : null;
     const [entries, categories] = await Promise.all([ctx.store.live('entries'), ctx.store.live('categories')]);
-    return text(weeklyText(weekSummary({ entries, categories, todayDate: ctx.today })));
+    return text(weeklyText(weekSummary({ entries, categories, todayDate: sent?.date ?? ctx.today })));
   }
   if (method === 'POST' && first === 'applepay' && !id) {
     return text(await ingestApplePay(ctx, await readJson(request)));
@@ -96,8 +103,7 @@ export async function handle(request, env, deps = {}) {
     response = failure(new HttpError(401, 'Check the backend token in Settings.'), asText);
   } else {
     try {
-      const ctx = context(env, deps);
-      await ensureSeeded(ctx.store, ctx.now);
+      const ctx = await context(env, deps);
       response = (await route(request, ctx)) ?? failure(new HttpError(404, 'Nothing changed: there is nothing at this address.'), asText);
     } catch (err) {
       response = failure(err, asText);
@@ -108,8 +114,7 @@ export async function handle(request, env, deps = {}) {
 
 /** The cron: add recurring items that are due, then refresh rates. */
 export async function runScheduled(env, deps = {}) {
-  const ctx = context(env, deps);
-  await ensureSeeded(ctx.store, ctx.now);
+  const ctx = await context(env, deps);
   await addRecurring(ctx);
   await refreshRates(ctx);
 }

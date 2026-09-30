@@ -42,4 +42,7 @@ export const FREQUENCIES = [
   ['yearly', 'Every year'],
 ].map(([id, name]) => ({ id, name }));
 
-export const TERM_NAMES = ['Michaelmas', 'Lent', 'Easter'];
+// Where "today" is for the Worker (recurring items) and the review week, until Settings changes it.
+export const DEFAULT_TIME_ZONE = 'Europe/London';
+
+export const TERM_NAMES =['Michaelmas', 'Lent', 'Easter'];

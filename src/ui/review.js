@@ -4,7 +4,7 @@
 import { h, fill, toast } from './dom.js';
 import { money, whenPhrase, runAction } from './format.js';
 import { categoryTable } from './charts.js';
-import { today, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, comparePhrase } from '../engine/index.js';
+import { partsInZone, DEFAULT_TIME_ZONE, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, comparePhrase } from '../engine/index.js';
 
 // Where the review is up to, kept between renders and tab visits.
 let place = { weekStart: null, open: false, step: null };
@@ -13,7 +13,9 @@ const weeks = (n) => (n === 1 ? '1 week in a row' : `${n} weeks in a row`);
 
 export function renderReview(el, { repo, showToSort }) {
   const S = repo.state;
-  const card = repo.connected() && reviewCard({ entries: S.entries, categories: S.categories, reviews: S.reviews, todayDate: today() });
+  // The week follows the time zone setting, like the backend's weekly summary and recurring items.
+  const todayDate = partsInZone(Date.now(), repo.setting('timeZone', DEFAULT_TIME_ZONE)).date;
+  const card = repo.connected() && reviewCard({ entries: S.entries, categories: S.categories, reviews: S.reviews, todayDate });
   el.hidden = !card;
   if (!card) return fill(el);
   if (place.weekStart !== card.weekStart) place = { weekStart: card.weekStart, open: false, step: null };

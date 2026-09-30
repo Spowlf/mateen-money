@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   today, addDays, addMonths, daysBetween, weekday, weekStart, monthEnd, monthsBetween, addMonthsKey,
-  overlapDays, formatDay, formatMonth, partsFromIso, partsInZone,
+  overlapDays, formatDay, formatMonth, partsFromIso, partsInZone, validTimeZone, zoneName,
 } from '../../src/engine/dates.js';
 
 test('today uses local getters, not the UTC date', () => {
@@ -58,4 +58,13 @@ test('partsFromIso keeps the local date of the offset it was written with', () =
 test('partsInZone gives the London date near midnight', () => {
   // 23:30 UTC on 30 Sep is 00:30 BST on 1 Oct.
   assert.equal(partsInZone(Date.UTC(2026, 8, 30, 23, 30)).date, '2026-10-01');
+});
+
+test('time zones: only real ones are valid, and each has a short name', () => {
+  assert.equal(validTimeZone('Asia/Singapore'), true);
+  assert.equal(validTimeZone('Mars/Olympus'), false);
+  assert.equal(validTimeZone('UTC'), false);
+  assert.equal(validTimeZone(null), false);
+  assert.equal(zoneName('America/New_York'), 'New York');
+  assert.equal(partsInZone(Date.UTC(2026, 8, 30, 18, 15), 'Asia/Singapore').date, '2026-10-01');
 });

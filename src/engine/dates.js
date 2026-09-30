@@ -127,6 +127,22 @@ export function partsFromIso(text) {
   return { date: `${y}-${mo}-${d}`, time: `${h}:${mi}`, at };
 }
 
+/** True for a time zone Intl knows, like 'Asia/Singapore'. */
+export function validTimeZone(timeZone) {
+  if (typeof timeZone !== 'string' || !timeZone.includes('/')) return false;
+  try {
+    new Intl.DateTimeFormat('en-GB', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** "Asia/Singapore" → "Singapore", "America/New_York" → "New York". */
+export function zoneName(timeZone) {
+  return timeZone.split('/').at(-1).replace(/_/g, ' ');
+}
+
 /** Date and time in a time zone (used by the Worker, which has no local zone). */
 export function partsInZone(ms, timeZone = 'Europe/London') {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {

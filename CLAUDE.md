@@ -71,6 +71,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Only spending joins a trip (never income). Adding, redating, deleting or restoring a trip re-files the payments on its days in the same write; ones whose trip was set by hand never move. A payment still pointing at a deleted trip counts as ordinary spending.
 - 2026-10-01: Default categories are the user's own list, alphabetical with Other last. Old default ids are never reused.
 - 2026-10-01: Short confirmation toasts start with a past-tense verb and have no period ("Saved term dates", "Deleted Pret"). Toasts with a full sentence end with one.
+- 2026-10-01: "Today" on the Worker is in the synced `timeZone` setting (default Europe/London, one-tap "Use this phone's time zone" in Settings): it adds recurring items and sets the app's review week. The weekly summary Shortcut POSTs the phone's ISO time with its offset, and that date picks the week. Payment dates still come from the phone.
 
 ## Writing style
 

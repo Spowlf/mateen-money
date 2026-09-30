@@ -2,7 +2,7 @@
 // and the first-run seed.
 
 import {
-  normaliseMerchant, parse, checkTerms, validFeeBps, retrip, DEFAULT_CATEGORIES, DEFAULT_METHODS, INCOME_TYPES, FREQUENCIES,
+  normaliseMerchant, parse, checkTerms, validFeeBps, validTimeZone, retrip, DEFAULT_TIME_ZONE, DEFAULT_CATEGORIES, DEFAULT_METHODS, INCOME_TYPES, FREQUENCIES,
 } from '../../src/engine/index.js';
 import { TABLES } from './tables.js';
 import { refuse } from './http.js';
@@ -19,6 +19,7 @@ const SETTING_CHECKS = {
   terms: checkTerms,
   yearMode: (v) => (v === 'academic' || v === 'calendar' ? null : 'pick academic or calendar year.'),
   excludeTrips: (v) => (typeof v === 'boolean' ? null : 'choose on or off.'),
+  timeZone: (v) => (validTimeZone(v) ? null : 'pick a time zone from the list.'),
 };
 
 function check(name, row) {
@@ -132,6 +133,7 @@ export async function ensureSeeded(store, now) {
       { id: 'terms', value: [] },   // blank until entered, per year (see terms.js)
       { id: 'yearMode', value: 'academic' },
       { id: 'excludeTrips', value: false },
+      { id: 'timeZone', value: DEFAULT_TIME_ZONE },
     ].map(live),
   }, now, { insertOnly: ['categories', 'methods', 'settings'] });
   await store.setMeta('seeded', 1);

@@ -40,7 +40,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 
 ## Weekly review
 
-- `GET /summary` returns plain text: total spent Monday to Sunday in GBP, change vs the average week over the last 8 weeks, top 3 categories, number of items in To sort.
+- `GET /summary` (or `POST /summary` with `{ timestamp }`, the phone's ISO time with its offset, which picks the week) returns plain text: total spent Monday to Sunday in GBP, change vs the average week over the last 8 weeks, top 3 categories, number of items in To sort.
 - A scheduled Shortcut (Sunday evening) fetches it and shows a notification.
 - In the app, a "Weekly review" card appears on Log from Sunday until completed:
   1. Sort any remaining items.

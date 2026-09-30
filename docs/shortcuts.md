@@ -43,10 +43,18 @@ This sends you a summary notification every Sunday evening.
 1. Go to **Automation**, tap **+**, and choose **Time of Day**.
 2. Set it to 19:00, **Weekly**, on Sunday. Choose **Run Immediately**.
 3. Add these actions:
-   1. **Get Contents of URL**
+   1. **Format Date**
+      - Date: **Current Date**
+      - Date Format: **ISO 8601**
+      - Turn on **Include ISO 8601 Time**
+   2. **Get Contents of URL**
       - URL: `<address>/summary`
-      - Method: **GET**
+      - Method: **POST**
       - Headers: `Authorization` = `Bearer <token>`
-   2. **Show Notification**, with **Contents of URL** as the text.
+      - Request Body: **JSON**, with one text field:
+        - `timestamp` = **Formatted Date**
+   3. **Show Notification**, with **Contents of URL** as the text.
+
+The time you send includes your phone's offset from UTC, so the summary covers the week that has just ended where you are, even abroad. Without it, the week follows the time zone in the app's Settings.
 
 It reads like this: "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Food £48, Groceries £35, Snacks £20. 3 to sort."
