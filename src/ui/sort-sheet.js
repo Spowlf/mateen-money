@@ -31,7 +31,7 @@ export function openSortSheet(repo, entry) {
   const name = h('input', { class: 'input', type: 'text', value: tidyName(entry.merchant), autocomplete: 'off', autocapitalize: 'words' });
   const save = h('button', { type: 'button', class: 'button primary' });
   const renderSave = () => {
-    const need = !categoryId ? 'Pick a category' : !currency ? 'Pick a currency' : !name.value.trim() ? 'Enter a vendor name' : null;
+    const need = !categoryId ? 'Pick a category' : !currency ? 'Pick a currency' : !name.value.trim() ? 'Enter a merchant name' : null;
     save.disabled = !!need;
     save.textContent = need ?? 'Save';
   };
@@ -52,7 +52,7 @@ export function openSortSheet(repo, entry) {
       value: null,
       onChange: (v) => { currency = v; renderSave(); },
     })),
-    field('Vendor name', name, 'Later payments from this merchant are filed the same way.'),
+    field('Merchant name', name, 'Later payments from this merchant are filed the same way.'),
     field('Category', chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
     h('div', { class: 'sheet-actions' },
       save,

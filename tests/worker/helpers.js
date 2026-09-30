@@ -64,7 +64,7 @@ export function makeWorker({ now = NOW, rates = {}, env: extra = {} } = {}) {
 export function manualEntry(extra = {}) {
   return {
     kind: 'spend', date: '2026-10-01', time: '12:30', at: NOW, amountMinor: 420, currency: 'GBP',
-    merchant: 'Pret', vendorId: null, categoryId: 'eating-out', incomeType: null, methodId: 'card',
+    merchant: 'Pret', vendorId: null, categoryId: 'food', incomeType: null, methodId: 'card',
     note: null, tripId: null, tripManual: 0, source: 'manual', spreadMonths: 1, spreadStart: null, ...extra,
   };
 }

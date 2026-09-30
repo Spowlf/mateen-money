@@ -126,7 +126,7 @@ export async function sortEntry(ctx, id, body) {
   const { store } = ctx;
   let e = await store.get('entries', id);
   if (!e || e.deletedAt) throw refuse('that payment no longer exists.', 404);
-  if (!body.vendorId && !body.categoryId && !body.currency) throw refuse('pick a vendor or a category.');
+  if (!body.vendorId && !body.categoryId && !body.currency) throw refuse('pick a merchant or a category.');
   if (body.currency && !validCurrency(body.currency)) throw refuse('pick a currency.');
 
   const [vendors, aliases, methods, rates, entries] = await Promise.all(
@@ -145,7 +145,7 @@ export async function sortEntry(ctx, id, body) {
   let vendor = null;
   if (body.vendorId) {
     vendor = vendors.find((v) => v.id === body.vendorId);
-    if (!vendor) throw refuse('that vendor no longer exists.');
+    if (!vendor) throw refuse('that merchant no longer exists.');
     vendor = { ...vendor };
   } else if (body.categoryId) {
     const name = body.vendorName?.trim() || e.merchant || 'Unknown';
@@ -252,7 +252,7 @@ export async function ingestApplePay(ctx, body) {
   const money = formatMoney(amountMinor, currency);
   const inGbp = currency !== 'GBP' && e.gbpPence != null ? `, ~${gbp(e.gbpPence)}` : '';
   if (refund) return `Refund of ${money} from ${merchant}${inGbp}`;
-  if (!vendor) return ambiguous ? 'New vendor: add a category and currency in the app.' : 'New vendor: add a category in the app.';
+  if (!vendor) return ambiguous ? 'New merchant: add a category and currency in the app.' : 'New merchant: add a category in the app.';
   const category = categories.find((c) => c.id === vendor.categoryId);
   if (!category) return `${money} at ${vendor.name}. Add a category in the app.`;
   const line = `${money} at ${vendor.name}, ${category.name}${inGbp}`;

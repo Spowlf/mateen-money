@@ -106,7 +106,7 @@ export function renderLog(root, { repo }) {
     oninput: () => onVendorTyped(vendorInput.value),
   });
   const vendorLabel = h('span', { class: 'field-label' });
-  const vendorChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Recent vendors' });
+  const vendorChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Recent merchants' });
   const quick = h('div', { class: 'field' });
   const keypad = h('div', { class: 'keypad' }, KEYS.map((k) => h('button', {
     type: 'button', class: 'key',
@@ -150,7 +150,7 @@ export function renderLog(root, { repo }) {
 
   function renderVendor() {
     const income = form.kind === 'income';
-    vendorLabel.textContent = income ? 'From' : 'Vendor';
+    vendorLabel.textContent = income ? 'From' : 'Merchant';
     vendorInput.placeholder = income ? 'Optional' : '';
     if (vendorInput.value !== form.vendorName) vendorInput.value = form.vendorName;
     vendorChips.hidden = income;

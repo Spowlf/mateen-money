@@ -41,7 +41,7 @@ export function renderHistory(root, { repo }) {
   function renderSwitch() {
     fill(el.switch, chips({
       label: 'Show',
-      options: [{ value: 'payments', label: 'Payments' }, { value: 'vendors', label: 'Vendors' }],
+      options: [{ value: 'payments', label: 'Payments' }, { value: 'vendors', label: 'Merchants' }],
       value: view.kind,
       onChange: (v) => { view.kind = v; renderControls(); renderBody(); },
     }));
@@ -49,7 +49,7 @@ export function renderHistory(root, { repo }) {
 
   function renderControls() {
     if (view.kind === 'vendors') {
-      const search = h('input', { class: 'input', type: 'search', placeholder: 'Search vendors', 'aria-label': 'Search vendors', autocomplete: 'off',
+      const search = h('input', { class: 'input', type: 'search', placeholder: 'Search merchants', 'aria-label': 'Search merchants', autocomplete: 'off',
         value: view.vendorQuery, oninput: () => { view.vendorQuery = search.value; renderBody(); } });
       return fill(el.controls, search);
     }
@@ -143,10 +143,10 @@ export function renderHistory(root, { repo }) {
       || S.aliases.some((a) => !a.deletedAt && a.vendorId === v.id && a.alias.toLowerCase().includes(q)));
     if (!S.vendors.some((v) => !v.deletedAt)) {
       return fill(el.body, h('section', { class: 'empty' },
-        h('h2', {}, 'No vendors yet'),
-        h('p', {}, 'Each place you pay becomes a vendor. It remembers the category, currency and card you used there.')));
+        h('h2', {}, 'No merchants yet'),
+        h('p', {}, 'Each place you pay becomes a merchant. It remembers the category, currency and card you used there.')));
     }
-    if (!vendors.length) return fill(el.body, h('p', { class: 'empty-line' }, 'No vendor has that name.'));
+    if (!vendors.length) return fill(el.body, h('p', { class: 'empty-line' }, 'No merchant has that name.'));
     fill(el.body, h('ul', { class: 'list' }, vendors.map((v) => h('li', {},
       h('button', { type: 'button', class: 'list-row', onclick: () => openVendorSheet(repo, v) },
         h('span', { class: 'list-main' },

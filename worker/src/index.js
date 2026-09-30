@@ -76,7 +76,7 @@ function failure(err, asText) {
     message = err.message;
   } else if (/UNIQUE constraint failed: aliases/.test(err?.message)) {
     status = 409;
-    message = 'Nothing changed: that name already belongs to another vendor.';
+    message = 'Nothing changed: that name already belongs to another merchant.';
   } else if (/constraint failed/.test(err?.message)) {
     status = 400;
     message = 'Nothing changed: some details are missing or not allowed.';

@@ -33,7 +33,7 @@ export function missing(form) {
   const minor = toMinor(form.amount, form.currency);
   if (!minor) return 'Enter an amount';
   if (form.kind === 'income') return form.incomeType ? null : 'Pick a type of income';
-  if (!form.vendorName?.trim()) return 'Pick a vendor';
+  if (!form.vendorName?.trim()) return 'Pick a merchant';
   if (!form.categoryId) return 'Pick a category';
   return null;
 }

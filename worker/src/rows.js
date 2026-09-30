@@ -72,7 +72,7 @@ export async function saveRow(ctx, name, id, body) {
     row.aliasNorm = normaliseMerchant(row.alias);
     if (!row.aliasNorm) throw refuse('enter a name with letters in it.');
     const clash = !row.deletedAt && (await store.all('aliases', 'deletedAt IS NULL AND aliasNorm = ? AND id != ?', row.aliasNorm, id)).length;
-    if (clash) throw refuse('that name already belongs to another vendor.', 409);
+    if (clash) throw refuse('that name already belongs to another merchant.', 409);
   }
   if (name === 'recurring' && row.anchorDay == null && row.frequency !== 'weekly' && validDate(row.nextDate)) {
     row.anchorDay = parse(row.nextDate)[2];

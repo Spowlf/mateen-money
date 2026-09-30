@@ -62,7 +62,7 @@ export function openEntrySheet(repo, entry) {
 
   function missing() {
     if (!toMinor(f.amount, f.currency)) return 'Enter an amount';
-    if (f.kind === 'spend' && !f.vendorText.trim()) return 'Enter a vendor';
+    if (f.kind === 'spend' && !f.vendorText.trim()) return 'Enter a merchant';
     if (f.kind === 'spend' && !f.categoryId) return 'Pick a category';
     if (f.kind === 'income' && !f.incomeType) return 'Pick a type of income';
     if (!f.date) return 'Pick a date';
@@ -115,7 +115,7 @@ export function openEntrySheet(repo, entry) {
           h('input', { type: 'checkbox', checked: f.statement, onchange: (e) => set({ statement: e.target.checked }, true) }),
           h('span', {}, 'Use the amount on my statement')),
         f.statement && field('Amount on your statement, in £', statement, 'Kept as it is. Exchange rates no longer change it.')),
-      field(income ? 'From' : 'Vendor', vendorInput,
+      field(income ? 'From' : 'Merchant', vendorInput,
         !income && vendor && f.vendorText === initialVendorText && entry.merchant && entry.merchant !== vendor.name ? `Arrived as ${entry.merchant}.` : null),
       h('datalist', { id: listId }, liveSorted(S.vendors, 'name').map((v) => h('option', { value: v.name }))),
       income
