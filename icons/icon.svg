@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full bleed so it also works as a maskable icon: the mark stays inside the centre 80%. -->
+  <rect width="512" height="512" fill="#2B63D9"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M334 172C326 136 298 116 264 116C224 116 198 144 198 184V304C198 340 186 366 162 392H352"/>
+    <path d="M160 262H298"/>
+  </g>
+</svg>

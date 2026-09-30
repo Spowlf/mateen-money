@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.dev.vars
+*-backup-*.json
+mateen-money-*.json
+mateen-money-*.csv
+.DS_Store
+.dev.db
+.dev.db-*

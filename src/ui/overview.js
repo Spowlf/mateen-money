@@ -1,0 +1,162 @@
+// Overview: the headline, then a month, year or term: totals, spending by category,
+// income and spending over six months, and trips. Nothing here is edited in place;
+// a trip opens a sheet with its breakdown, and its payments in History.
+
+import { h, fill, chips, icon, sheet } from './dom.js';
+import { runAction } from './format.js';
+import { renderHeadline } from './headline.js';
+import { categoryTable, incomeSpendingChart } from './charts.js';
+import { openTripSheet } from './settings.js';
+import { showTripPayments } from './history.js';
+import {
+  today, monthKey, gbp, gbpRounded, formatDay, formatMonth, overview, shiftPeriod, termNow, termLabel, yearTerms, daysBetween,
+} from '../engine/index.js';
+
+// Kept between visits to the tab, so switching away and back doesn't lose the place.
+let period = null;
+
+const KINDS = [{ value: 'month', label: 'Month' }, { value: 'year', label: 'Year' }, { value: 'term', label: 'Term' }];
+
+function dateSpan(from, to) {
+  const [a, b] = [formatDay(from), formatDay(to)];
+  if (from.slice(0, 4) !== to.slice(0, 4)) return `${a} to ${b}`;
+  return `${a.replace(/ \d{4}$/, '')} to ${b}`;
+}
+
+export function renderOverview(root, { repo }) {
+  const S = repo.state;
+  const el = {
+    headline: h('section', { 'aria-live': 'polite' }),
+    filters: h('section', { class: 'filters', 'aria-label': 'Period' }),
+    body: h('div', { class: 'screen' }),
+  };
+  fill(root, h('div', { class: 'screen' }, el.headline, el.filters, el.body));
+
+  const terms = () => repo.setting('terms', []);
+  const yearMode = () => repo.setting('yearMode', 'academic');
+  const excludeTrips = () => repo.setting('excludeTrips', false) === true;
+  const liveTrips = () => S.trips.filter((t) => !t.deletedAt);
+
+  function defaultPeriod(kind) {
+    const todayDate = today();
+    if (kind === 'month') return { kind, month: monthKey(todayDate) };
+    if (kind === 'year') return { kind, date: todayDate };
+    return { kind, ...termNow(terms(), todayDate) };
+  }
+  // A term period saved before terms had years is replaced.
+  if (!period || (period.kind === 'term' && !period.name)) period = defaultPeriod('month');
+
+  function step(n) {
+    period = shiftPeriod(period, n);
+    render();
+  }
+
+  function renderFilters(data) {
+    const unit = period.kind;
+    const nav = h('div', { class: 'period-nav' },
+      h('button', { type: 'button', class: 'icon-button', 'aria-label': `Previous ${unit}`, onclick: () => step(-1) }, icon('back')),
+      h('p', { class: 'period-label', 'aria-live': 'polite' }, data?.range.label ?? termLabel(period)),
+      h('button', { type: 'button', class: 'icon-button', 'aria-label': `Next ${unit}`, onclick: () => step(1) }, icon('forward')));
+    const modeChips = period.kind === 'year' && chips({
+      label: 'Kind of year',
+      options: [{ value: 'academic', label: 'Academic year' }, { value: 'calendar', label: 'Calendar year' }],
+      value: yearMode(),
+      onChange: (v) => runAction(() => repo.setSetting('yearMode', v)).then(render),
+    });
+    const tripToggle = liveTrips().length > 0 && h('label', { class: 'toggle' },
+      h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
+      h('span', {}, 'Leave trips out of these totals'));
+    fill(el.filters,
+      chips({ label: 'Show a', options: KINDS, value: period.kind, onChange: (v) => { period = defaultPeriod(v); render(); } }),
+      nav, modeChips, tripToggle);
+  }
+
+  function totalsCard(data) {
+    const t = data.totals;
+    const tilde = t.estimated ? '~' : '';
+    const row = (label, value, sub, cls = '') => h('li', { class: 'total-row' },
+      h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, label), sub && h('span', { class: 'list-sub' }, sub)),
+      h('span', { class: `list-amount ${cls}` }, value));
+    return h('ul', { class: 'list totals' },
+      row(data.range.current ? 'Spent so far' : 'Spent', `${tilde}${gbp(t.spent)}`,
+        data.compare ?? (data.weekly !== null ? `About ${tilde}${gbpRounded(data.weekly)} a week` : null)),
+      row('Income', `${tilde}${gbp(t.income)}`),
+      row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : ''));
+  }
+
+  const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
+
+  function openTrip({ trip, pence, count, estimated, rows }) {
+    const tilde = estimated ? '~' : '';
+    const todayDate = today();
+    const days = trip.start <= todayDate ? daysBetween(trip.start, todayDate < trip.end ? todayDate : trip.end) + 1 : 0;
+    const s = sheet(trip.name,
+      h('div', { class: 'sheet-form' },
+        h('p', { class: 'reason' }, `${dateSpan(trip.start, trip.end)}. ${count ? `${countPhrase(count)}.` : 'No payments on it yet.'}`),
+        h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
+          h('span', { class: 'list-main' },
+            h('span', { class: 'list-title' }, trip.end < todayDate ? 'Spent' : 'Spent so far'),
+            count > 0 && days > 0 && h('span', { class: 'list-sub' }, `About ${tilde}${gbpRounded(pence / days)} a day`)),
+          h('span', { class: 'list-amount' }, `${tilde}${gbp(pence)}`))),
+        estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
+        rows.length > 0
+          ? categoryTable(rows, { caption: `Spending by category, ${trip.name}` })
+          : h('p', { class: 'empty-line' }, 'Payments on the trip’s days are added to it as they come in.'),
+        h('div', { class: 'sheet-actions' },
+          count > 0 && h('button', { type: 'button', class: 'button primary', onclick: () => { s.close(); showTripPayments(trip.id); } }, `See the ${countPhrase(count)}`),
+          h('button', { type: 'button', class: count > 0 ? 'button secondary' : 'button primary', onclick: () => { s.close(); openTripSheet(repo, trip); } }, 'Change the name or dates'))));
+  }
+
+  function tripsSection(data) {
+    const trips = data.trips;
+    return h('section', { class: 'section' },
+      h('h2', { class: 'subhead' }, 'Trips'),
+      trips.length
+        ? h('ul', { class: 'list' }, trips.map((t) => h('li', {}, h('button', { type: 'button', class: 'list-row trip-row', onclick: () => openTrip(t) },
+          h('span', { class: 'list-main' },
+            h('span', { class: 'list-title' }, t.trip.name),
+            h('span', { class: 'list-sub' }, `${dateSpan(t.trip.start, t.trip.end)}, ${t.count ? countPhrase(t.count) : 'nothing yet'}`),
+            t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence, { whole: true })}`).join(', '))),
+          h('span', { class: 'list-amount' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
+        : h('p', { class: 'empty-line' }, 'Add a trip to see what it cost. Payments on its days are added to it.'),
+      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
+  }
+
+  function render() {
+    renderHeadline(el.headline, repo, { big: true });
+    const data = overview({
+      entries: S.entries, categories: S.categories, trips: liveTrips(), period, todayDate: today(),
+      yearMode: yearMode(), terms: terms(), excludeTrips: excludeTrips(),
+    });
+    renderFilters(data);
+    if (!data) {
+      fill(el.body, h('section', { class: 'empty' },
+        h('h2', {}, `No dates for ${termLabel(period)} yet`),
+        h('p', {}, 'Add your term dates in Settings to see what each term cost.'),
+        h('a', { class: 'button primary', href: '#settings' }, 'Add term dates')));
+      return;
+    }
+    const term = period.kind === 'term' && yearTerms(terms(), period.year).find((t) => t.name === period.name);
+    // Drawn at the size it will show (inside the card's padding), so its text stays true size.
+    const width = Math.max((el.body.clientWidth || 358) - 32, 260);
+    fill(el.body,
+      h('section', { class: 'section', 'aria-label': 'Totals' },
+        totalsCard(data),
+        data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
+        term && h('p', { class: 'reason' }, `${term.name} term runs ${dateSpan(term.start, term.end)}.`),
+        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline still counts them.')),
+      h('section', { class: 'section' },
+        h('h2', { class: 'subhead' }, 'Spending by category'),
+        data.rows.length
+          ? categoryTable(data.rows, { caption: `Spending by category, ${data.range.label}` })
+          : h('p', { class: 'empty-line' }, `Nothing spent in ${data.range.label.replace(/ so far$/, '')} yet.`)),
+      h('section', { class: 'section' },
+        h('h2', { class: 'subhead' }, 'Income and spending'),
+        h('p', { class: 'reason' }, `The six months to ${formatMonth(data.series.at(-1).month)}. The allowance counts an equal share in each month.`),
+        incomeSpendingChart(data.series, { width })),
+      tripsSection(data));
+  }
+
+  render();
+  return { refresh: render };
+}
