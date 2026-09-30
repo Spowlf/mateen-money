@@ -12,7 +12,7 @@ test('Apple Pay: an unknown vendor lands in To sort and the notification says so
   const w = makeWorker();
   const res = await w.call('POST', '/applepay', { body: applePay() });
   assert.equal(res.status, 200);
-  assert.equal(res.body, 'New vendor: add a category in the app.');
+  assert.equal(res.body, 'New merchant: add a category in the app.');
   const [e] = w.rows('entries');
   assert.deepEqual(
     [e.kind, e.source, e.merchant, e.categoryId, e.vendorId, e.amountMinor, e.currency, e.gbpPence, e.date, e.time, e.card],
@@ -34,9 +34,9 @@ test('Apple Pay: a known vendor gets its category and the notification names it'
   const w = makeWorker();
   await knownPret(w);
   const res = await w.call('POST', '/applepay', { body: applePay() });
-  assert.equal(res.body, '£4.20 at Pret a Manger, Eating out');
+  assert.equal(res.body, '£4.20 at Pret a Manger, Food');
   const e = w.rows('entries', "source = 'applepay'")[0];
-  assert.equal(e.categoryId, 'eating-out');
+  assert.equal(e.categoryId, 'food');
   assert.equal(w.rows('vendors')[0].useCount, 2);
 });
 
@@ -79,9 +79,9 @@ test('duplicates: a deleted payment doesn\'t block the same payment arriving aga
 
 test('Apple Pay: a foreign payment is converted, and the notification shows both amounts', async () => {
   const w = makeWorker({ rates });
-  await w.call('PUT', '/entries/e0', { body: manualEntry({ merchant: 'Ya Kun', categoryId: 'coffee-snacks', date: '2026-09-20' }) });
+  await w.call('PUT', '/entries/e0', { body: manualEntry({ merchant: 'Ya Kun', categoryId: 'snacks', date: '2026-09-20' }) });
   const res = await w.call('POST', '/applepay', { body: applePay({ amount: 'S$12.50', merchant: 'YA KUN #0231 SINGAPORE', timestamp: '2026-10-01T20:00:00+08:00' }) });
-  assert.equal(res.body, 'S$12.50 at Ya Kun, Coffee and snacks, ~£7.35');
+  assert.equal(res.body, 'S$12.50 at Ya Kun, Snacks, ~£7.35');
   const e = w.rows('entries', "source = 'applepay'")[0];
   assert.deepEqual([e.currency, e.amountMinor, e.gbpPence, e.gbpStatus, e.date, e.time], ['SGD', 1250, 735, 'estimated', '2026-10-01', '20:00']);
 });
@@ -89,7 +89,7 @@ test('Apple Pay: a foreign payment is converted, and the notification shows both
 test('ambiguous symbols: "$" asks which currency, and the answer is remembered for that card', async () => {
   const w = makeWorker({ rates });
   const res = await w.call('POST', '/applepay', { body: applePay({ amount: '$12.50', merchant: 'CHEERS' }) });
-  assert.equal(res.body, 'New vendor: add a category and currency in the app.');
+  assert.equal(res.body, 'New merchant: add a category and currency in the app.');
   const e = w.rows('entries')[0];
   assert.deepEqual([e.needsCurrency, e.symbol, e.currency], [1, '$', 'USD']);
 

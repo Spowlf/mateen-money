@@ -97,7 +97,7 @@ export function syncedPhrase(ms, now = new Date()) {
   return `Last synced ${day === today(now) ? 'today' : formatDay(day)} at ${nowTime(d)}`;
 }
 
-/** The one line under the keypad saying what else will be saved: "Eating out, on Card, today at 12:30". */
+/** The one line under the keypad saying what else will be saved: "Food, on Card, today at 12:30". */
 export function summaryLine(form, { categories = [], methods = [], trips = [], todayDate }) {
   const parts = [];
   if (form.kind === 'income') {

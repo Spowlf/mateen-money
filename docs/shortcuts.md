@@ -28,9 +28,9 @@ This logs every Apple Pay payment on its own. It needs iOS 17 or later.
 
 After a payment, you'll see one of these notifications:
 
-- "£4.20 at Pret, Eating out": a known vendor, sorted for you.
-- "New vendor: add a category in the app.": it's waiting in To sort.
-- "New vendor: add a category and currency in the app.": the amount used a symbol like $ or ¥ that fits several currencies. Once you pick the currency, it's remembered for that card.
+- "£4.20 at Pret, Food": a known merchant, sorted for you.
+- "New merchant: add a category in the app.": it's waiting in To sort.
+- "New merchant: add a category and currency in the app.": the amount used a symbol like $ or ¥ that fits several currencies. Once you pick the currency, it's remembered for that card.
 - "Already logged: £4.20 at Pret.": the same payment arrived twice within 2 minutes, so it was only logged once.
 - A line starting "Nothing changed:": nothing was saved. The rest of the line says what to check.
 
@@ -49,4 +49,4 @@ This sends you a summary notification every Sunday evening.
       - Headers: `Authorization` = `Bearer <token>`
    2. **Show Notification**, with **Contents of URL** as the text.
 
-It reads like this: "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Eating out £48, Groceries £35, Coffee and snacks £20. 3 to sort."
+It reads like this: "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Food £48, Groceries £35, Snacks £20. 3 to sort."

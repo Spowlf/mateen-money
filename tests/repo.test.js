@@ -56,15 +56,15 @@ test('repo: connecting syncs everything, and the copy opens again offline', asyn
   const w = makeWorker();
   const db = memoryDb();
   const repo = await connected(w, db);
-  assert.equal(repo.state.categories.length, 16);
+  assert.equal(repo.state.categories.length, 15);
   assert.equal(repo.state.lastSyncedAt, NOW);
 
   const offline = createRepo({ db, fetch: async () => { throw new TypeError('offline'); } });
   await offline.load();
-  assert.equal(offline.state.categories.length, 16);
+  assert.equal(offline.state.categories.length, 15);
   assert.equal(offline.state.lastSyncedAt, NOW);
   await assert.rejects(offline.sync(), OfflineError);
-  assert.equal(offline.state.categories.length, 16);
+  assert.equal(offline.state.categories.length, 15);
 });
 
 test('repo: a later sync pulls only what changed, including payments from the Shortcut', async () => {

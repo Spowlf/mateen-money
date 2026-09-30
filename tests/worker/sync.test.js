@@ -77,18 +77,18 @@ test('rows: missing required fields are refused with nothing changed', async () 
 
 test('rows: an alias gets its normalised name, and one already in use is refused', async () => {
   const w = makeWorker();
-  await w.call('PUT', '/vendors/v1', { body: { name: 'Pret', categoryId: 'eating-out' } });
-  await w.call('PUT', '/vendors/v2', { body: { name: 'Costa', categoryId: 'coffee-snacks' } });
+  await w.call('PUT', '/vendors/v1', { body: { name: 'Pret', categoryId: 'food' } });
+  await w.call('PUT', '/vendors/v2', { body: { name: 'Costa', categoryId: 'snacks' } });
   const res = await w.call('PUT', '/aliases/a1', { body: { vendorId: 'v1', alias: 'PRET A MANGER #1234' } });
   assert.equal(res.body.changes.aliases[0].aliasNorm, 'pret a manger');
   const clash = await w.call('PUT', '/aliases/a2', { body: { vendorId: 'v2', alias: 'Pret a Manger' } });
   assert.equal(clash.status, 409);
-  assert.equal(clash.body.error, 'Nothing changed: that name already belongs to another vendor.');
+  assert.equal(clash.body.error, 'Nothing changed: that name already belongs to another merchant.');
 });
 
 test('rows: editing a vendor in the app marks it as edited by you', async () => {
   const w = makeWorker();
-  const res = await w.call('PUT', '/vendors/v1', { body: { name: 'Pret', categoryId: 'eating-out' } });
+  const res = await w.call('PUT', '/vendors/v1', { body: { name: 'Pret', categoryId: 'food' } });
   assert.equal(res.body.changes.vendors[0].userEdited, 1);
 });
 

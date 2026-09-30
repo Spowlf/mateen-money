@@ -91,7 +91,7 @@ export function comparePhrase(s) {
 
 /**
  * The notification text.
- * "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Eating out £48, Groceries £35, Coffee and snacks £20. 3 to sort."
+ * "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Food £48, Groceries £35, Snacks £20. 3 to sort."
  */
 export function weeklyText(s) {
   const parts = [];

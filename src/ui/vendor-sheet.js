@@ -33,7 +33,7 @@ export function openVendorSheet(repo, vendor) {
       if (!alias) { input.setCustomValidity('Enter the name as it arrives.'); input.reportValidity(); return; }
       if (await runAction(() => repo.saveRow('aliases', crypto.randomUUID(), { vendorId: vendor.id, alias }))) {
         renderAliases();
-        toast(`Payments arriving as ${alias} go to ${vendor.name}`);
+        toast(`Payments arriving as ${alias} go to ${vendor.name}.`);
       }
     } }, 'Add');
     input.addEventListener('input', () => input.setCustomValidity(''));
@@ -47,7 +47,7 @@ export function openVendorSheet(repo, vendor) {
             renderAliases();
             toast(`Removed ${a.alias}`, { label: 'Undo', run: () => runAction(async () => { await repo.restoreRow('aliases', a.id); renderAliases(); }) });
           } }, icon('close')))))
-        : h('p', { class: 'field-hint' }, 'Names from Apple Pay that you file under this vendor are added here.'),
+        : h('p', { class: 'field-hint' }, 'Names from Apple Pay that you file under this merchant are added here.'),
       h('div', { class: 'add-row' }, input, add));
   }
 
@@ -79,7 +79,7 @@ export function openVendorSheet(repo, vendor) {
     aliasList,
     h('div', { class: 'sheet-actions' },
       save,
-      h('button', { type: 'button', class: 'button danger', onclick: remove }, 'Delete vendor'))));
+      h('button', { type: 'button', class: 'button danger', onclick: remove }, 'Delete merchant'))));
   renderAliases();
   renderSave();
 }

@@ -67,7 +67,10 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Front end on GitHub Pages from the repo root of `main` (`.nojekyll`, all paths relative). Deploy steps are in `docs/deploy.md`.
 - 2026-10-01: "Plan your yearly allowance" leaves the date blank: only the user knows when it arrives.
 - 2026-10-01: Cash on hand before the allowance arrives is logged once as income, type "Cash I already had" (`cash`, one-off: never a recurring item). It counts in full in the month it's logged and doesn't carry over; savings are still not tracked. While nothing has come in this month, the headline says so and suggests logging it.
+- 2026-10-01: The user sees "merchant", never "vendor" (labels, hints, Worker notifications, CSV header). Code, tables and fields keep the `vendor` names, so no migration.
 - 2026-10-01: Only spending joins a trip (never income). Adding, redating, deleting or restoring a trip re-files the payments on its days in the same write; ones whose trip was set by hand never move. A payment still pointing at a deleted trip counts as ordinary spending.
+- 2026-10-01: Default categories are the user's own list, alphabetical with Other last. Old default ids are never reused.
+- 2026-10-01: Short confirmation toasts start with a past-tense verb and have no period ("Saved term dates", "Deleted Pret"). Toasts with a full sentence end with one.
 
 ## Writing style
 

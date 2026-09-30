@@ -1,21 +1,20 @@
 // Seed data shared by the Worker (first run) and the app (empty states). Ids are stable; never reuse one.
 
 export const DEFAULT_CATEGORIES = [
+  ['delivery', 'Delivery'],
+  ['food', 'Food'],
+  ['gifts', 'Gifts'],
   ['groceries', 'Groceries'],
-  ['eating-out', 'Eating out'],
-  ['coffee-snacks', 'Coffee and snacks'],
-  ['takeaway', 'Takeaway and delivery'],
+  ['health', 'Health'],
+  ['kelly', 'Kelly'],
+  ['leisure', 'Leisure'],
+  ['school', 'School'],
+  ['snacks', 'Snacks'],
+  ['societies', 'Societies and events'],
+  ['subscriptions', 'Subscriptions'],
   ['transport', 'Transport'],
   ['travel', 'Travel'],
-  ['rent-bills', 'Rent and college bills'],
-  ['phone-utilities', 'Phone and utilities'],
-  ['books', 'Books and course materials'],
-  ['societies', 'Societies and events'],
-  ['going-out', 'Going out'],
-  ['shopping', 'Shopping'],
-  ['health', 'Health and personal care'],
-  ['subscriptions', 'Subscriptions'],
-  ['gifts', 'Gifts'],
+  ['utilities', 'Utilities'],
   ['other', 'Other'],
 ].map(([id, name], i) => ({ id, name, sort: i, archived: 0 }));
 

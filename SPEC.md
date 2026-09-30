@@ -18,7 +18,7 @@ Right after paying, phone in one hand. Apple Pay payments log themselves; everyt
 
 - Apple Pay: an iOS Shortcut POSTs `{amount (text, may include a currency symbol), merchant, card, timestamp}` to `/applepay`. Duplicates (same amount + merchant within 2 minutes) are ignored. Entries can be deleted (declined payments can still trigger).
 - Known vendors get their category automatically. Unknown vendors land in "To sort" at the top of Log.
-- The backend replies with one plain-text line for the notification: "£4.20 at Pret, Eating out" or "New vendor: add a category in the app".
+- The backend replies with one plain-text line for the notification: "£4.20 at Pret, Food" or "New vendor: add a category in the app".
 - Manual entry on Log: date and time default to now (editable), category chips, vendor with autocomplete, amount on a number pad, currency, payment method, optional note and trip.
 - Vendor memory: category, currency and payment method per vendor; editable.
 - Vendor aliases: in To sort, an entry can be assigned to an existing vendor; the incoming merchant name is saved as an alias so later payments are categorised automatically. Aliases are editable.
@@ -76,7 +76,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 
 ## Default categories
 
-Groceries, Eating out, Coffee and snacks, Takeaway and delivery, Transport, Travel, Rent and college bills, Phone and utilities, Books and course materials, Societies and events, Going out, Shopping, Health and personal care, Subscriptions, Gifts, Other. Editable.
+Delivery, Food, Gifts, Groceries, Health, Kelly, Leisure, School, Snacks, Societies and events, Subscriptions, Transport, Travel, Utilities, Other. Editable.
 
 ## Later, not now
 

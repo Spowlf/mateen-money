@@ -61,9 +61,9 @@ test('vendors: renaming keeps the old name as an alias, so payments under it are
   const res = await w.call('PUT', `/vendors/${v.id}`, { body: { name: 'Pret' } });
   assert.deepEqual(res.body.changes.aliases.map((a) => [a.vendorId, a.aliasNorm]), [[v.id, 'pret a manger']]);
   const note = await w.call('POST', '/applepay', { body: applePay({ merchant: 'PRET A MANGER', timestamp: '2026-10-01T16:00:00+01:00' }) });
-  assert.equal(note.body, '£4.20 at Pret, Eating out');
+  assert.equal(note.body, '£4.20 at Pret, Food');
   // A change that doesn't change the name adds nothing.
-  assert.equal((await w.call('PUT', `/vendors/${v.id}`, { body: { categoryId: 'coffee-snacks' } })).body.changes.aliases, undefined);
+  assert.equal((await w.call('PUT', `/vendors/${v.id}`, { body: { categoryId: 'snacks' } })).body.changes.aliases, undefined);
 });
 
 test('vendors: deleting one lets go of its aliases, and undo brings them back', async () => {
@@ -80,11 +80,11 @@ test('vendors: deleting one lets go of its aliases, and undo brings them back', 
 
 test('entries: editing an old payment teaches its vendor only what was changed', async () => {
   const w = makeWorker();
-  await w.call('PUT', '/entries/old', { body: manualEntry({ categoryId: 'eating-out' }) });
-  await w.call('PUT', '/entries/new', { body: manualEntry({ categoryId: 'coffee-snacks', methodId: 'cash' }) });
+  await w.call('PUT', '/entries/old', { body: manualEntry({ categoryId: 'food' }) });
+  await w.call('PUT', '/entries/new', { body: manualEntry({ categoryId: 'snacks', methodId: 'cash' }) });
   // Fixing the note on the old one keeps the vendor's newer choices.
-  await w.call('PUT', '/entries/old', { body: manualEntry({ categoryId: 'eating-out', note: 'With Sam' }) });
-  assert.deepEqual(['categoryId', 'methodId'].map((f) => w.rows('vendors')[0][f]), ['coffee-snacks', 'cash']);
+  await w.call('PUT', '/entries/old', { body: manualEntry({ categoryId: 'food', note: 'With Sam' }) });
+  assert.deepEqual(['categoryId', 'methodId'].map((f) => w.rows('vendors')[0][f]), ['snacks', 'cash']);
   // Changing its category is a choice worth remembering.
   await w.call('PUT', '/entries/old', { body: manualEntry({ categoryId: 'groceries', note: 'With Sam' }) });
   assert.deepEqual(['categoryId', 'methodId'].map((f) => w.rows('vendors')[0][f]), ['groceries', 'cash']);

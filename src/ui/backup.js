@@ -39,14 +39,14 @@ export async function exportBackup(repo) {
   const file = new File([JSON.stringify(data, null, 1)], `mateen-money-backup-${today()}.json`, { type: 'application/json' });
   if (!(await deliver(file))) return;
   await repo.markBackedUp();
-  toast(fresh ? 'Backup saved' : 'Backup saved from the last sync. You’re offline.');
+  toast(fresh ? 'Saved a backup' : 'Saved a backup from the last sync. You’re offline.');
 }
 
 export async function exportCsv(repo) {
   const S = repo.state;
   const csv = entriesCsv({ entries: S.entries, vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
   const file = new File([csv], `mateen-money-payments-${today()}.csv`, { type: 'text/csv' });
-  if (await deliver(file)) toast('Payments exported');
+  if (await deliver(file)) toast('Exported payments');
 }
 
 /** Replaces everything on the backend with a backup file, after asking. */
@@ -64,5 +64,5 @@ export async function importBackup(repo, file) {
   const n = check.counts.entries;
   const ok = confirm(`Replace everything on your backend with the backup${when}? It has ${n === 1 ? '1 payment' : `${n.toLocaleString('en-GB')} payments`}. What you’ve logged since is removed.`);
   if (!ok) return;
-  if (await runAction(() => repo.restoreBackup(data))) toast('Backup restored');
+  if (await runAction(() => repo.restoreBackup(data))) toast('Restored the backup');
 }

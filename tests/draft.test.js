@@ -73,7 +73,7 @@ test('form: the Save button says what is missing', () => {
   const f = emptyForm({ date: '2026-10-01' });
   assert.equal(missing(f), 'Enter an amount');
   assert.equal(missing({ ...f, amount: '0' }), 'Enter an amount');
-  assert.equal(missing({ ...f, amount: '4.2' }), 'Pick a vendor');
+  assert.equal(missing({ ...f, amount: '4.2' }), 'Pick a merchant');
   assert.equal(missing({ ...f, amount: '4.2', vendorName: 'Pret' }), 'Pick a category');
   assert.equal(missing(filled()), null);
   assert.equal(missing({ ...f, kind: 'income', amount: '50' }), 'Pick a type of income');

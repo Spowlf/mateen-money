@@ -35,16 +35,16 @@ test('entries: vendor memory remembers category, currency and payment method', a
   const first = (await w.call('PUT', '/entries/e1', { body: manualEntry() })).body;
   const vendor = first.changes.vendors[0];
   assert.equal(first.changes.entries[0].vendorId, vendor.id);
-  assert.deepEqual([vendor.name, vendor.categoryId, vendor.currency, vendor.methodId, vendor.useCount], ['Pret', 'eating-out', 'GBP', 'card', 1]);
+  assert.deepEqual([vendor.name, vendor.categoryId, vendor.currency, vendor.methodId, vendor.useCount], ['Pret', 'food', 'GBP', 'card', 1]);
 
   // Same vendor typed again, a different category this time: memory follows, use count grows.
-  await w.call('PUT', '/entries/e2', { body: manualEntry({ merchant: 'pret', categoryId: 'coffee-snacks', methodId: 'cash' }) });
+  await w.call('PUT', '/entries/e2', { body: manualEntry({ merchant: 'pret', categoryId: 'snacks', methodId: 'cash' }) });
   let v = w.rows('vendors');
   assert.equal(v.length, 1);
-  assert.deepEqual([v[0].categoryId, v[0].methodId, v[0].useCount], ['coffee-snacks', 'cash', 2]);
+  assert.deepEqual([v[0].categoryId, v[0].methodId, v[0].useCount], ['snacks', 'cash', 2]);
 
   // Editing an existing entry isn't a new use.
-  await w.call('PUT', '/entries/e2', { body: manualEntry({ merchant: 'pret', categoryId: 'coffee-snacks', methodId: 'cash', note: 'Flat white' }) });
+  await w.call('PUT', '/entries/e2', { body: manualEntry({ merchant: 'pret', categoryId: 'snacks', methodId: 'cash', note: 'Flat white' }) });
   v = w.rows('vendors');
   assert.equal(v[0].useCount, 2);
 });

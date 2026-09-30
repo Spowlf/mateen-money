@@ -254,7 +254,7 @@ function termsSection(repo) {
   save.addEventListener('click', async () => {
     save.disabled = true;
     if (await runAction(() => repo.setSetting('terms', next()))) {
-      toast('Term dates saved', { label: 'Undo', run: () => runAction(() => repo.setSetting('terms', saved)) });
+      toast('Saved term dates', { label: 'Undo', run: () => runAction(() => repo.setSetting('terms', saved)) });
     } else changed();
   });
   const section = h('section', { class: 'section' });
