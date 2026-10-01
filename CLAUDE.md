@@ -66,14 +66,14 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: The icon is a white £ drawn as paths on accent blue, full bleed, so one 512 PNG also serves as the maskable icon. PNGs are exported from `icons/icon.svg` with headless Chrome.
 - 2026-10-01: Front end on GitHub Pages from the repo root of `main` (`.nojekyll`, all paths relative). Deploy steps are in `docs/deploy.md`.
 - 2026-10-01: "Plan your yearly allowance" leaves the date blank: only the user knows when it arrives.
-- 2026-10-01: Cash on hand before the allowance arrives is logged once as income, type "Cash I already had" (`cash`, one-off: never a recurring item). It counts in full in the month it's logged and doesn't carry over; savings are still not tracked. While nothing has come in this month, the headline says so and suggests logging it.
+- 2026-10-01: Cash on hand before the allowance arrives is logged once as income, type "Cash I Already Had" (`cash`, one-off: never a recurring item). It counts in full in the month it's logged and doesn't carry over; savings are still not tracked. While nothing has come in this month, the headline says so and suggests logging it.
 - 2026-10-01: The user sees "merchant", never "vendor" (labels, hints, Worker notifications, CSV header). Code, tables and fields keep the `vendor` names, so no migration.
 - 2026-10-01: Only spending joins a trip (never income). Adding, redating, deleting or restoring a trip re-files the payments on its days in the same write; ones whose trip was set by hand never move. A payment still pointing at a deleted trip counts as ordinary spending.
 - 2026-10-01: Default categories are the user's own list, alphabetical with Other last. Old default ids are never reused.
 - 2026-10-01: Short confirmation toasts start with a past-tense verb and have no period ("Saved term dates", "Deleted Pret"). Toasts with a full sentence end with one.
 - 2026-10-01: "Today" on the Worker is in the synced `timeZone` setting (default Europe/London, one-tap "Use this phone's time zone" in Settings): it adds recurring items and sets the app's review week. The weekly summary Shortcut POSTs the phone's ISO time with its offset, and that date picks the week. Payment dates still come from the phone.
 - 2026-10-01: Log asks for an optional "Description" right under the merchant (the `note` field; "Description" in the edit sheet and CSV too).
-- 2026-10-01: "Events and Societies" and "Bank Transfer" are title case by the user's choice, an exception to sentence case.
+- 2026-10-01: Category, payment method and income type names are title case by the user's choice ("Events and Societies", "Bank Transfer", "Part-Time Work", "To Sort" in the History filter), an exception to sentence case.
 - 2026-10-01: Overview has no headline card (it lives on Log only). "Left over" / "Overspent" is the stand-out row of the totals, so the big figure always matches the selected period. When the six months are all zero the chart is replaced by "Nothing logged in the last six months yet."
 
 ## Writing style

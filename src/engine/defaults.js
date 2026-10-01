@@ -25,11 +25,11 @@ export const DEFAULT_METHODS = [
 ];
 
 // oneOff: logged once on Log, never planned as a recurring item.
-// "Cash I already had" lets spending before the allowance arrives count against real money.
+// "Cash I Already Had" lets spending before the allowance arrives count against real money.
 export const INCOME_TYPES = [
-  ['allowance', 'Allowance / stipend'],
-  ['cash', 'Cash I already had', true],
-  ['work', 'Part-time work'],
+  ['allowance', 'Allowance / Stipend'],
+  ['cash', 'Cash I Already Had', true],
+  ['work', 'Part-Time Work'],
   ['family', 'Family'],
   ['refund', 'Refund'],
   ['other', 'Other'],

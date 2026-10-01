@@ -55,14 +55,16 @@ export function renderHistory(root, { repo }) {
     }
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Search names, descriptions or amounts', 'aria-label': 'Search payments', autocomplete: 'off',
       value: view.query, oninput: () => { view.query = search.value; shown = PAGE; renderBody(); } });
-    const categories = liveSorted(S.categories).filter((c) => !c.archived || c.id === view.categoryId);
+    // Alphabetical here, Other last, whatever order Settings gives them.
+    const categories = S.categories.filter((c) => !c.deletedAt && (!c.archived || c.id === view.categoryId))
+      .sort((a, b) => (a.id === 'other') - (b.id === 'other') || a.name.localeCompare(b.name, 'en'));
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));
     const methods = liveSorted(S.methods, 'name');
     const change = (key) => (v) => { view[key] = v; shown = PAGE; renderControls(); renderBody(); };
     fill(el.controls, search, h('div', { class: 'filter-row' },
       select('Category', view.categoryId, [
         { value: null, label: 'All categories' },
-        { value: TO_SORT, label: 'To sort' },
+        { value: TO_SORT, label: 'To Sort' },
         { value: INCOME, label: 'Income' },
         ...categories.map((c) => ({ value: c.id, label: c.name })),
       ], change('categoryId')),
