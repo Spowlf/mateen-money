@@ -101,7 +101,7 @@ export function openRecurringSheet(repo, item = {}) {
       existing && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.active, onchange: (e) => set({ active: e.target.checked }) }),
         h('span', {}, 'Add it automatically')),
-      existing && !f.active && h('p', { class: 'field-hint' }, 'Paused: it isn’t added and doesn’t count in what’s left this month.'),
+      existing && !f.active && h('p', { class: 'field-hint' }, 'Paused.'),
       h('div', { class: 'sheet-actions' },
         save,
         existing && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, income ? 'Delete income' : 'Delete cost')),
@@ -173,14 +173,14 @@ export function renderPlan(root, { repo }) {
     if (!repo.connected()) {
       return fill(root, h('section', { class: 'empty' },
         h('h2', {}, 'Connect to your backend first'),
-        h('p', {}, 'Your plan is stored on your backend, which adds each item on its date.'),
+        h('p', {}, 'Add your backend in Settings.'),
         h('button', { type: 'button', class: 'button primary', onclick: () => { location.hash = '#settings'; } }, 'Open Settings')));
     }
     const p = planSummary(S.recurring, { rates: S.rates });
     if (!p.costs.length && !p.income.length) {
       return fill(root, h('section', { class: 'empty' },
         h('h2', {}, 'Nothing planned yet'),
-        h('p', {}, 'Add costs and income that repeat, like a phone contract or a weekly shift. Each is logged for you on its date, and counts in what’s left this month until then.'),
+        h('p', {}, 'Each item is logged for you on its date.'),
         h('button', { type: 'button', class: 'button primary', onclick: () => openRecurringSheet(repo, { kind: 'spend' }) }, 'Add a recurring cost'),
         h('button', { type: 'button', class: 'button secondary', onclick: () => openRecurringSheet(repo, { kind: 'income' }) }, 'Add recurring income')));
     }
@@ -190,9 +190,9 @@ export function renderPlan(root, { repo }) {
         h('ul', { class: 'list totals' },
           h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyIncome, { whole: true })}`)),
           h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyCosts, { whole: true })}`))),
-        h('p', { class: 'reason' }, `In an average month, from what’s planned below.${p.estimated ? ' Foreign amounts use the latest rate.' : ''}`)),
-      section('Costs', p.costs, 'Costs that repeat, like subscriptions or a phone contract, go here.', 'Add a recurring cost', 'spend'),
-      section('Income', p.income, 'Income that repeats, like a stipend or a regular shift, goes here.', 'Add recurring income', 'income')));
+        h('p', { class: 'reason' }, 'In an average month.')),
+      section('Costs', p.costs, 'No recurring costs.', 'Add a recurring cost', 'spend'),
+      section('Income', p.income, 'No recurring income.', 'Add recurring income', 'income')));
   }
 
   render();

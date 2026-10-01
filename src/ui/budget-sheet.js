@@ -58,7 +58,7 @@ export function openBudgetSheet(repo, categoryId = null) {
           renderSave();
         },
       })),
-    field('Monthly budget, £', amount, `Applies from ${monthName}. Earlier months keep the budget they had.`),
+    field('Monthly budget, £', amount, `Applies from ${monthName}.`),
     h('div', { class: 'sheet-actions' }, save, remove)));
   renderSave();
   if (categoryId) amount.focus();

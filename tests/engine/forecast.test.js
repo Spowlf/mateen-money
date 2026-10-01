@@ -140,10 +140,10 @@ test('forecast: the last day adds no pace', () => {
   assert.equal(forecastReason(f), 'Counts £310 spent. Today is the last day of the month.');
 });
 
-test('forecast: the first week says the pace is blended', () => {
+test('forecast: the first week blends the pace without explaining it', () => {
   const f = monthForecast({ entries: [...history, income('2026-10-01', 50000), spend('2026-10-01', 700)], todayDate: '2026-10-01' });
   assert.equal(f.blended, true);
-  assert.match(forecastReason(f), /blends this month with the 8 weeks before it/);
+  assert.doesNotMatch(forecastReason(f), /blends/);
 });
 
 test('category forecasts: each category at its own pace, with its recurring costs', () => {

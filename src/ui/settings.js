@@ -36,7 +36,7 @@ function openCategorySheet(repo, category) {
   name.addEventListener('input', renderSave);
   const used = category ? S.entries.filter((e) => !e.deletedAt && e.categoryId === category.id).length : 0;
   const s = sheet(category ? category.name : 'Add a category', h('div', { class: 'sheet-form' },
-    field('Name', name, category ? 'Payments already in this category move with the new name.' : null),
+    field('Name', name, null),
     h('div', { class: 'sheet-actions' },
       save,
       category && h('button', {
@@ -78,7 +78,6 @@ function categoriesSection(repo) {
   };
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Categories'),
-    h('p', { class: 'reason' }, 'The order here is the order in pickers. The ones you use most also come first when you log.'),
     h('ul', { class: 'list' }, live.map((c, i) => h('li', { class: 'reorder-row' },
       h('button', { type: 'button', class: 'list-row', onclick: () => openCategorySheet(repo, c) },
         h('span', { class: 'list-title' }, c.name)),
@@ -100,7 +99,6 @@ function budgetsSection(repo) {
   const categories = liveSorted(S.categories).filter((c) => !c.archived);
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Budgets'),
-    h('p', { class: 'reason' }, 'An optional monthly budget for any category, in pounds. A change applies from this month on.'),
     h('ul', { class: 'list' }, categories.map((c) => {
       const pence = budgetFor(S.budgets, c.id, month);
       return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openBudgetSheet(repo, c.id) },
@@ -168,8 +166,8 @@ function openMethodSheet(repo, method) {
     field('Name', name),
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Kind'),
       chips({ label: 'Kind', options: METHOD_KINDS, value: f.kind, onChange: (v) => { f.kind = v; } })),
-    field('Foreign currency fee, %', fee, 'Added to payments in other currencies. 2.99 for most UK cards, 0 for Monzo, Starling or Wise.'),
-    field('Apple Pay card name', wallet, 'The card’s name in Wallet, as the Shortcut sends it. Leave blank if you don’t use it with Apple Pay.'),
+    field('Foreign currency fee, %', fee, '2.99 for most UK cards, 0 for Monzo, Starling or Wise.'),
+    field('Apple Pay card name', wallet, 'As it appears in Wallet.'),
     memory,
     h('div', { class: 'sheet-actions' },
       save,
@@ -180,8 +178,7 @@ function openMethodSheet(repo, method) {
           s.close();
           toast(`Deleted ${method.name}`, { label: 'Undo', run: () => runAction(() => repo.restoreRow('methods', method.id)) });
         },
-      }, 'Delete payment method')),
-    method && h('p', { class: 'field-hint' }, 'Payments made with it keep its name. Changing the fee reprices only new payments.')));
+      }, 'Delete payment method'))));
   renderMemory();
   renderSave();
 }
@@ -190,7 +187,6 @@ function methodsSection(repo) {
   const methods = liveSorted(repo.state.methods, 'name');
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Payment methods'),
-    h('p', { class: 'reason' }, 'A card Apple Pay sends for the first time is added here by itself.'),
     methods.length
       ? h('ul', { class: 'list' }, methods.map((m) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openMethodSheet(repo, m) },
         h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, m.name), h('span', { class: 'list-sub' }, methodSub(m)))))))
@@ -215,7 +211,6 @@ export function openTripSheet(repo, trip) {
   const s = sheet(trip ? trip.name : 'Add a trip', h('div', { class: 'sheet-form' },
     field('Name', name),
     h('div', { class: 'row-2' }, field('First day', start), field('Last day', end)),
-    h('p', { class: 'field-hint' }, 'Payments on these days are suggested for the trip. You can change any of them.'),
     h('div', { class: 'sheet-actions' },
       save,
       trip && h('button', {
@@ -249,7 +244,7 @@ function tripsSection(repo) {
     trips.length
       ? h('ul', { class: 'list' }, trips.map((t) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openTripSheet(repo, t) },
         h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, t.name), h('span', { class: 'list-sub' }, dateSpan(t.start, t.end)))))))
-      : h('p', { class: 'empty-line' }, 'Add a trip to see what it cost, and to leave it out of monthly totals if you like.'),
+      : h('p', { class: 'empty-line' }, 'No trips yet.'),
     h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
 }
 
@@ -290,7 +285,6 @@ function termsSection(repo) {
   const label = `${termsYear}–${String(termsYear + 1).slice(2)}`;
   return fill(section,
     h('h2', { class: 'subhead' }, 'Term dates'),
-    h('p', { class: 'reason' }, 'Overview shows what each term cost once its dates are here. Leave a term blank until you know it.'),
     h('div', { class: 'period-nav' },
       h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Previous year', disabled: termsYear <= TERM_YEARS[0], onclick: () => step(-1) }, icon('back')),
       h('p', { class: 'period-label period-label-small', 'aria-live': 'polite' }, label),
@@ -369,7 +363,6 @@ function timeZoneSection(repo) {
   const differs = validTimeZone(phone) && phone !== current;
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Time zone'),
-    h('p', { class: 'reason' }, 'The date here decides when recurring items are added and which week you review.'),
     h('ul', { class: 'list' }, h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openTimeZoneSheet(repo) },
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, zoneName(current)),
@@ -388,13 +381,12 @@ function backupSection(repo) {
   const last = repo.state.lastBackupAt;
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Backup and export'),
-    h('p', { class: 'reason' }, `Your backend keeps everything. A backup is your own copy, and can put it all back. ${last ? `Last backup ${formatDay(today(new Date(last)))} from this phone.` : 'No backup from this phone yet.'}`),
+    h('p', { class: 'reason' }, last ? `Last backup ${formatDay(today(new Date(last)))}.` : 'No backup yet.'),
     h('div', { class: 'button-stack' },
       h('button', { type: 'button', class: 'button secondary', onclick: () => runAction(() => exportBackup(repo)) }, 'Export backup'),
       h('button', { type: 'button', class: 'button secondary', onclick: () => exportCsv(repo) }, 'Export payments as CSV'),
       h('button', { type: 'button', class: 'button danger', onclick: () => file.click() }, 'Restore from a backup'),
-      file),
-    h('p', { class: 'field-hint' }, 'Restoring replaces everything on your backend with the backup. You’re asked first.'));
+      file));
 }
 
 // Backend connection
@@ -432,8 +424,8 @@ function backendSection(repo, onConnected) {
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Backend'),
     h('p', { class: 'reason' }, `${syncedPhrase(repo.state.lastSyncedAt)}.`),
-    field('Backend address', address, 'The address Wrangler printed when you deployed.'),
-    field('Token', token, 'The API token you set on the backend. It stays on this phone.'),
+    field('Backend address', address),
+    field('Token', token, 'Stays on this phone.'),
     problem,
     connect);
 }
@@ -445,7 +437,7 @@ export function renderSettings(root, { repo, onConnected }) {
     if (root.contains(active) && active.matches('input')) return;
     if (!repo.connected()) {
       return fill(root, h('div', { class: 'screen' },
-        h('p', { class: 'hint' }, 'Connect to your backend first. Everything you log is stored there, and the rest of Settings needs it.'),
+        h('p', { class: 'hint' }, 'Connect to your backend first.'),
         backendSection(repo, onConnected)));
     }
     fill(root, h('div', { class: 'screen settings' },

@@ -114,7 +114,7 @@ test('headline reason: says why it is below zero while nothing has come in this 
   assert.equal(headlineReason(none), 'Log your income and spending to see what’s left.');
   const spentOnly = monthHeadline({ entries: [spend('2026-10-03', 2890)], month: '2026-10', todayDate: '2026-10-05' });
   assert.equal(headlineReason(spentOnly),
-    '£28.90 spent and nothing coming in this month yet. Log your existing cash, or your allowance, as income to see what’s left.');
+    '£28.90 spent and nothing coming in this month yet. Log your existing cash or allowance as income.');
   const both = monthHeadline({ entries: [income('2026-10-01', 15000, { incomeType: 'cash' }), spend('2026-10-03', 2890)], month: '2026-10', todayDate: '2026-10-05' });
   assert.equal(headlineReason(both), '£150 coming in, £28.90 spent and £0 still due this month.');
 });

@@ -22,11 +22,11 @@ export function entryBody(e) {
 function gbpLine(e) {
   if (e.currency === 'GBP') return null;
   if (e.gbpStatus === 'statement') return `${gbp(e.gbpPence)} from your statement.`;
-  if (e.gbpPence == null) return 'Waiting for an exchange rate, so it isn’t counted yet.';
+  if (e.gbpPence == null) return 'Waiting for an exchange rate.';
   const fee = e.feePence ? `, including a ${gbp(e.feePence)} fee` : '';
   return e.gbpStatus === 'final'
     ? `${gbp(e.gbpPence)} at ${e.rate} per £1${fee}.`
-    : `~${gbp(e.gbpPence)} at ${e.rate} per £1${fee}. It’s final once that day’s rate is out.`;
+    : `~${gbp(e.gbpPence)} at ${e.rate} per £1${fee}.`;
 }
 
 const SOURCE_NOTE = {
@@ -114,7 +114,7 @@ export function openEntrySheet(repo, entry) {
         h('label', { class: 'toggle' },
           h('input', { type: 'checkbox', checked: f.statement, onchange: (e) => set({ statement: e.target.checked }, true) }),
           h('span', {}, 'Use the amount on my statement')),
-        f.statement && field('Amount on your statement, in £', statement, 'Kept as it is. Exchange rates no longer change it.')),
+        f.statement && field('Amount on your statement, in £', statement, null)),
       field(income ? 'From' : 'Merchant', vendorInput,
         !income && vendor && f.vendorText === initialVendorText && entry.merchant && entry.merchant !== vendor.name ? `Arrived as ${entry.merchant}.` : null),
       h('datalist', { id: listId }, liveSorted(S.vendors, 'name').map((v) => h('option', { value: v.name }))),

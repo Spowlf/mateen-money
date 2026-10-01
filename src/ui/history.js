@@ -119,15 +119,12 @@ export function renderHistory(root, { repo }) {
     if (!S.entries.some((e) => !e.deletedAt && e.kind === kind)) {
       return fill(el.body, h('section', { class: 'empty' },
         h('h2', {}, income ? 'No income yet' : 'No payments yet'),
-        h('p', {}, income
-          ? 'Income you log, like your allowance or existing cash, appears here by day.'
-          : 'Payments you log, or that Apple Pay sends, appear here by day.'),
         h('a', { class: 'button primary', href: '#log' }, income ? 'Log income' : 'Log a payment')));
     }
     const found = searchEntries(S.entries, filters(), { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
     if (!found.length) {
       return fill(el.body, h('div', {},
-        h('p', { class: 'empty-line' }, 'Nothing matches. Try fewer words or clear the filters.'),
+        h('p', { class: 'empty-line' }, 'Nothing matches.'),
         h('button', { type: 'button', class: 'text-button', onclick: clear }, 'Clear search and filters')));
     }
     const waiting = toSortIds();
@@ -165,8 +162,7 @@ export function renderHistory(root, { repo }) {
       || S.aliases.some((a) => !a.deletedAt && a.vendorId === v.id && a.alias.toLowerCase().includes(q)));
     if (!S.vendors.some((v) => !v.deletedAt)) {
       return fill(el.body, h('section', { class: 'empty' },
-        h('h2', {}, 'No merchants yet'),
-        h('p', {}, 'Each place you pay becomes a merchant. It remembers the category, currency and card you used there.')));
+        h('h2', {}, 'No merchants yet')));
     }
     if (!vendors.length) return fill(el.body, h('p', { class: 'empty-line' }, 'No merchant has that name.'));
     fill(el.body, h('ul', { class: 'list' }, vendors.map((v) => h('li', {},

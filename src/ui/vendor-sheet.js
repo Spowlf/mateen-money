@@ -47,7 +47,7 @@ export function openVendorSheet(repo, vendor) {
             renderAliases();
             toast(`Removed ${a.alias}`, { label: 'Undo', run: () => runAction(async () => { await repo.restoreRow('aliases', a.id); renderAliases(); }) });
           } }, icon('close')))))
-        : h('p', { class: 'field-hint' }, 'Names from Apple Pay that you file under this merchant are added here.'),
+        : null,
       h('div', { class: 'add-row' }, input, add));
   }
 
@@ -74,8 +74,8 @@ export function openVendorSheet(repo, vendor) {
 
   const s = sheet(vendor.name, h('div', { class: 'sheet-form' },
     h('p', { class: 'reason' }, own.length
-      ? `${own.length === 1 ? '1 payment' : `${own.length} payments`}, the last on ${formatDay(last)}. Changes apply to payments from now on.`
-      : 'No payments yet. Changes apply to payments from now on.'),
+      ? `${own.length === 1 ? '1 payment' : `${own.length} payments`}, the last on ${formatDay(last)}.`
+      : 'No payments yet.'),
     field('Name', name),
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
       chips({ label: 'Category', options: withRemoved(categories, f.categoryId, S.categories), value: f.categoryId, onChange: (v) => { f.categoryId = v; } })),

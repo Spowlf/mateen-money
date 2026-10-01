@@ -47,7 +47,7 @@ export function renderReview(el, { repo, showToSort }) {
   let body;
   if (place.step === 'sort') {
     body = [
-      h('p', {}, card.toSort === 1 ? '1 payment is waiting in To sort. Sort it so the week adds up.' : `${card.toSort} payments are waiting in To sort. Sort them so the week adds up.`),
+      h('p', {}, card.toSort === 1 ? '1 payment is waiting in To sort.' : `${card.toSort} payments are waiting in To sort.`),
       h('div', { class: 'review-actions' },
         h('button', { type: 'button', class: 'button secondary', onclick: showToSort }, 'Go to To sort'),
         h('button', { type: 'button', class: 'text-button', onclick: next }, 'Skip for now')),
@@ -55,7 +55,7 @@ export function renderReview(el, { repo, showToSort }) {
   } else if (place.step === 'week') {
     body = [
       h('p', { class: 'review-figure' }, h('span', { class: 'num' }, gbp(s.totalPence)), h('span', { class: 'unit' }, 'spent that week')),
-      h('p', { class: 'reason' }, compare ? `${compare.charAt(0).toUpperCase()}${compare.slice(1)}, averaged over ${s.usualWeeks === 1 ? 'the week' : `the ${s.usualWeeks} weeks`} before.` : 'Your usual week shows here once there are earlier weeks to compare.'),
+      compare && h('p', { class: 'reason' }, `${compare.charAt(0).toUpperCase()}${compare.slice(1)}, averaged over ${s.usualWeeks === 1 ? 'the week' : `the ${s.usualWeeks} weeks`} before.`),
       s.rows.length > 0 && categoryTable(s.rows, { caption: `Spending by category, week of ${formatDayShort(card.weekStart)}` }),
       s.largest.length > 0 && h('h3', { class: 'review-sub' }, 'Largest purchases'),
       s.largest.length > 0 && h('ul', { class: 'list' }, s.largest.map((e) => h('li', { class: 'total-row' },

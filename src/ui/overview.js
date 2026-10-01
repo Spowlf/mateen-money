@@ -121,7 +121,7 @@ export function renderOverview(root, { repo }) {
         ? h('ul', { class: 'list' }, rows.map((r) => h('li', {}, current
           ? h('button', { type: 'button', class: 'list-row budget-row', 'aria-label': `${r.name}: ${budgetStatusText(r)}. Change the budget`, onclick: () => openBudgetSheet(repo, r.categoryId) }, content(r))
           : h('div', { class: 'list-row budget-row static' }, content(r)))))
-        : h('p', { class: 'reason' }, 'Set a monthly budget for a category to see how it’s going.'),
+        : h('p', { class: 'reason' }, 'No budgets yet.'),
       current && h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo, null) }, 'Set a budget')));
   }
 
@@ -133,16 +133,15 @@ export function renderOverview(root, { repo }) {
     const days = trip.start <= todayDate ? daysBetween(trip.start, todayDate < trip.end ? todayDate : trip.end) + 1 : 0;
     const s = sheet(trip.name,
       h('div', { class: 'sheet-form' },
-        h('p', { class: 'reason' }, `${dateSpan(trip.start, trip.end)}. ${count ? `${countPhrase(count)}.` : 'No payments on it yet.'}`),
+        h('p', { class: 'reason' }, `${dateSpan(trip.start, trip.end)}${count ? `. ${countPhrase(count)}.` : '.'}`),
         h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
           h('span', { class: 'list-main' },
             h('span', { class: 'list-title' }, trip.end < todayDate ? 'Spent' : 'Spent so far'),
             count > 0 && days > 0 && h('span', { class: 'list-sub' }, `About ${tilde}${gbpRounded(pence / days)} a day`)),
           h('span', { class: 'list-amount' }, `${tilde}${gbp(pence)}`))),
-        estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
         rows.length > 0
           ? categoryTable(rows, { caption: `Spending by category, ${trip.name}` })
-          : h('p', { class: 'empty-line' }, 'Payments on the trip’s days are added to it as they come in.'),
+          : h('p', { class: 'empty-line' }, 'No payments on it yet.'),
         h('div', { class: 'sheet-actions' },
           count > 0 && h('button', { type: 'button', class: 'button primary', onclick: () => { s.close(); showTripPayments(trip.id); } }, `See the ${countPhrase(count)}`),
           h('button', { type: 'button', class: count > 0 ? 'button secondary' : 'button primary', onclick: () => { s.close(); openTripSheet(repo, trip); } }, 'Change the name or dates'))));
@@ -159,7 +158,7 @@ export function renderOverview(root, { repo }) {
             h('span', { class: 'list-sub' }, `${dateSpan(t.trip.start, t.trip.end)}, ${t.count ? countPhrase(t.count) : 'nothing yet'}`),
             t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence, { whole: true })}`).join(', '))),
           h('span', { class: 'list-amount' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
-        : h('p', { class: 'empty-line' }, 'Add a trip to see what it cost. Payments on its days are added to it.'),
+        : h('p', { class: 'empty-line' }, 'No trips yet.'),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
   }
 
@@ -172,7 +171,7 @@ export function renderOverview(root, { repo }) {
     if (!data) {
       fill(el.body, h('section', { class: 'empty' },
         h('h2', {}, `No dates for ${termLabel(period)} yet`),
-        h('p', {}, 'Add your term dates in Settings to see what each term cost.'),
+        h('p', {}, 'Add them in Settings.'),
         h('a', { class: 'button primary', href: '#settings' }, 'Add term dates')));
       return;
     }
@@ -182,9 +181,8 @@ export function renderOverview(root, { repo }) {
     fill(el.body,
       h('section', { class: 'section', 'aria-label': 'Totals' },
         totalsCard(data),
-        data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
         term && h('p', { class: 'reason' }, `${term.name} Term runs ${dateSpan(term.start, term.end)}.`),
-        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.'),
+        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out.'),
         // Under the totals it changes, so the figures come first.
         liveTrips().length > 0 && h('label', { class: 'toggle' },
           h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
@@ -199,7 +197,7 @@ export function renderOverview(root, { repo }) {
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Income and spending'),
         data.series.some((m) => m.income || m.spent)
-          ? [h('p', { class: 'reason' }, `The six months to ${formatMonth(data.series.at(-1).month)}. The allowance counts an equal share in each month.`),
+          ? [h('p', { class: 'reason' }, `The six months to ${formatMonth(data.series.at(-1).month)}.`),
             incomeSpendingChart(data.series, { width })]
           : h('p', { class: 'empty-line' }, 'Nothing logged in the last six months yet.')),
       tripsSection(data));

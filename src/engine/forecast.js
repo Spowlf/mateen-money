@@ -163,6 +163,5 @@ export function forecastReason(f) {
   if (!f.daysAfter) return `Counts ${parts.join(' and ')}. Today is the last day of the month.`;
   const days = f.daysAfter === 1 ? 'the 1 day left' : `the ${f.daysAfter} days left`;
   parts.push(`about ${gbp(f.dailyPence)} a day for ${days}`);
-  const pace = f.blended ? ' The pace blends this month with the 8 weeks before it until a week has passed.' : '';
-  return `Counts ${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}.${pace}`;
+  return `Counts ${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}.`;
 }

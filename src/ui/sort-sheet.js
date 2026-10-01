@@ -54,7 +54,7 @@ export function openSortSheet(repo, entry) {
       value: null,
       onChange: (v) => { currency = v; renderSave(); },
     })),
-    !income && field('Merchant name', name, 'Later payments from this merchant are filed the same way.'),
+    !income && field('Merchant name', name),
     !income && field('Category', chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
     h('div', { class: 'sheet-actions' },
       save,
