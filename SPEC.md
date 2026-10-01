@@ -35,7 +35,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 `left = income this month + recurring income still due this month − spending this month − recurring costs still due this month`
 
 - The allowance is one lump sum a year, entered net of rent, spread evenly over Oct–Sep (each month gets an equal share, the remainder in September).
-- Rent is never logged. Savings are not tracked.
+- Rent is never logged. Savings never count here: account balances live in Net worth, apart from spending.
 - The headline counts trip spending even when Overview leaves trips out.
 
 ## Safe to spend and forecast
@@ -85,12 +85,28 @@ At the top of Log and Overview: "£X left this month", red if negative.
 - Name and dates. Entries within a trip's dates are suggested for it; changeable.
 - Overview shows each trip's total and category breakdown, and a toggle to leave trips out of monthly and yearly totals.
 
+## Net worth
+
+What you own, beside the spending tracker, never inside it: no balance, holding or price changes the headline, budget, forecast or Overview. Shown in GBP; each account keeps its own currency. Credit cards come later.
+
+- **Accounts** `{ id, name, kind, currency, sort }`, kind `current`, `savings` or `investment` (`card` later). The user's: DBS, HSBC, Revolut (current; Revolut in SGD), CIMB (savings, SGD), IBKR (investment, base SGD).
+- **Balances** for current and savings accounts are typed in by hand as dated snapshots `{ id, accountId, date, amountMinor }`; the latest live one is the balance. A balance over 30 days old gets a warning on Accounts ("DBS was last updated 35 days ago.") with a button to update it.
+- **IBKR** syncs itself each night through the Flex Web Service: the user sets up one Flex Query (open positions, net asset value, cash, trades, dividends and deposits) and its token, which is a Worker secret like the API token. The Worker replaces IBKR's holdings `{ id, accountId, symbol, exchange, name, currency, units, costMinor, closeMicro }` and appends its activity `{ id, accountId, date, type, symbol, units, amountMinor, currency }` (buy, sell, dividend, deposit, withdrawal). Units are fractional (184.8563), kept exactly as integer millionths, as are prices; values are multiplied with BigInt, since units × price in millionths passes 2^53.
+- **Prices** are fetched by the Worker, never the phone: every 15 minutes while the London or New York market is open, and when the Net Worth tab opens (`POST /prices/refresh`, at most once a minute). Source: Yahoo Finance's chart endpoint (`SPUS`, `GLD`, `ISDW.L`) behind one small adapter, so it can be swapped; when it fails, the last Flex close stands. Prices live in their own table and `GET /prices`, outside `rev`, so a price tick is never a data change to sync.
+- **IBKR's value** = the Flex net liquidation value at the last close + Σ units × (live price − close price), converted to SGD. So it matches IBKR's own figure at the close (fees and accruals included) and moves with prices during the day. **Today** = Σ units × (live price − previous close), as IBKR's Daily P&L.
+- **Gain** = value − cost, from IBKR's cost basis, in GBP and %. Dividends show in activity.
+- **Net worth** = every account's balance converted to GBP at the latest stored rate (Frankfurter; USD and SGD covered), marked "~" with "Shares at prices up to 15 minutes old. Singapore and US dollars at today's rates." The Worker saves one figure a day after the New York close `{ date, gbpPence }` for the chart; history starts the day accounts are added.
+- **Net Worth tab**: the total, today's change and the change since the 1st; a 6 Months / Year / All line chart in `--ink` (blue means money out) with "Show as a table"; By Type (Investments, Savings, Current Accounts) as meters of the total; This Month split into market and currency moves (IBKR) and bank balance changes. Gains and losses carry + / − and stay neutral in colour.
+- **Accounts** (from the tab): each account by kind with its balance, its own currency under the GBP figure, and when it was last updated; "Add an account".
+- **IBKR** (from Accounts): value, today, cost and gain; holdings with a Value / Today / Gain switch; Mix (each holding's share); recent activity.
+
 ## Screens
 
 1. **Log**: headline, weekly review card (when due), To sort, entry form.
 2. **Overview**: totals with "Left over" standing out (no headline card); month and year to date; spending by category (inline SVG chart + table); income vs spending; change vs last month; month picker. Year is calendar or academic (Oct–Sep), plus a term view (Michaelmas, Lent, Easter) with editable dates (blank by default). Trips section.
 3. **History**: grouped by day, search, filters (category, trip, payment method), edit and delete.
 4. **Plan**: recurring items and income sources.
+5. **Net Worth**: accounts, IBKR holdings and the total in GBP (see Net worth).
 - **Settings** (header icon): categories, budget, payment methods and fees, term dates, trips, allowance schedule, backup, CSV export, backend token.
 
 ## Default categories
@@ -110,3 +126,7 @@ Delivery, Events and Societies, Food, Gifts, Groceries, Health, Kelly, Leisure, 
 - The budget applying from its start month (earlier months unchanged), its forecast warning.
 - Safe to spend (negative headline, last day of the month, trips always counted) and the forecast (blending in the first week and after, recurring and trips left out of the pace).
 - The offline draft is never lost.
+- Holding values (fractional units × price exactly, with BigInt; rounding to the penny once), IBKR's value from the close NAV plus moves since, today's change, gain.
+- Net worth (latest balance per account, conversion to GBP, a balance over 30 days old flagged), one snapshot a day (running the job twice writes one).
+- Price refresh (market hours only, at most once a minute on demand, the Flex close kept when the source fails).
+- Flex sync replacing holdings and adding activity once only, however often it runs.

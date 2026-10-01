@@ -10,7 +10,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - Money is integer minor units everywhere (pence for GBP; `exponent()` in `src/engine/money.js` says how many decimals a currency has). Convert from text once, on save.
 - Dates are `'YYYY-MM-DD'` strings; date maths in UTC; "today" from local getters. Instants are ms timestamps.
 - Never commit the API token, backups or `.dev.vars`. The token is a Worker secret and is typed into Settings on the phone.
-- Build in stages. Tests for the maths before any interface. Check in with the user after each stage. **Don't commit or push until asked.**
+- Build in stages. Tests for the maths before any interface. Check in with the user after each stage. **Commit and push automatically.**
 - Push straight to `main`, never to a feature branch (even one a session is set up with).
 - When you add a front-end file, add it to `FILES` in `sw.js` (a test checks this).
 
@@ -24,6 +24,9 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 6. History, Plan and Settings.
 7. Trips and term views.
 8. PWA and deployment.
+9. Accounts and balances: tables, routes, the net worth maths with tests, the Accounts screen.
+10. IBKR and prices: Flex sync, price adapter and refresh, daily snapshot, `docs/ibkr.md` for the Flex Query setup.
+11. Net Worth tab: total, chart, By Type, This Month, the IBKR screen.
 
 ## Commands
 
@@ -32,7 +35,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 
 ## Decisions
 
-- 2026-10-01: Allowance is one lump sum a year, entered net of rent, spread evenly over Oct–Sep. Rent is never logged. Savings are not tracked.
+- 2026-10-01: Allowance is one lump sum a year, entered net of rent, spread evenly over Oct–Sep. Rent is never logged. Savings are not tracked in spending (balances live in Net Worth, apart from it).
 - 2026-10-01: The Log headline is one figure. With a monthly budget it's what's left of the budget ("£X left in this month's budget" = budget − spending − recurring costs still due, or "£X over budget this month"), the number the user is trying to stick to. Without one it's "£X left this month" = income this month (allowance share included) + recurring income still due this month − spending this month − recurring costs still due this month. With a budget, the month's income gets a warning line only when it runs out first ("Only £X of this month's income is left…") or nothing has come in yet (`incomeCheckLine`). Every other "left" figure is named for what it is (Overview: "Left over").
 - 2026-10-01: The Overview "leave trips out" toggle affects Overview totals only; the headline always counts everything.
 - 2026-10-01: Term dates start blank; the user enters them in Settings.
@@ -100,6 +103,8 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: A category is unusual in the review when it's more than 50% and at least £15.00 above its usual week (`UNUSUAL_MIN_EXTRA`), so a tiny usual doesn't flag every week. The line says pounds, not a percentage ("Gifts: £35.00, £31.00 more than your usual £4.00.").
 - 2026-10-01: Warnings (`.warning`) sit on the surface they're in with a 3px `--warn` rule at the start, not an amber fill: the fill looked muddy on the dark card. The design principles' "no coloured top stripes" is about cards; this rule marks a warning.
 - 2026-10-01: Cut-back tips are facts the engine finds (`findHabits` in `src/engine/habits.js`): over the 4 weeks to the review week's Sunday, a merchant 8 times or more, or 8 or more buys under £5.00 in one category, either adding up to £20.00. Recurring costs and live trips don't count. They show in the review's "anything unusual" step, and the biggest one goes in the weekly summary. The app never claims a saving (it can't see prices); an optional "Use Model" step in the Sunday Shortcut adds a suggestion on the phone. No AI runs in the app or the Worker.
+- 2026-10-01: Net worth (accounts, IBKR holdings, prices) sits beside spending and never changes the headline, budget, forecast or Overview. It's in GBP; each account keeps its own currency. Bank balances are dated snapshots typed by hand, flagged after 30 days. IBKR syncs nightly through the Flex Web Service (its token a Worker secret); prices come from the Worker every 15 minutes in market hours and on opening the tab, from a swappable adapter (Yahoo chart endpoint first), kept out of `rev`. IBKR's value is the Flex close NAV plus price moves since, so it matches IBKR at the close. Units and prices are integer millionths, multiplied with BigInt. Details in SPEC.md, Net worth.
+- 2026-10-01: Net Worth is a fifth tab. Its chart line is `--ink`, not blue (blue means money out); gains and losses stay neutral with + / −. Credit cards come later.
 
 ## Writing style
 
