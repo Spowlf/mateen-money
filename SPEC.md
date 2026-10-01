@@ -38,6 +38,15 @@ At the top of Log and Overview: "£X left this month", red if negative.
 - Rent is never logged. Savings are not tracked.
 - The headline counts trip spending even when Overview leaves trips out.
 
+## Safe to spend and forecast
+
+- Under the headline on Log: "£12.40 a day for the rest of October." = the headline ÷ days left in the month, today included. On the last day: "£75.00 to spend today, the last day of October." If the headline is negative: "Over by £X this month." Like the headline, it always counts trips.
+- Overview, current month only: "At this pace: £X by 31 October, £Y more than you have." (or "£Y to spare."), with how it's counted under it.
+- `forecast = spent so far + recurring costs still due + daily day-to-day rate × days after today`. "More than you have" / "to spare" compares it with everything coming in this month (income received + recurring income still due).
+- Day-to-day spending leaves out recurring items (entries with a `recurringId`) and, when the Overview toggle leaves trips out, trip spending. Trip spending still counts in "spent so far": the toggle only keeps one trip from setting the pace.
+- Daily rate: on days 1–7, `d/7 × this month's average + (1 − d/7) × the 8 weeks before the month`, so one big early purchase doesn't swing it; from day 7, this month's average alone. History counts only from the first logged payment; with none, this month stands alone.
+- Each category gets the same forecast at its own pace (for budgets).
+
 ## Weekly review
 
 - `GET /summary` (or `POST /summary` with `{ timestamp }`, the phone's ISO time with its offset, which picks the week) returns plain text: total spent Monday to Sunday in GBP, change vs the average week over the last 8 weeks, top 3 categories, number of items in To sort.
@@ -56,6 +65,15 @@ At the top of Log and Overview: "£X left this month", red if negative.
 - The GBP value can be overwritten to match the statement.
 - Ambiguous symbols ($, ¥, kr): ask which currency and remember the answer per card.
 
+## Budgets
+
+- Optional monthly budget per category, in GBP, set in Settings (Budgets) or from Overview. No overall budget: the headline already says what's left of real income.
+- `budgets` rows `{ id: 'categoryId:YYYY-MM', categoryId, fromMonth, amountPence }`: a month's budget is the latest live row on or before it. A change writes a row for the current month, so it applies from that month on and earlier months keep theirs. `amountPence` 0 = no budget from that month. No rollover yet; every month's amount stays readable so it can be added later.
+- Spending counts trips (it's real money); the Overview toggle only keeps trips out of the forecast pace, as for the month forecast.
+- Overview, current month: each budgeted category with spent, budget, left, forecast and a bar. Over: red "£X over". Forecast to go over: amber "On track for £X of £Y". Past months: budget against actual, no forecast.
+- Log: picking a budgeted category shows "Eating out: £34 left this month." (or "£5 over this month.").
+- Weekly review, "Anything unusual": categories over, or forecast to go over, their budget this month.
+
 ## Income and recurring
 
 - Income entries: allowance, existing cash, friends / family, refunds, other. Same currency handling.
@@ -72,15 +90,11 @@ At the top of Log and Overview: "£X left this month", red if negative.
 2. **Overview**: totals with "Left over" standing out (no headline card); month and year to date; spending by category (inline SVG chart + table); income vs spending; change vs last month; month picker. Year is calendar or academic (Oct–Sep), plus a term view (Michaelmas, Lent, Easter) with editable dates (blank by default). Trips section.
 3. **History**: grouped by day, search, filters (category, trip, payment method), edit and delete.
 4. **Plan**: recurring items and income sources.
-- **Settings** (header icon): categories, payment methods and fees, term dates, trips, allowance schedule, backup, CSV export, backend token.
+- **Settings** (header icon): categories, budgets, payment methods and fees, term dates, trips, allowance schedule, backup, CSV export, backend token.
 
 ## Default categories
 
 Delivery, Events and Societies, Food, Gifts, Groceries, Health, Kelly, Leisure, School, Snacks, Subscriptions, Transport, Travel, Utilities, Other. Editable.
-
-## Later, not now
-
-Monthly budgets per category, with amount left and a "safe to spend today" figure. The data model reserves a `budgets` table and `categoryRows()` returns one row per category so a budget can be attached later.
 
 ## Named rules to test
 
@@ -92,4 +106,6 @@ Monthly budgets per category, with amount left and a "safe to spend today" figur
 - Headline figure, including the allowance spread across months and upcoming recurring items.
 - Weekly summary figures (week bounds, 8-week average, top 3, To sort count).
 - Trip exclusion from totals.
+- Budgets applying from their start month (earlier months unchanged), per-category forecast warnings.
+- Safe to spend (negative headline, last day of the month, trips always counted) and the forecast (blending in the first week and after, recurring and trips left out of the pace).
 - The offline draft is never lost.

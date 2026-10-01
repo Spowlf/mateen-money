@@ -37,6 +37,7 @@ export const TABLES = {
   reviews: table(['weekStart', 'completedAt'], { required: ['weekStart', 'completedAt'] }),
   rates: table(['forDate', 'currency', 'perGbp'], { clientWrites: false }),
   settings: table(['value'], { required: ['value'], json: ['value'] }),
+  budgets: table(['categoryId', 'fromMonth', 'amountPence'], { required: ['categoryId', 'fromMonth', 'amountPence'] }),
 };
 
 /** A row as the API sends it: JSON columns parsed. */

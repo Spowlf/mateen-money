@@ -122,3 +122,15 @@ export function incomeSpendingChart(series, { width = 358 } = {}) {
 
   return h('figure', { class: 'chart-figure' }, legend, h('div', { class: 'chart-wrap' }, svg, tooltip), table);
 }
+
+/**
+ * A category's budget as a meter: the track is the budget, the fill what's spent (full when over).
+ * Colour follows the status (ok, heading over, over); the status is always written beside it too.
+ */
+export function budgetBar(r) {
+  const width = 100;
+  const mark = { ok: 'mark-1', heading: 'mark-warn', over: 'mark-danger' }[r.status];
+  return s('svg', { class: 'cat-bar', viewBox: `0 0 ${width} 8`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
+    s('rect', { x: 0, y: 0, width, height: 8, rx: 4, class: 'mark-track' }),
+    r.share > 0 && s('path', { d: bar(Math.max(r.share * width, 1), 8), class: mark }));
+}

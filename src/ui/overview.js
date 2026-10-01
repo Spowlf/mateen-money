@@ -4,11 +4,13 @@
 
 import { h, fill, chips, icon, sheet } from './dom.js';
 import { runAction } from './format.js';
-import { categoryTable, incomeSpendingChart } from './charts.js';
+import { categoryTable, incomeSpendingChart, budgetBar } from './charts.js';
+import { openBudgetSheet } from './budget-sheet.js';
 import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
 import {
-  today, monthKey, gbp, gbpRounded, formatDay, formatMonth, overview, shiftPeriod, termNow, termLabel, yearTerms, daysBetween,
+  today, monthKey, gbp, gbpRounded, formatDay, formatDayShort, formatMonth, overview, shiftPeriod, termNow, termLabel, yearTerms, daysBetween,
+  forecastLine, forecastReason, budgetRows, budgetStatusText,
 } from '../engine/index.js';
 
 // Kept between visits to the tab, so switching away and back doesn't lose the place.
@@ -82,6 +84,34 @@ export function renderOverview(root, { repo }) {
       row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', 'standout'));
   }
 
+  // Budgets: this month with forecasts (tap to change one), other months budget against actual.
+  function budgetsSection(data) {
+    if (period.kind !== 'month') return null;
+    const todayDate = today();
+    const rows = budgetRows({
+      entries: S.entries, categories: S.categories, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
+      month: period.month, todayDate, excludeTrips: excludeTrips() && new Set(liveTrips().map((t) => t.id)),
+    });
+    const current = data.range.current;
+    if (!rows.length && !current) return null;
+    const monthEndShort = formatDayShort(data.range.to);
+    const content = (r) => [
+      h('span', { class: 'budget-top' },
+        h('span', { class: 'list-title' }, r.name),
+        h('span', { class: `budget-status ${r.status}` }, budgetStatusText(r))),
+      h('span', { class: 'list-sub' }, `${gbp(r.spentPence)} of ${gbp(r.budgetPence, { whole: true })}${r.forecastPence > r.spentPence ? `, about ${gbpRounded(r.forecastPence)} by ${monthEndShort}` : ''}`),
+      budgetBar(r),
+    ];
+    return h('section', { class: 'section' },
+      h('h2', { class: 'subhead' }, 'Budgets'),
+      rows.length
+        ? h('ul', { class: 'list' }, rows.map((r) => h('li', {}, current
+          ? h('button', { type: 'button', class: 'list-row budget-row', 'aria-label': `${r.name}: ${budgetStatusText(r)}. Change the budget`, onclick: () => openBudgetSheet(repo, r.categoryId) }, content(r))
+          : h('div', { class: 'list-row budget-row static' }, content(r)))))
+        : h('p', { class: 'empty-line' }, 'Set a monthly budget for a category to see how it’s going.'),
+      current && h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo, null) }, 'Set a budget')));
+  }
+
   const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
 
   function openTrip({ trip, pence, count, estimated, rows }) {
@@ -122,7 +152,7 @@ export function renderOverview(root, { repo }) {
 
   function render() {
     const data = overview({
-      entries: S.entries, categories: S.categories, trips: liveTrips(), period, todayDate: today(),
+      entries: S.entries, categories: S.categories, trips: liveTrips(), recurring: S.recurring, rates: S.rates, period, todayDate: today(),
       yearMode: yearMode(), terms: terms(), excludeTrips: excludeTrips(),
     });
     renderFilters(data);
@@ -139,9 +169,12 @@ export function renderOverview(root, { repo }) {
     fill(el.body,
       h('section', { class: 'section', 'aria-label': 'Totals' },
         totalsCard(data),
+        data.forecast && h('p', { class: `forecast${data.forecast.spare < 0 ? ' over' : ''}` }, forecastLine(data.forecast)),
+        data.forecast && h('p', { class: 'reason' }, forecastReason(data.forecast)),
         data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
         term && h('p', { class: 'reason' }, `${term.name} term runs ${dateSpan(term.start, term.end)}.`),
         excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.')),
+      budgetsSection(data),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by category'),
         data.rows.length

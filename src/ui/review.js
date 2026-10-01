@@ -4,7 +4,7 @@
 import { h, fill, toast } from './dom.js';
 import { money, whenPhrase, runAction } from './format.js';
 import { categoryTable } from './charts.js';
-import { partsInZone, DEFAULT_TIME_ZONE, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, comparePhrase } from '../engine/index.js';
+import { partsInZone, DEFAULT_TIME_ZONE, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, comparePhrase, budgetWarningLine } from '../engine/index.js';
 
 // Where the review is up to, kept between renders and tab visits.
 let place = { weekStart: null, open: false, step: null };
@@ -15,7 +15,11 @@ export function renderReview(el, { repo, showToSort }) {
   const S = repo.state;
   // The week follows the time zone setting, like the backend's weekly summary and recurring items.
   const todayDate = partsInZone(Date.now(), repo.setting('timeZone', DEFAULT_TIME_ZONE)).date;
-  const card = repo.connected() && reviewCard({ entries: S.entries, categories: S.categories, reviews: S.reviews, todayDate });
+  const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
+  const card = repo.connected() && reviewCard({
+    entries: S.entries, categories: S.categories, reviews: S.reviews, todayDate,
+    budgets: S.budgets, recurring: S.recurring, rates: S.rates, excludeTrips,
+  });
   el.hidden = !card;
   if (!card) return fill(el);
   if (place.weekStart !== card.weekStart) place = { weekStart: card.weekStart, open: false, step: null };
@@ -74,6 +78,9 @@ export function renderReview(el, { repo, showToSort }) {
           h('p', {}, card.unusual.length === 1 ? 'One category ran more than 50% above usual:' : 'These ran more than 50% above usual:'),
           card.unusual.map((u) => h('p', { class: 'warning' }, unusualLine(u))))
         : h('p', {}, 'Nothing ran more than 50% above usual that week.'),
+      card.budgetWarnings.length > 0 && h('div', { class: 'review-list' },
+        h('p', {}, card.budgetWarnings.length === 1 ? 'One budget needs a look this month:' : 'These budgets need a look this month:'),
+        card.budgetWarnings.map((r) => h('p', { class: 'warning' }, budgetWarningLine(r, card.month)))),
       h('div', { class: 'review-actions' }, h('button', { type: 'button', class: 'button secondary', onclick: done }, 'Done')),
     ];
   }

@@ -40,7 +40,6 @@ test('headline: allowance share minus spending', () => {
   assert.equal(h.left, 44750);
   assert.equal(h.negative, false);
   assert.equal(h.daysLeft, 29);
-  assert.equal(h.safePerDay, Math.floor(44750 / 29));
 });
 
 test('headline: the allowance counts even in months after it arrived', () => {
@@ -78,7 +77,6 @@ test('headline: red when negative, trips included, deleted entries ignored', () 
   const h = monthHeadline({ entries, month: '2026-10', todayDate: '2026-10-05' });
   assert.equal(h.left, -3000);
   assert.equal(h.negative, true);
-  assert.equal(h.safePerDay, 0);
 });
 
 test('headline: entries still waiting for a rate are counted, not guessed', () => {

@@ -70,9 +70,7 @@ export function monthHeadline({ entries, recurring = [], rates = [], month, toda
     unpriced,
     unpricedIncome,
     dueItems,
-    daysLeft,
-    // For budgets later: what can go out each day and still end the month at zero.
-    safePerDay: left > 0 && daysLeft ? Math.floor(left / daysLeft) : 0,
+    daysLeft,   // today included; safeToSpend() in forecast.js divides by it
   };
 }
 

@@ -9,10 +9,10 @@
 // Money is integer minor units (see exponent() in src/engine/money.js). Dates are 'YYYY-MM-DD'.
 
 export const DB_NAME = 'mateen-money';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;   // 2: budgets
 
 /** Tables that sync from the backend. */
-export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings'];
+export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets'];
 
 // store name -> { keyPath, indexes: { name: keyPath } }
 export const STORES = {
@@ -26,6 +26,7 @@ export const STORES = {
   reviews: { keyPath: 'id', indexes: {} },
   rates: { keyPath: 'id', indexes: {} },
   settings: { keyPath: 'id', indexes: {} },   // synced preferences: { id: key, value }
+  budgets: { keyPath: 'id', indexes: {} },
   meta: { keyPath: 'key', indexes: {} },      // device only: { key, value } (token, rev, lastSyncedAt, draft)
 };
 
@@ -144,8 +145,12 @@ export const STORES = {
  *   terms         [{ id, name, start, end }]  blank until entered
  *   yearMode      'calendar' | 'academic'
  *   excludeTrips  boolean (Overview toggle)
- *
- * Reserved for budgets (not built): a `budgets` table of
- *   { id, categoryId, fromMonth: 'YYYY-MM', amountPence }
- * categoryRows() already returns one row per category to attach it to.
+ */
+
+/**
+ * @typedef {Object} Budget  A category's monthly budget from fromMonth on (see src/engine/budgets.js).
+ * @property {string} id           `${categoryId}:${fromMonth}`
+ * @property {string} categoryId
+ * @property {string} fromMonth    'YYYY-MM'; a month's budget is the latest row on or before it
+ * @property {number} amountPence  GBP; 0 = no budget from this month
  */

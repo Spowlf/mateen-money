@@ -7,6 +7,8 @@ export * from './vendors.js';
 export * from './recurring.js';
 export * from './allowance.js';
 export * from './headline.js';
+export * from './forecast.js';
+export * from './budgets.js';
 export * from './totals.js';
 export * from './summary.js';
 export * from './review.js';

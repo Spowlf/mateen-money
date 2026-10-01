@@ -157,3 +157,20 @@ test('settings: the time zone starts as London and takes only a real time zone',
   assert.equal((await w.call('PUT', '/settings/timeZone', { body: { value: 'Asia/Singapore' } })).status, 200);
   assert.equal((await w.call('GET', '/sync?since=0')).body.today, '2026-10-01');
 });
+
+test('budgets: a row per category and month, synced, checked before it is kept', async () => {
+  const w = makeWorker();
+  const ok = await w.call('PUT', '/budgets/food:2026-10', { body: { categoryId: 'food', fromMonth: '2026-10', amountPence: 15000 } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.changes.budgets[0].amountPence, 15000);
+  const sync = await w.call('GET', '/sync?since=0');
+  assert.deepEqual(sync.body.changes.budgets.map((b) => [b.id, b.amountPence]), [['food:2026-10', 15000]]);
+  const bad = [
+    ['/budgets/food:2026-11', { categoryId: 'food', fromMonth: '2026-11', amountPence: -1 }, 'Nothing changed: enter a budget of £0 or more.'],
+    ['/budgets/food:2026-11', { categoryId: 'food', fromMonth: '2026-11', amountPence: 12.5 }, 'Nothing changed: enter a budget of £0 or more.'],
+    ['/budgets/food:2026-13', { categoryId: 'food', fromMonth: '2026-13', amountPence: 100 }, 'Nothing changed: pick the month it starts.'],
+    ['/budgets/x', { categoryId: 'food', fromMonth: '2026-11', amountPence: 100 }, 'Nothing changed: pick the month it starts.'],
+  ];
+  for (const [path, body, message] of bad) assert.equal((await w.call('PUT', path, { body })).body.error, message, path);
+  assert.equal(w.rows('budgets').length, 1);
+});

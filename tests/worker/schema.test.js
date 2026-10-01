@@ -15,7 +15,7 @@ test('schema: every synced table exists with the columns the Worker writes', () 
   }
 });
 
-test('schema: a budgets table is reserved for later', () => {
+test('schema: budgets have a month they start from', () => {
   const db = fakeD1();
   assert.deepEqual(columnsOf(db, 'budgets').sort(), ['amountPence', 'categoryId', 'deletedAt', 'fromMonth', 'id', 'rev', 'updatedAt'].sort());
 });

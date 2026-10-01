@@ -41,6 +41,10 @@ function check(name, row) {
     if (row.kind === 'income' && ONE_OFF_IDS.has(row.incomeType)) return 'log existing cash once, on the Log screen.';
     if (!Number.isInteger(row.spreadMonths) || row.spreadMonths < 1 || row.spreadMonths > 24) return 'spread it over 1 to 24 months.';
   }
+  if (name === 'budgets') {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(row.fromMonth) || row.id !== `${row.categoryId}:${row.fromMonth}`) return 'pick the month it starts.';
+    if (!Number.isInteger(row.amountPence) || row.amountPence < 0) return 'enter a budget of £0 or more.';
+  }
   if (name === 'settings' && SETTING_CHECKS[row.id]) return SETTING_CHECKS[row.id](row.value);
   return null;
 }

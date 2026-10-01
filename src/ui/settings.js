@@ -6,9 +6,10 @@ import { h, fill, chips, field, sheet, toast, icon } from './dom.js';
 import { liveSorted, runAction } from './format.js';
 import { openRecurringSheet } from './plan.js';
 import { exportBackup, exportCsv, importBackup } from './backup.js';
+import { openBudgetSheet } from './budget-sheet.js';
 import {
   today, gbp, formatDay, formatMoney, syncedPhrase, moveCategory, nextSort, percentToBps, bpsToPercent, checkTerms,
-  yearRange, termYearOf, yearTerms, replaceYearTerms, termLabel, partsInZone, validTimeZone, zoneName, DEFAULT_TIME_ZONE,
+  monthKey, budgetFor, yearRange, termYearOf, yearTerms, replaceYearTerms, termLabel, partsInZone, validTimeZone, zoneName, DEFAULT_TIME_ZONE,
 } from '../engine/index.js';
 import { OfflineError } from '../errors.js';
 
@@ -89,6 +90,23 @@ function categoriesSection(repo) {
       h('ul', { class: 'list' }, archived.map((c) => h('li', { class: 'total-row' },
         h('span', { class: 'list-title' }, c.name),
         h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('categories', c.id, { archived: 0 })).then((r) => r && toast(`Brought back ${c.name}`)) }, 'Bring back'))))));
+}
+
+// Budgets
+
+function budgetsSection(repo) {
+  const S = repo.state;
+  const month = monthKey(today());
+  const categories = liveSorted(S.categories).filter((c) => !c.archived);
+  return h('section', { class: 'section' },
+    h('h2', { class: 'subhead' }, 'Budgets'),
+    h('p', { class: 'reason' }, 'An optional monthly budget for any category, in pounds. A change applies from this month on.'),
+    h('ul', { class: 'list' }, categories.map((c) => {
+      const pence = budgetFor(S.budgets, c.id, month);
+      return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openBudgetSheet(repo, c.id) },
+        h('span', { class: 'list-title' }, c.name),
+        h('span', { class: pence ? 'list-amount' : 'list-sub' }, pence ? `${gbp(pence, { whole: true })} a month` : 'No budget')));
+    })));
 }
 
 // Payment methods
@@ -429,6 +447,7 @@ export function renderSettings(root, { repo, onConnected }) {
     }
     fill(root, h('div', { class: 'screen settings' },
       categoriesSection(repo),
+      budgetsSection(repo),
       methodsSection(repo),
       tripsSection(repo),
       termsSection(repo),

@@ -3,6 +3,7 @@
 import { addMonthsKey, monthKey, monthEnd, formatMonth, addMonths, daysBetween } from './dates.js';
 import { periodTotals, categoryRows, yearRange, monthRange, tripTotals, change, monthlySeries, isLive } from './totals.js';
 import { yearTerms, termLabel, shiftTerm } from './terms.js';
+import { monthForecast } from './forecast.js';
 
 const MONTHS_OF_HISTORY = 6;
 
@@ -60,7 +61,7 @@ export function changeVsPrevious(current, previous, previousKey, currentKey, { s
 }
 
 /** Everything the Overview shows for a period, or null if the period has no dates. */
-export function overview({ entries, categories, trips = [], period, todayDate, yearMode, terms, excludeTrips = false }) {
+export function overview({ entries, categories, trips = [], recurring = [], rates = [], period, todayDate, yearMode, terms, excludeTrips = false }) {
   const range = periodRange(period, { todayDate, yearMode, terms });
   if (!range) return null;
   // A payment still filed under a deleted trip counts as an ordinary one.
@@ -83,6 +84,10 @@ export function overview({ entries, categories, trips = [], period, todayDate, y
     weekly: period.kind === 'term' && range.from <= todayDate ? perWeek(totals.spent, range.from, range.to, todayDate) : null,
     series: monthlySeries(entries, lastMonth, MONTHS_OF_HISTORY, { excludeTrips: options.excludeTrips }),
     trips: tripTotals(entries, trips, categories),
+    // The month in progress only: where spending ends up at this pace.
+    forecast: period.kind === 'month' && range.current
+      ? monthForecast({ entries, recurring, rates, todayDate, excludeTrips: options.excludeTrips })
+      : null,
   };
 }
 

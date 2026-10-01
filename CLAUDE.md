@@ -79,6 +79,10 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Income types are Allowance / Stipend, Existing Cash, Friends / Family, Refund and Other. "Part-time work" (`work`) was dropped; `family` was renamed. Never reuse the `work` id.
 - 2026-10-01: Income has no "Paid with": Log and the edit sheet hide it, the summary line leaves it out, and a manual income entry saves `methodId: null`. Apple Pay refunds keep their card.
 - 2026-10-01: The service worker refreshes files with `cache: 'no-cache'` (Pages sends `max-age=600`), and the app asks it to check every file on coming back to the screen, at most once a minute, because a resumed home screen app fetches nothing.
+- 2026-10-01: Safe to spend today = the headline ÷ days left, today included, so it always counts trips and "Over by £X this month." always matches a red headline. The Overview trips toggle only keeps trip spending out of the forecast's daily rate; trip spending still counts in its "spent so far". Logic in `src/engine/forecast.js`.
+- 2026-10-01: The forecast projects day-to-day spending (no recurring items) over the days after today, since today's spending is already counted. Days 1–7 blend this month's average with the 8 weeks before the month, weighted d/7, so day 7 is this month alone. Forecast money in prose is rounded to whole pounds.
+- 2026-10-01: Budgets are per category only (no overall budget, by the user's choice). A `budgets` row sets a category's budget from `fromMonth` on (id `categoryId:YYYY-MM`); a change writes this month's row so past months keep theirs; `amountPence` 0 removes it from that month (the reserved D1 column is NOT NULL, so no migration). Logic in `src/engine/budgets.js`.
+- 2026-10-01: Budget spending counts trips; the trips toggle only keeps them out of the pace, as for the month forecast. A removed category's budget drops out from this month but stays in past months.
 
 ## Writing style
 
