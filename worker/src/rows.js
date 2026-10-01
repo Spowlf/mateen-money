@@ -38,7 +38,7 @@ function check(name, row) {
     if (!Number.isInteger(row.amountMinor) || row.amountMinor <= 0) return 'enter an amount above zero.';
     if (!validCurrency(row.currency)) return 'pick a currency.';
     if (row.kind === 'income' && !INCOME_IDS.has(row.incomeType)) return 'pick a type of income.';
-    if (row.kind === 'income' && ONE_OFF_IDS.has(row.incomeType)) return 'log cash you already had once, on the Log screen.';
+    if (row.kind === 'income' && ONE_OFF_IDS.has(row.incomeType)) return 'log existing cash once, on the Log screen.';
     if (!Number.isInteger(row.spreadMonths) || row.spreadMonths < 1 || row.spreadMonths > 24) return 'spread it over 1 to 24 months.';
   }
   if (name === 'settings' && SETTING_CHECKS[row.id]) return SETTING_CHECKS[row.id](row.value);

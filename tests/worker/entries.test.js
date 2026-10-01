@@ -149,5 +149,5 @@ test('entries: cash you already had is income, logged once, never planned as a r
   const plan = await w.call('PUT', '/recurring/r1', {
     body: { kind: 'income', label: 'Cash', amountMinor: 15000, currency: 'GBP', frequency: 'monthly', nextDate: '2026-10-15', incomeType: 'cash' },
   });
-  assert.equal(plan.body.error, 'Nothing changed: log cash you already had once, on the Log screen.');
+  assert.equal(plan.body.error, 'Nothing changed: log existing cash once, on the Log screen.');
 });

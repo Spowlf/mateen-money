@@ -79,7 +79,7 @@ export function headlineReason(hl) {
   if (!income && !hl.spent && !hl.costsDue) return 'Log your income and spending to see what’s left.';
   if (!income) {
     const out = [hl.spent && `${gbp(hl.spent, { whole: true })} spent`, hl.costsDue && `${gbp(hl.costsDue, { whole: true })} still due`].filter(Boolean).join(' and ');
-    return `${out} and nothing coming in this month yet. Log cash you already had, or your allowance, as income to see what’s left.`;
+    return `${out} and nothing coming in this month yet. Log your existing cash, or your allowance, as income to see what’s left.`;
   }
   return `${gbp(income, { whole: true })} coming in, ${gbp(hl.spent, { whole: true })} spent and ${gbp(hl.costsDue, { whole: true })} still due this month.`;
 }
