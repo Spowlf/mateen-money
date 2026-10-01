@@ -111,11 +111,13 @@ function budgetsSection(repo) {
 
 // Payment methods
 
+/** The kind, fee and Apple Pay card, leaving out whatever just repeats the name ("Cash", "Monzo"). */
 function methodSub(m) {
+  const kind = METHOD_KINDS.find((k) => k.value === m.kind)?.label;
   return [
-    METHOD_KINDS.find((k) => k.value === m.kind)?.label,
+    kind !== m.name && kind,
     m.feeBps ? `${bpsToPercent(m.feeBps)}% on foreign currency` : 'No foreign fee',
-    m.walletCard && `Apple Pay card ${m.walletCard}`,
+    m.walletCard && m.walletCard !== m.name && `Apple Pay card ${m.walletCard}`,
   ].filter(Boolean).join(', ');
 }
 

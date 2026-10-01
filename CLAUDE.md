@@ -50,7 +50,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: A manual entry counts for duplicate detection too, so logging by hand before the Apple Pay payment arrives doesn't double count.
 - 2026-10-01: Settings holds only the backend address and token until the Settings stage, because nothing saves without them. Connecting checks them with a full sync first; a different address replaces the local copy.
 - 2026-10-01: On Log, the category question appears under the vendor only for a new vendor (or one with no category). A known vendor's choices show in the summary line. The details (date, time, currency, paid with, category, trip) stay folded under it until "Change" (or "More" in the category question) opens them, and fold again after saving.
-- 2026-10-01: To sort shows 3 payments, then "Show N more". Each has one sideways-scrolling row of choices: the likely vendor, the top 4 categories, "Other". A category tap names the new vendor with `tidyName()`.
+- 2026-10-01: To sort shows 3 payments, then "Show N more". Each has one row of choices that wraps (nothing hidden off to the side): the likely vendor, the top 4 categories, "Other". A category tap names the new vendor with `tidyName()`.
 - 2026-10-01: Undo after saving deletes the entry and puts what was typed back under a new id (the old id is now a deleted row).
 - 2026-10-01: Overview periods are a month, a year (academic or calendar, the synced `yearMode`) or a term. A year or term in progress runs to the end of this month, not today, so spread income counts this month's full share as the month view does.
 - 2026-10-01: "Change vs last month" for the month in progress compares with the same days of last month ("12% more than by this point in September"), never with all of it.
@@ -83,6 +83,9 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: The forecast projects day-to-day spending (no recurring items) over the days after today, since today's spending is already counted. Days 1–7 blend this month's average with the 8 weeks before the month, weighted d/7, so day 7 is this month alone. Forecast money in prose is rounded to whole pounds.
 - 2026-10-01: Budgets are per category only (no overall budget, by the user's choice). A `budgets` row sets a category's budget from `fromMonth` on (id `categoryId:YYYY-MM`); a change writes this month's row so past months keep theirs; `amountPence` 0 removes it from that month (the reserved D1 column is NOT NULL, so no migration). Logic in `src/engine/budgets.js`.
 - 2026-10-01: Budget spending counts trips; the trips toggle only keeps them out of the pace, as for the month forecast. A removed category's budget drops out from this month but stays in past months.
+- 2026-10-01: No home-screen widget, by the user's choice. A Scriptable widget can't open the home-screen app (iOS gives it no link) or handle a tap itself, and opening Safari instead was not wanted.
+- 2026-10-01: Statement import (not built yet) gets presets for the user's banks: DBS and Revolut (Singapore), HSBC (UK). It waits for the user's sample CSVs; build it all in one go then, presets included, and don't guess a bank's format without its sample.
+- 2026-10-01: The design principles below win over HANDOVER.md where they differ: no spring or press-scale motion (pressed = a stronger background), a neutral raised shadow with no top stripe, no tab bar blur, one small-print size (`--t-s`), segmented controls for view switches (Spent / Received, Cost / Income, Month / Year / Term, Academic / Calendar year, Payments / Income / Merchants), and text-style secondary buttons (danger is the same in red). The audit is in `docs/design-audit.md`.
 
 ## Writing style
 
@@ -98,3 +101,15 @@ Applies to every string the user sees, including notification text from the Work
 - Errors say whether anything changed: "Nothing changed: …".
 - Estimated figures carry a "~" and say how they're counted.
 - Second person, short, one idea per sentence. Plain words ("Phone tap", not "NFC").
+
+## Design principles
+
+- Our look is chosen, not defaulted. Use only the colour tokens in styles.css; don't add gradients, glows, coloured top stripes, glass/blur or new accent colours.
+- Motion only explains a change of state (e.g. the headline figure updating after a save). No looping, timed, scroll-triggered or decorative animation. Respect prefers-reduced-motion.
+- Nothing important is hidden behind hover, long-press or swipe. Pressed and hover states make an element more prominent, never less.
+- Type: screen title, section heading, body, small print and the number style. No other text styles, and no labels that repeat nearby text.
+- One look per meaning: segmented controls for switching views, pill chips for picking values, one primary and one secondary button style.
+- No generic dashboard patterns: no coloured icon tiles on stat cards, no icon-plus-text grids, no emoji, no stock illustration.
+- Secondary text meets 4.5:1 contrast in light and dark mode.
+- Each screen shows its most useful information first, with no decorative space above it.
+- Every decorative detail must have a stated reason. If it has none, remove it.

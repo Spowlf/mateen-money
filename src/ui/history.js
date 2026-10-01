@@ -1,7 +1,7 @@
 // History: payments and income on their own tabs, grouped by day, with search and filters; and every vendor.
 // Tapping a row opens its sheet. Nothing is edited in place.
 
-import { h, fill, chips } from './dom.js';
+import { h, fill, segmented } from './dom.js';
 import { money, liveSorted } from './format.js';
 import { openEntrySheet } from './entry-sheet.js';
 import { openSortSheet } from './sort-sheet.js';
@@ -44,7 +44,7 @@ export function renderHistory(root, { repo }) {
   }
 
   function renderSwitch() {
-    fill(el.switch, chips({
+    fill(el.switch, segmented({
       label: 'Show',
       options: [{ value: 'payments', label: 'Payments' }, { value: 'income', label: 'Income' }, { value: 'vendors', label: 'Merchants' }],
       value: view.kind,

@@ -1,6 +1,6 @@
 // Log: the headline, To sort, and the entry form. Home screen: type the amount, tap a vendor, Save.
 
-import { h, fill, chips, field, sheet, toast } from './dom.js';
+import { h, fill, chips, segmented, field, sheet, toast, scrollBehaviour } from './dom.js';
 import { money, whenPhrase, liveSorted, runAction } from './format.js';
 import { renderHeadline } from './headline.js';
 import { renderReview } from './review.js';
@@ -34,7 +34,7 @@ export function renderLog(root, { repo }) {
 
   const renderHeadlinePanel = () => {
     renderHeadline(el.headline, repo);
-    renderReview(el.review, { repo, showToSort: () => el.toSort.scrollIntoView({ behavior: 'smooth', block: 'start' }) });
+    renderReview(el.review, { repo, showToSort: () => el.toSort.scrollIntoView({ behavior: scrollBehaviour(), block: 'start' }) });
   };
 
   // To sort
@@ -51,7 +51,7 @@ export function renderLog(root, { repo }) {
     } else {
       const { vendor, categories } = sortChoices(entry, sortContext(S));
       quick = h('div', { class: 'chips', role: 'group', 'aria-label': `Sort ${entry.merchant}` },
-        vendor && h('button', { type: 'button', class: 'chip suggestion', onclick: () => sort(entry, { vendorId: vendor.id }) }, vendor.name),
+        vendor && h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { vendorId: vendor.id }) }, vendor.name),
         categories.map((c) => h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { categoryId: c.id, vendorName: tidyName(entry.merchant) }) }, c.name)),
         h('button', { type: 'button', class: 'chip', onclick: () => openSortSheet(repo, entry) }, 'Other'));
     }
@@ -94,7 +94,7 @@ export function renderLog(root, { repo }) {
     renderForm({ details });
   }
 
-  const kind = chips({
+  const kind = segmented({
     label: 'Spent or received',
     options: [{ value: 'spend', label: 'Spent' }, { value: 'income', label: 'Received' }],
     value: 'spend',
@@ -134,7 +134,7 @@ export function renderLog(root, { repo }) {
   function showDetails(open) {
     detailsOpen = open;
     renderForm({ details: open });
-    if (open) details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (open) details.scrollIntoView({ behavior: scrollBehaviour(), block: 'start' });
   }
 
   function press(k) {

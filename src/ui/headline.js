@@ -5,6 +5,9 @@
 import { h, fill } from './dom.js';
 import { today, monthKey, monthHeadline, headlineReason, safeToSpend, safeToSpendLine, gbp } from '../engine/index.js';
 
+// The figure last shown. It eases in only when it changes (after a save or a sync), never on every redraw.
+let shownFigure = null;
+
 export function renderHeadline(el, repo) {
   const S = repo.state;
   if (!repo.connected()) {
@@ -18,11 +21,13 @@ export function renderHeadline(el, repo) {
   const hl = monthHeadline({ entries: S.entries, recurring: S.recurring, rates: S.rates, month: monthKey(todayDate), todayDate });
   const figure = `${hl.estimated ? '~' : ''}${gbp(hl.left)}`;
   const safe = safeToSpend(hl);
+  const changed = shownFigure !== null && shownFigure !== figure;
+  shownFigure = figure;
   const reasons = [headlineReason(hl)];
   if (hl.estimated) reasons.push('Foreign amounts are estimated until their rate is final.');
   fill(el, h('div', { class: `headline${hl.negative ? ' negative' : ''}` },
     h('p', { class: 'headline-figure', 'aria-label': `${figure} left this month` },
-      h('span', { class: 'num' }, figure), h('span', { class: 'unit' }, 'left this month')),
+      h('span', { class: `num${changed ? ' changed' : ''}` }, figure), h('span', { class: 'unit' }, 'left this month')),
     safe && h('p', { class: `headline-safe${safe.over !== undefined ? ' over' : ''}` }, safeToSpendLine(safe, hl.month, { estimated: hl.estimated })),
     h('p', { class: 'reason' }, reasons.join(' ')),
     hl.unpriced > 0 && h('p', { class: 'warning' },

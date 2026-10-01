@@ -1,7 +1,7 @@
 // Plan: recurring costs and income. Each is added automatically on its date by the backend,
 // and counts in "left this month" until then.
 
-import { h, fill, chips, field, sheet, toast } from './dom.js';
+import { h, fill, chips, segmented, field, sheet, toast } from './dom.js';
 import { liveSorted, runAction, withRemoved } from './format.js';
 import {
   today, gbp, formatMoney, formatDay, toMinor, toDecimalText, planSummary, catchUpDates,
@@ -75,7 +75,7 @@ export function openRecurringSheet(repo, item = {}) {
     const categories = liveSorted(S.categories).filter((c) => !c.archived);
     const methods = liveSorted(S.methods, 'name');
     body.replaceChildren(...[
-      !existing && chips({
+      !existing && segmented({
         label: 'Cost or income',
         options: [{ value: 'spend', label: 'Cost' }, { value: 'income', label: 'Income' }],
         value: f.kind,

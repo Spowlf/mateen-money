@@ -1,7 +1,7 @@
 // Editing a payment or income from History: every field, the statement amount, and delete.
 // Saving and deleting both offer Undo; Undo puts back exactly what was there.
 
-import { h, chips, field, sheet, toast } from './dom.js';
+import { h, chips, segmented, field, sheet, toast } from './dom.js';
 import { money, liveSorted, runAction, withRemoved } from './format.js';
 import {
   gbp, formatMoney, toMinor, toDecimalText, matchVendor, INCOME_TYPES, COMMON_CURRENCIES,
@@ -102,7 +102,7 @@ export function openEntrySheet(repo, entry) {
 
     body.replaceChildren(...[
       SOURCE_NOTE[entry.source] && h('p', { class: 'reason' }, SOURCE_NOTE[entry.source](entry)),
-      chips({
+      segmented({
         label: 'Spent or received',
         options: [{ value: 'spend', label: 'Spent' }, { value: 'income', label: 'Received' }],
         value: f.kind,

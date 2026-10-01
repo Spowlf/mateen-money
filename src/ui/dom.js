@@ -31,15 +31,24 @@ export function fill(el, ...children) {
 }
 
 /**
- * A radio group of chips. options: [{ value, label }]. Returns the group; group.set(value) changes
- * the selection without calling onChange.
+ * A radio group of chips, for picking a value. options: [{ value, label }]. Returns the group;
+ * group.set(value) changes the selection without calling onChange.
  */
 export function chips({ label, options, value, onChange, className = '' }) {
-  const group = h('div', { class: 'chips', role: 'radiogroup', 'aria-label': label });
+  return radioGroup({ label, options, value, onChange, groupClass: 'chips', itemClass: `chip ${className}` });
+}
+
+/** A segmented control, for switching what the screen shows. Same options as chips(). */
+export function segmented({ label, options, value, onChange }) {
+  return radioGroup({ label, options, value, onChange, groupClass: 'segmented', itemClass: 'segment' });
+}
+
+function radioGroup({ label, options, value, onChange, groupClass, itemClass }) {
+  const group = h('div', { class: groupClass, role: 'radiogroup', 'aria-label': label });
   const render = (current) => {
     fill(group, options.map((o) => h('button', {
       type: 'button',
-      class: `chip ${className}`,
+      class: itemClass,
       role: 'radio',
       'aria-checked': String(o.value === current),
       onclick: () => { render(o.value); onChange(o.value); },
@@ -97,3 +106,6 @@ export function icon(name) {
   svg.innerHTML = ICONS[name];
   return svg;
 }
+
+/** Smooth scrolling explains a jump, unless the phone asks for less motion. */
+export const scrollBehaviour = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');

@@ -2,7 +2,7 @@
 // income and spending over six months, and trips. Nothing here is edited in place;
 // a trip opens a sheet with its breakdown, and its payments in History.
 
-import { h, fill, chips, icon, sheet } from './dom.js';
+import { h, fill, segmented, icon, sheet } from './dom.js';
 import { runAction } from './format.js';
 import { categoryTable, incomeSpendingChart, budgetBar } from './charts.js';
 import { openBudgetSheet } from './budget-sheet.js';
@@ -57,18 +57,15 @@ export function renderOverview(root, { repo }) {
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Previous ${unit}`, onclick: () => step(-1) }, icon('back')),
       h('p', { class: 'period-label', 'aria-live': 'polite' }, data?.range.label ?? termLabel(period)),
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Next ${unit}`, onclick: () => step(1) }, icon('forward')));
-    const modeChips = period.kind === 'year' && chips({
+    const modeChips = period.kind === 'year' && segmented({
       label: 'Kind of year',
       options: [{ value: 'academic', label: 'Academic year' }, { value: 'calendar', label: 'Calendar year' }],
       value: yearMode(),
       onChange: (v) => runAction(() => repo.setSetting('yearMode', v)).then(render),
     });
-    const tripToggle = liveTrips().length > 0 && h('label', { class: 'toggle' },
-      h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
-      h('span', {}, 'Leave trips out of these totals'));
     fill(el.filters,
-      chips({ label: 'Show a', options: KINDS, value: period.kind, onChange: (v) => { period = defaultPeriod(v); render(); } }),
-      nav, modeChips, tripToggle);
+      segmented({ label: 'Show a', options: KINDS, value: period.kind, onChange: (v) => { period = defaultPeriod(v); render(); } }),
+      nav, modeChips);
   }
 
   function totalsCard(data) {
@@ -173,7 +170,11 @@ export function renderOverview(root, { repo }) {
         data.forecast && h('p', { class: 'reason' }, forecastReason(data.forecast)),
         data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
         term && h('p', { class: 'reason' }, `${term.name} term runs ${dateSpan(term.start, term.end)}.`),
-        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.')),
+        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.'),
+        // Under the totals it changes, so the figures come first.
+        liveTrips().length > 0 && h('label', { class: 'toggle' },
+          h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
+          h('span', {}, 'Leave trips out of these totals'))),
       budgetsSection(data),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by category'),
