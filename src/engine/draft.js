@@ -53,7 +53,8 @@ export function formToEntry(form, { id, now = Date.now() }) {
     vendorId: form.vendorId,
     categoryId: income ? null : form.categoryId,
     incomeType: income ? form.incomeType : null,
-    methodId: form.methodId,
+    // Income isn't paid with anything.
+    methodId: income ? null : form.methodId,
     note: form.note?.trim() || null,
     tripId: form.tripId,
     tripManual: form.tripManual ? 1 : 0,

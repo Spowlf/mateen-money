@@ -229,7 +229,7 @@ export function renderLog(root, { repo }) {
     fill(details,
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       field('Currency', currency),
-      methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
+      !income && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
         chips({ label: 'Paid with', options: methods.map((m) => ({ value: m.id, label: m.name })), value: form.methodId, onChange: (v) => set({ methodId: v }) })),
       !income && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
         chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: form.categoryId, onChange: (v) => set({ categoryId: v }, { details: true }) })),

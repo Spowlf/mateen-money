@@ -76,6 +76,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Category, payment method and income type names are title case by the user's choice ("Events and Societies", "Bank Transfer", "Friends / Family", "To Sort" in the History filter), an exception to sentence case.
 - 2026-10-01: Overview has no headline card (it lives on Log only). "Left over" / "Overspent" is the stand-out row of the totals, so the big figure always matches the selected period. When the six months are all zero the chart is replaced by "Nothing logged in the last six months yet."
 - 2026-10-01: Income types are Allowance / Stipend, Existing Cash, Friends / Family, Refund and Other. "Part-time work" (`work`) was dropped; `family` was renamed. Never reuse the `work` id.
+- 2026-10-01: Income has no "Paid with": Log and the edit sheet hide it, the summary line leaves it out, and a manual income entry saves `methodId: null`. Apple Pay refunds keep their card.
 
 ## Writing style
 

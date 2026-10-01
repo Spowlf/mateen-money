@@ -338,7 +338,10 @@ main {
   background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
   background-size: 6px 6px; background-repeat: no-repeat;
 }
-.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.row-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s3); }
+/* iOS gives date and time inputs a fixed minimum width and centres the text; make them fit like the rest. */
+.input[type="date"], .input[type="time"] { min-width: 0; -webkit-appearance: none; appearance: none; text-align: left; }
+.input::-webkit-date-and-time-value { text-align: left; }
 .toggle { display: flex; align-items: center; gap: var(--s3); min-height: var(--touch); font-weight: 600; cursor: pointer; }
 .toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
 .details { display: grid; gap: var(--s4); padding-top: var(--s2); scroll-margin-top: var(--s4); }

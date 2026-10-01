@@ -107,7 +107,7 @@ export function summaryLine(form, { categories = [], methods = [], trips = [], t
     const category = categories.find((c) => c.id === form.categoryId);
     if (category) parts.push(category.name);
   }
-  const method = methods.find((m) => m.id === form.methodId);
+  const method = form.kind !== 'income' && methods.find((m) => m.id === form.methodId);
   if (method) parts.push(`on ${method.name}`);
   const day = form.date === todayDate ? 'today' : formatDay(form.date);
   parts.push(form.time ? `${day} at ${form.time}` : day);

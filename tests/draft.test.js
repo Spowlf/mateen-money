@@ -81,8 +81,8 @@ test('form: the Save button says what is missing', () => {
 });
 
 test('form: income keeps its spread, spending never has one', () => {
-  const inc = formToEntry({ ...emptyForm({ date: '2026-09-28' }), kind: 'income', amount: '6000', incomeType: 'allowance', spreadMonths: 12, spreadStart: '2026-10', categoryId: 'x' }, { id: 'a' });
-  assert.deepEqual([inc.spreadMonths, inc.spreadStart, inc.categoryId, inc.amountMinor], [12, '2026-10', null, 600000]);
+  const inc = formToEntry({ ...emptyForm({ date: '2026-09-28' }), kind: 'income', amount: '6000', incomeType: 'allowance', spreadMonths: 12, spreadStart: '2026-10', categoryId: 'x', methodId: 'card' }, { id: 'a' });
+  assert.deepEqual([inc.spreadMonths, inc.spreadStart, inc.categoryId, inc.methodId, inc.amountMinor], [12, '2026-10', null, null, 600000]);
   const sp = formToEntry({ ...filled(), spreadMonths: 12, spreadStart: '2026-10' }, { id: 'b' });
   assert.deepEqual([sp.spreadMonths, sp.spreadStart], [1, null]);
 });
