@@ -53,7 +53,7 @@ If you haven't since stage 10, update the database and the Worker:
 
 ```sh
 npx wrangler d1 execute mateen-money --remote --file worker/schema.sql
-npx wrangler d1 execute mateen-money --remote --file worker/migrations/002-method-accounts.sql
+npx wrangler d1 execute mateen-money --remote --command "ALTER TABLE methods ADD COLUMN accountId TEXT"
 npx wrangler deploy
 ```
 

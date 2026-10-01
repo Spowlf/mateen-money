@@ -30,7 +30,7 @@ Copy the `database_id` it prints into `wrangler.toml`, replacing `paste-the-id-f
 npx wrangler d1 execute mateen-money --remote --file worker/schema.sql
 ```
 
-You can run the schema again safely. It only creates what's missing.
+You can run the schema again safely. It only creates what's missing. If `--file` says "Authentication error [code: 10000]", run `npx wrangler login` again; the migrations below use `--command`, which isn't affected.
 
 ## 4. Set the API token
 
@@ -129,6 +129,15 @@ The tests don't need any of this. `npm test` runs the Worker against Node's buil
 
 # Changing the schema later
 
-Migrations so far, to run once each on a database made before them: `worker/migrations/002-method-accounts.sql` (links a payment method to a Net Worth account) and `worker/migrations/003-income-accounts.sql` (the account income went into).
+Migrations so far, to run once each on a database made before them:
 
-Add new columns with `ALTER TABLE` statements in a new file, for example `worker/migrations/002-….sql`. Run it with `d1 execute --remote --file`. Also add the column to `worker/src/tables.js`. A test checks the two match.
+```sh
+# 002: links a payment method to a Net Worth account
+npx wrangler d1 execute mateen-money --remote --command "ALTER TABLE methods ADD COLUMN accountId TEXT"
+# 003: the account income went into
+npx wrangler d1 execute mateen-money --remote --command "ALTER TABLE entries ADD COLUMN accountId TEXT"
+```
+
+Run again, each says the column already exists, and that's harmless. `PRAGMA table_info(entries)` (or `methods`) shows whether it's there.
+
+Add new columns with `ALTER TABLE` statements in a new file, for example `worker/migrations/004-….sql`, with the command to run in its header comment. Run each statement with `d1 execute --remote --command "…"`: `--remote --file` can fail with "Authentication error [code: 10000]" even when you're logged in and `--command` works. Also add the column to `worker/src/tables.js`. A test checks the two match.
