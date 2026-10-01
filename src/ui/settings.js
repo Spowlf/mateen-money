@@ -92,7 +92,7 @@ function categoriesSection(repo, view) {
     live.length > CATEGORIES_SHOWN && h('div', {}, h('button', {
       type: 'button', class: 'text-button', 'aria-expanded': String(view.showAll),
       onclick: () => { view.showAll = !view.showAll; view.render(); },
-    }, view.showAll ? 'Show fewer' : `Show ${live.length - CATEGORIES_SHOWN} more`)),
+    }, view.showAll ? 'Show fewer' : 'Show more')),
     h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openCategorySheet(repo, null) }, 'Add a Category')),
     archived.length > 0 && h('details', { class: 'table-view' },
       h('summary', {}, `Removed categories, ${archived.length}`),
