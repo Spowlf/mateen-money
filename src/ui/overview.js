@@ -9,7 +9,7 @@ import { openBudgetSheet } from './budget-sheet.js';
 import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
 import {
-  today, monthKey, gbp, gbpRounded, formatDay, formatDayShort, formatMonth, overview, shiftPeriod, termNow, termLabel, yearTerms, daysBetween,
+  today, monthKey, gbp, gbpRounded, formatDay, formatDayShort, formatMonth, overview, shiftPeriod, termNow, termLabel, inTermSpan, clampTerm, yearTerms, daysBetween,
   forecastRow, forecastReason, budgetRows, budgetStatusText,
 } from '../engine/index.js';
 
@@ -45,6 +45,9 @@ export function renderOverview(root, { repo }) {
   }
   // A term period saved before terms had years is replaced.
   if (!period || (period.kind === 'term' && !period.name)) period = defaultPeriod('month');
+  // Only Easter 2026 to Easter 2027 are offered.
+  if (period.kind === 'term' && !inTermSpan(period)) period = { kind: 'term', ...clampTerm(period) };
+  const canStep = (n) => period.kind !== 'term' || inTermSpan(shiftPeriod(period, n));
 
   function step(n) {
     period = shiftPeriod(period, n);
@@ -54,9 +57,9 @@ export function renderOverview(root, { repo }) {
   function renderFilters(data) {
     const unit = period.kind;
     const nav = h('div', { class: 'period-nav' },
-      h('button', { type: 'button', class: 'icon-button', 'aria-label': `Previous ${unit}`, onclick: () => step(-1) }, icon('back')),
+      h('button', { type: 'button', class: 'icon-button', 'aria-label': `Previous ${unit}`, disabled: !canStep(-1), onclick: () => step(-1) }, icon('back')),
       h('p', { class: 'period-label', 'aria-live': 'polite' }, data?.range.label ?? termLabel(period)),
-      h('button', { type: 'button', class: 'icon-button', 'aria-label': `Next ${unit}`, onclick: () => step(1) }, icon('forward')));
+      h('button', { type: 'button', class: 'icon-button', 'aria-label': `Next ${unit}`, disabled: !canStep(1), onclick: () => step(1) }, icon('forward')));
     const modeChips = period.kind === 'year' && segmented({
       label: 'Kind of year',
       options: [{ value: 'academic', label: 'Academic year' }, { value: 'calendar', label: 'Calendar year' }],

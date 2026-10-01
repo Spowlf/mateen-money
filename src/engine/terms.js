@@ -41,6 +41,19 @@ export function termLabel(term) {
   return `${term.name} term ${year}`;
 }
 
+// The only terms the app offers: Easter 2026 (the end of 2025–26) to Easter 2027, the last
+// year at Cambridge. Overview and Settings never step outside them.
+export const FIRST_TERM = Object.freeze({ year: 2025, name: 'Easter' });
+export const LAST_TERM = Object.freeze({ year: 2026, name: 'Easter' });
+
+const termIndex = ({ year, name }) => year * TERM_NAMES.length + TERM_NAMES.indexOf(name);
+
+/** Whether a term ({ year, name }) is one the app offers. */
+export const inTermSpan = (term) => termIndex(term) >= termIndex(FIRST_TERM) && termIndex(term) <= termIndex(LAST_TERM);
+
+/** The academic years with a term in the span: 2025 (Easter only) and 2026. */
+export const TERM_YEARS = Object.freeze([FIRST_TERM.year, LAST_TERM.year].filter((y, i, a) => a.indexOf(y) === i));
+
 /** The term n terms away. term is { year, name }. */
 export function shiftTerm({ year, name }, n) {
   const i = year * TERM_NAMES.length + TERM_NAMES.indexOf(name) + n;
@@ -52,5 +65,13 @@ export function termNow(terms, todayDate) {
   const dated = datedTerms(terms);
   const pick = dated.find((t) => todayDate >= t.start && todayDate <= t.end)
     ?? dated.filter((t) => t.end < todayDate).at(-1) ?? dated[0];
-  return pick ? { year: pick.year, name: pick.name } : { year: termYearOf(todayDate), name: TERM_NAMES[0] };
+  const term = pick ? { year: pick.year, name: pick.name } : { year: termYearOf(todayDate), name: TERM_NAMES[0] };
+  return clampTerm(term);
+}
+
+/** The nearest term in the span. */
+export function clampTerm(term) {
+  if (termIndex(term) < termIndex(FIRST_TERM)) return { ...FIRST_TERM };
+  if (termIndex(term) > termIndex(LAST_TERM)) return { ...LAST_TERM };
+  return { year: term.year, name: term.name };
 }

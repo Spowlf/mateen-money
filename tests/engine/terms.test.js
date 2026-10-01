@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { termYearOf, yearTerms, replaceYearTerms, termLabel, datedTerms, shiftTerm, termNow } from '../../src/engine/terms.js';
+import { termYearOf, yearTerms, replaceYearTerms, termLabel, datedTerms, shiftTerm, termNow, inTermSpan, clampTerm, TERM_YEARS } from '../../src/engine/terms.js';
 
 const t26 = [
   { id: 'michaelmas-2026', name: 'Michaelmas', year: 2026, start: '2026-10-06', end: '2026-12-04' },
@@ -57,4 +57,17 @@ test('terms: the term to show first is this one, else the last one, else the nex
   assert.deepEqual(termNow(all, '2026-12-20'), { year: 2026, name: 'Michaelmas' });
   assert.deepEqual(termNow(t26, '2026-09-01'), { year: 2026, name: 'Michaelmas' });
   assert.deepEqual(termNow([], '2027-02-01'), { year: 2026, name: 'Michaelmas' });
+});
+
+test('terms: only Easter 2026 to Easter 2027 are offered', () => {
+  assert.equal(inTermSpan({ year: 2025, name: 'Lent' }), false);
+  assert.equal(inTermSpan({ year: 2025, name: 'Easter' }), true);
+  assert.equal(inTermSpan({ year: 2026, name: 'Michaelmas' }), true);
+  assert.equal(inTermSpan({ year: 2026, name: 'Easter' }), true);
+  assert.equal(inTermSpan({ year: 2027, name: 'Michaelmas' }), false);
+  assert.deepEqual(clampTerm({ year: 2027, name: 'Lent' }), { year: 2026, name: 'Easter' });
+  assert.deepEqual(clampTerm({ year: 2024, name: 'Easter' }), { year: 2025, name: 'Easter' });
+  assert.deepEqual(TERM_YEARS, [2025, 2026]);
+  // With no dates after the last term, Overview still opens on a term in the span.
+  assert.deepEqual(termNow([], '2027-10-05'), { year: 2026, name: 'Easter' });
 });

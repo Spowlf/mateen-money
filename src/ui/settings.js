@@ -9,7 +9,7 @@ import { exportBackup, exportCsv, importBackup } from './backup.js';
 import { openBudgetSheet } from './budget-sheet.js';
 import {
   today, gbp, formatDay, formatMoney, syncedPhrase, moveCategory, nextSort, percentToBps, bpsToPercent, checkTerms,
-  monthKey, budgetFor, yearRange, termYearOf, yearTerms, replaceYearTerms, termLabel, partsInZone, validTimeZone, zoneName, DEFAULT_TIME_ZONE,
+  monthKey, budgetFor, yearRange, termYearOf, TERM_YEARS, inTermSpan, yearTerms, replaceYearTerms, termLabel, partsInZone, validTimeZone, zoneName, DEFAULT_TIME_ZONE,
 } from '../engine/index.js';
 import { OfflineError } from '../errors.js';
 
@@ -260,8 +260,9 @@ let termsYear = null;
 
 function termsSection(repo) {
   const saved = repo.setting('terms', []);
-  termsYear ??= termYearOf(today());
-  const terms = yearTerms(saved, termsYear).map((t) => ({ ...t }));
+  // Only the years with a term from Easter 2026 to Easter 2027, and only those terms.
+  termsYear ??= Math.min(Math.max(termYearOf(today()), TERM_YEARS[0]), TERM_YEARS.at(-1));
+  const terms = yearTerms(saved, termsYear).filter(inTermSpan).map((t) => ({ ...t }));
   const problem = h('p', { class: 'warning', hidden: true });
   const save = h('button', { type: 'button', class: 'button secondary', disabled: true }, 'Save term dates');
   const next = () => replaceYearTerms(saved, termsYear, terms);
@@ -291,9 +292,9 @@ function termsSection(repo) {
     h('h2', { class: 'subhead' }, 'Term dates'),
     h('p', { class: 'reason' }, 'Overview shows what each term cost once its dates are here. Leave a term blank until you know it.'),
     h('div', { class: 'period-nav' },
-      h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Previous year', onclick: () => step(-1) }, icon('back')),
+      h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Previous year', disabled: termsYear <= TERM_YEARS[0], onclick: () => step(-1) }, icon('back')),
       h('p', { class: 'period-label period-label-small', 'aria-live': 'polite' }, label),
-      h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Next year', onclick: () => step(1) }, icon('forward'))),
+      h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Next year', disabled: termsYear >= TERM_YEARS.at(-1), onclick: () => step(1) }, icon('forward'))),
     terms.map((t) => h('fieldset', { class: 'term' },
       h('legend', { class: 'field-label' }, termLabel(t)),
       h('div', { class: 'row-2' }, field('First day', input(t, 'start')), field('Last day', input(t, 'end'))))),

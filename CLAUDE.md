@@ -86,6 +86,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: No home-screen widget, by the user's choice. A Scriptable widget can't open the home-screen app (iOS gives it no link) or handle a tap itself, and opening Safari instead was not wanted.
 - 2026-10-01: Statement import (not built yet) gets presets for the user's banks: DBS and Revolut (Singapore), HSBC (UK). It waits for the user's sample CSVs; build it all in one go then, presets included, and don't guess a bank's format without its sample.
 - 2026-10-01: The design principles below win over HANDOVER.md where they differ: no spring or press-scale motion (pressed = a stronger background), a neutral raised shadow with no top stripe, no tab bar blur, one small-print size (`--t-s`), segmented controls for view switches (Spent / Received, Cost / Income, Month / Year / Term, Academic / Calendar year, Payments / Income / Merchants), and text-style secondary buttons (danger is the same in red). The audit is in `docs/design-audit.md`.
+- 2026-10-01: 2026–27 is the user's last year at Cambridge, so only Easter 2026 to Easter 2027 are offered (`FIRST_TERM` / `LAST_TERM` in `src/engine/terms.js`). Overview's term arrows stop there, and Settings edits 2025–26 (Easter term only) and 2026–27.
 
 ## Writing style
 
