@@ -94,11 +94,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; }
-/* The page fills the screen. In the home screen app it's the screen's own height (--app-height, set
-   in app.js), since iOS sometimes opens it with a shorter window and left a gap under the tab bar;
-   in a browser tab, 100dvh. */
+/* Pinned to every edge, not given a height: as a home screen app with a see-through status bar, iOS
+   sometimes measures 100dvh short on opening, which left a gap under the tab bar until the app
+   was reopened. */
 body {
-  margin: 0; position: fixed; top: 0; left: 0; right: 0; height: var(--app-height, 100dvh);
+  margin: 0; position: fixed; inset: 0;
   display: flex; flex-direction: column;
   background: var(--paper); color: var(--ink);
   font: var(--t-m)/1.5 var(--font-text);
