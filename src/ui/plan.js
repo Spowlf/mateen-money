@@ -85,7 +85,8 @@ export function openRecurringSheet(repo, item = {}) {
       field('Name', label),
       h('div', { class: 'row-2' }, field('Amount', amount), field('Currency', currency)),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'How often'),
-        chips({ label: 'How often', options: FREQUENCIES.map((x) => ({ value: x.id, label: x.name })), value: f.frequency, onChange: (v) => set({ frequency: v }) })),
+        chips({ label: 'How often', options: FREQUENCIES.map((x) => ({ value: x.id, label: x.name })), value: f.frequency,
+          onChange: (v) => set({ frequency: v, spread: income && f.incomeType === 'allowance' && v === 'yearly' }, true) })),
       field(existing ? 'Next date' : 'First date', next, f.frequency === 'termly' ? 'Every term means every 4 months from this date.' : null),
       catchUp,
       income
@@ -94,7 +95,7 @@ export function openRecurringSheet(repo, item = {}) {
             onChange: (v) => set({ incomeType: v, spread: v === 'allowance' && f.frequency === 'yearly' }, true) }))
         : h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
           chips({ label: 'Category', options: withCategoryIcons(withRemoved(categories, f.categoryId, S.categories)), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
-      income && f.incomeType === 'allowance' && h('label', { class: 'toggle' },
+      income && f.incomeType === 'allowance' && f.frequency === 'yearly' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
         h('span', {}, 'Spread over October to September')),
       methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, income ? 'Paid into' : 'Paid with'),
@@ -126,7 +127,7 @@ export function openRecurringSheet(repo, item = {}) {
       categoryId: income ? null : f.categoryId,
       incomeType: income ? f.incomeType : null,
       methodId: f.methodId,
-      spreadMonths: income && f.incomeType === 'allowance' && f.spread ? 12 : 1,
+      spreadMonths: income && f.incomeType === 'allowance' && f.frequency === 'yearly' && f.spread ? 12 : 1,
       active: f.active ? 1 : 0,
     };
     const id = existing?.id ?? crypto.randomUUID();
