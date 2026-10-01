@@ -15,6 +15,7 @@ export function emptyForm({ id = null, date, time, currency = 'GBP', methodId = 
     categoryId: null,
     incomeType: null,
     methodId,
+    accountId: null,
     date,
     time,
     note: '',
@@ -55,6 +56,8 @@ export function formToEntry(form, { id, now = Date.now() }) {
     incomeType: income ? form.incomeType : null,
     // Income isn't paid with anything.
     methodId: income ? null : form.methodId,
+    // The Net Worth account income went into, if picked.
+    accountId: income ? form.accountId ?? null : null,
     note: form.note?.trim() || null,
     tripId: form.tripId,
     tripManual: form.tripManual ? 1 : 0,

@@ -72,7 +72,9 @@ export function renderNetWorth(root, { repo }) {
     const changes = changeLine(day, month, todayDate);
     const notes = [
       nw.rateDate && `Converted to pounds at the rates for ${formatDay(nw.rateDate)}.`,
-      nw.carried.length && 'Card payments logged since a balance was typed are taken off it.',
+      nw.carried.length && (nw.carried.some((r) => r.income)
+        ? 'Card payments and income logged since a balance was typed are counted in it.'
+        : 'Card payments logged since a balance was typed are taken off it.'),
       nw.groups.some((g) => g.accounts.some((r) => r.live?.pricedAt)) && 'Shares at prices up to 15 minutes old.',
       nw.noRate.length && `Leaves out ${nw.noRate.map((r) => r.account.name).join(', ')} until ${nw.noRate.length === 1 ? 'its exchange rate arrives' : 'their exchange rates arrive'}.`,
       nw.noBalance.length && `Leaves out ${nw.noBalance.map((r) => r.account.name).join(', ')}: add ${nw.noBalance.length === 1 ? 'its balance' : 'their balances'}.`,

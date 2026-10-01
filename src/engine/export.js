@@ -42,12 +42,12 @@ export function csvCell(value) {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-const CSV_COLUMNS = ['Date', 'Time', 'Type', 'Merchant', 'Category', 'Amount', 'Currency', 'GBP', 'Fee GBP', 'GBP is', 'Paid with', 'Trip', 'Description', 'Added by'];
+const CSV_COLUMNS = ['Date', 'Time', 'Type', 'Merchant', 'Category', 'Amount', 'Currency', 'GBP', 'Fee GBP', 'GBP is', 'Paid with', 'Into', 'Trip', 'Description', 'Added by'];
 const STATUS = { final: 'Final', estimated: 'Estimated', statement: 'From statement' };
 const SOURCE = { manual: 'You', applepay: 'Apple Pay', recurring: 'Plan' };
 
 /** Live payments and income as CSV, oldest first. Amounts are plain decimals ("4.20"). */
-export function entriesCsv({ entries, vendors = [], categories = [], methods = [], trips = [] }) {
+export function entriesCsv({ entries, vendors = [], categories = [], methods = [], accounts = [], trips = [] }) {
   const name = (rows, id) => rows.find((r) => r.id === id)?.name ?? '';
   const rows = entries.filter(isLive).sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1)
     : (a.time ?? '') < (b.time ?? '') ? -1 : (a.time ?? '') > (b.time ?? '') ? 1 : (a.at ?? 0) - (b.at ?? 0)));
@@ -66,6 +66,7 @@ export function entriesCsv({ entries, vendors = [], categories = [], methods = [
       e.feePence ? toDecimalText(e.feePence, 'GBP') : '',
       STATUS[e.gbpStatus] ?? '',
       name(methods, e.methodId),
+      income ? name(accounts, e.accountId) : '',
       name(trips, e.tripId),
       e.note ?? '',
       SOURCE[e.source] ?? '',

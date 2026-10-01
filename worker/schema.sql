@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS entries (
   needsCurrency INTEGER NOT NULL DEFAULT 0,
   symbol TEXT,
   card TEXT,
+  accountId TEXT, -- income only: the Net Worth account it went into (migrations/003)
   updatedAt INTEGER NOT NULL,
   deletedAt INTEGER,
   rev INTEGER NOT NULL

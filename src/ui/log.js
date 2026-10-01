@@ -5,6 +5,7 @@ import { money, whenPhrase, liveSorted, runAction } from './format.js';
 import { renderHeadline } from './headline.js';
 import { renderReview } from './review.js';
 import { sortPayment, openSortSheet, sortContext, reread } from './sort-sheet.js';
+import { intoField } from './accounts.js';
 import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
   emptyForm, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
@@ -211,7 +212,7 @@ export function renderLog(root, { repo }) {
     details.hidden = !detailsOpen;
     changeButton.textContent = detailsOpen ? 'Hide details' : 'Change';
     changeButton.setAttribute('aria-expanded', String(detailsOpen));
-    summaryText.textContent = summaryLine(form, { categories: S.categories, methods: S.methods, trips: S.trips, todayDate: today() });
+    summaryText.textContent = summaryLine(form, { categories: S.categories, methods: S.methods, accounts: S.accounts, trips: S.trips, todayDate: today() });
   }
 
   function renderDetails() {
@@ -232,6 +233,7 @@ export function renderLog(root, { repo }) {
       field('Currency', currency),
       !income && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
         chips({ label: 'Paid with', options: methods.map((m) => ({ value: m.id, label: m.name })), value: form.methodId, onChange: (v) => set({ methodId: v }) })),
+      income && intoField(S, form.accountId, (v) => set({ accountId: v })),
       !income && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
         chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: form.categoryId, onChange: (v) => set({ categoryId: v }, { details: true }) })),
       income && form.incomeType === 'allowance' && h('label', { class: 'toggle' },

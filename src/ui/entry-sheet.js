@@ -3,13 +3,14 @@
 
 import { h, chips, segmented, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { money, liveSorted, runAction, withRemoved } from './format.js';
+import { intoField } from './accounts.js';
 import {
   gbp, formatMoney, toMinor, toDecimalText, matchVendor, INCOME_TYPES, COMMON_CURRENCIES,
 } from '../engine/index.js';
 
 // The fields the app sends when saving an entry (the backend owns the rest).
 const FIELDS = ['kind', 'date', 'time', 'at', 'amountMinor', 'currency', 'merchant', 'vendorId', 'categoryId', 'incomeType',
-  'methodId', 'note', 'tripId', 'tripManual', 'spreadStart', 'spreadMonths', 'needsCurrency'];
+  'methodId', 'accountId', 'note', 'tripId', 'tripManual', 'spreadStart', 'spreadMonths', 'needsCurrency'];
 
 /** An entry as a PUT body that puts it back exactly: its statement amount included. */
 export function entryBody(e) {
@@ -45,6 +46,7 @@ export function openEntrySheet(repo, entry) {
     categoryId: entry.categoryId,
     incomeType: entry.incomeType,
     methodId: entry.methodId,
+    accountId: entry.accountId ?? null,
     date: entry.date,
     time: entry.time ?? '',
     tripId: entry.tripId,
@@ -131,6 +133,7 @@ export function openEntrySheet(repo, entry) {
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       !income && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
         chips({ label: 'Paid with', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
+      income && intoField(S, f.accountId, (v) => set({ accountId: v })),
       ((!income && trips.length > 0) || f.tripId) && field('Trip', trip, f.tripManual ? null : 'Suggested from the date.'),
       field('Description', note),
       h('div', { class: 'sheet-actions' },
@@ -160,6 +163,7 @@ export function openEntrySheet(repo, entry) {
       categoryId: income ? null : f.categoryId,
       incomeType: income ? f.incomeType : null,
       methodId: income ? null : f.methodId,
+      accountId: income ? f.accountId : null,
       date: f.date,
       time: f.time || null,
       note: f.note.trim() || null,

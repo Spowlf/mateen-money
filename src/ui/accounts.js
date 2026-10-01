@@ -43,10 +43,15 @@ export function pricesAt(ms, todayDate) {
   return `Prices at ${nowTime(d)}${day === todayDate ? '' : ` on ${formatDay(day)}`}`;
 }
 
-/** "Updated 27 Aug 2026, 14 payments since"; IBKR: "Prices at 14:32" or "Close on 1 Oct 2026". */
+/**
+ * "Updated 27 Aug 2026, 14 payments since", "…, 1 payment in since", "…, 2 payments out, 1 in since";
+ * IBKR: "Prices at 14:32" or "Close on 1 Oct 2026".
+ */
 export function updatedLine(r, todayDate) {
   if (r.live) return r.live.pricedAt ? pricesAt(r.live.pricedAt, todayDate) : `Close on ${formatDay(r.balance.date)}`;
-  return [updatedPhrase(r.balance.date, todayDate), r.payments && `${plural(r.payments, 'payment')} since`].filter(Boolean).join(', ');
+  const since = r.payments && r.income ? `${plural(r.payments, 'payment')} out, ${r.income} in`
+    : r.income ? `${plural(r.income, 'payment')} in` : r.payments && plural(r.payments, 'payment');
+  return [updatedPhrase(r.balance.date, todayDate), since && `${since} since`].filter(Boolean).join(', ');
 }
 
 // The balance as an input shows it: "2016.76", "-25.00".
@@ -112,7 +117,7 @@ export function openAccountSheet(repo, account = null) {
     const date = h('input', { class: 'input', type: 'date', value: f.date, max: today(), required: true, onchange: () => set({ date: date.value }) });
     const hint = account && latest && latest.currency !== f.currency ? `The last balance was in ${latest.currency}.`
       : !latest ? (f.kind === 'current' ? 'Below zero for an overdraft: -25.00.' : null)
-      : carried?.payments ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
+      : carried?.payments || carried?.income ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
         : `${updatedPhrase(latest.date, today())}. Leave it as it is to keep it.`;
     // Cards are toggles, not one choice: an account can have several.
     const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Cards that pay from it' }, methods.map((m) => {
@@ -249,6 +254,19 @@ export function openBalancesSheet(repo) {
   renderSave();
 }
 
+/**
+ * The "Into" picker for income: the bank accounts it can go into (not investments, which IBKR
+ * keeps itself), plus the one it's in already. Null when there's no account to offer.
+ */
+export function intoField(S, value, onChange) {
+  const accounts = S.accounts.filter((a) => (!a.deletedAt && a.kind !== 'investment') || a.id === value)
+    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+  if (!accounts.length) return null;
+  return h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Into'),
+    chips({ label: 'Into', options: [{ value: null, label: 'No account' }, ...accounts.map((a) => ({ value: a.id, label: a.name }))], value: value ?? null, onChange }),
+    h('span', { class: 'field-hint' }, 'It’s added to that account’s balance in Net Worth.'));
+}
+
 /** The IBKR account: the first with holdings, or null. */
 export const ibkrAccount = (S) => S.accounts.find((a) => !a.deletedAt && S.holdings.some((x) => !x.deletedAt && x.accountId === a.id)) ?? null;
 
@@ -286,7 +304,7 @@ export function renderAccounts(root, { repo }) {
   function accountRow(r, todayDate) {
     const { account, balance } = r;
     const foreign = balance && balance.currency !== 'GBP';
-    const moved = r.payments || r.live?.pricedAt;
+    const moved = r.payments || r.income || r.live?.pricedAt;
     const own = balance && `${moved ? '~' : ''}${formatMoney(r.amountMinor, balance.currency)}`;
     const tilde = foreign || moved ? '~' : '';
     const sub = balance ? updatedLine(r, todayDate) : 'No balance yet';
@@ -319,7 +337,7 @@ export function renderAccounts(root, { repo }) {
         h('button', { type: 'button', class: 'text-button', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
       !stale && h('div', {}, h('button', { type: 'button', class: 'button secondary', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
       nw.groups.map((g) => h('section', { class: 'section' },
-        h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate || r.payments || r.live?.pricedAt) ? '~' : ''}${gbp(g.pence)}`)),
+        h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate || r.payments || r.income || r.live?.pricedAt) ? '~' : ''}${gbp(g.pence)}`)),
         h('ul', { class: 'list' }, g.accounts.map((r) => accountRow(r, todayDate))))),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo) }, 'Add an account'))));
   }

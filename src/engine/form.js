@@ -98,7 +98,7 @@ export function syncedPhrase(ms, now = new Date()) {
 }
 
 /** The one line under the keypad saying what else will be saved: "Food, on Card, today at 12:30". */
-export function summaryLine(form, { categories = [], methods = [], trips = [], todayDate }) {
+export function summaryLine(form, { categories = [], methods = [], accounts = [], trips = [], todayDate }) {
   const parts = [];
   if (form.kind === 'income') {
     const type = INCOME_TYPES.find((t) => t.id === form.incomeType);
@@ -109,6 +109,8 @@ export function summaryLine(form, { categories = [], methods = [], trips = [], t
   }
   const method = form.kind !== 'income' && methods.find((m) => m.id === form.methodId);
   if (method) parts.push(`on ${method.name}`);
+  const account = form.kind === 'income' && accounts.find((a) => a.id === form.accountId);
+  if (account) parts.push(`into ${account.name}`);
   const day = form.date === todayDate ? 'today' : formatDay(form.date);
   parts.push(form.time ? `${day} at ${form.time}` : day);
   const trip = trips.find((t) => t.id === form.tripId);

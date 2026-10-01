@@ -151,3 +151,14 @@ test('entries: cash you already had is income, logged once, never planned as a r
   });
   assert.equal(plan.body.error, 'Nothing changed: log existing cash once, on the Log screen.');
 });
+
+test('entries: income keeps the account it went into; a payment never has one', async () => {
+  const w = makeWorker({ rates });
+  const income = await w.call('PUT', '/entries/c1', { body: manualEntry({ kind: 'income', merchant: null, categoryId: null, incomeType: 'cash', amountMinor: 140000, currency: 'SGD', accountId: 'revolut' }) });
+  assert.equal(income.body.changes.entries[0].accountId, 'revolut');
+  const spend = await w.call('PUT', '/entries/e1', { body: manualEntry({ accountId: 'revolut' }) });
+  assert.equal(spend.body.changes.entries[0].accountId, null);
+  // Changed to a payment, it leaves the account.
+  await w.call('PUT', '/entries/c1', { body: { kind: 'spend', merchant: 'Pret', categoryId: 'food' } });
+  assert.equal(w.rows('entries', "id = 'c1'")[0].accountId, null);
+});

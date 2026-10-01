@@ -18,7 +18,7 @@ export const TABLES = {
   entries: table([
     'kind', 'date', 'time', 'at', 'amountMinor', 'currency', 'gbpPence', 'feePence', 'feeBps', 'rate', 'gbpStatus',
     'merchant', 'vendorId', 'categoryId', 'incomeType', 'methodId', 'note', 'tripId', 'tripManual', 'source',
-    'recurringId', 'occurrenceDate', 'spreadStart', 'spreadMonths', 'needsCurrency', 'symbol', 'card',
+    'recurringId', 'occurrenceDate', 'spreadStart', 'spreadMonths', 'needsCurrency', 'symbol', 'card', 'accountId',
   ], {
     required: ['kind', 'date', 'amountMinor', 'currency'],
     defaults: { feePence: 0, feeBps: 0, gbpStatus: 'estimated', tripManual: 0, source: 'manual', spreadMonths: 1, needsCurrency: 0 },

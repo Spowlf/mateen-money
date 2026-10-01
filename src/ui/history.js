@@ -101,9 +101,10 @@ export function renderHistory(root, { repo }) {
       // The type is already the title when the income has no "From".
       income ? e.merchant && INCOME_TYPES.find((t) => t.id === e.incomeType)?.name : name(S.categories, e.categoryId),
       name(S.methods, e.methodId),
+      income && name(S.accounts, e.accountId) && `into ${name(S.accounts, e.accountId)}`,
       e.time,
       name(S.trips, e.tripId) && `${name(S.trips, e.tripId)} trip`,
-    ].filter(Boolean).join(', ');
+    ].filter(Boolean).join(', ').replace(/^into /, 'Into ');
     // What the row is at a glance: its category's icon, To Sort's, or money coming in.
     const rowIcon = income ? 'income' : waiting || !e.categoryId ? 'to-sort' : e.categoryId;
     return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => (waiting ? openSortSheet(repo, e) : openEntrySheet(repo, e)) },

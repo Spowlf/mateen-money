@@ -15,7 +15,7 @@ const ENTRY_DEFAULTS = Object.fromEntries(TABLES.entries.columns.map((c) => [c, 
 
 // Fields the app may set. The rest (GBP value, rev, source...) belong to the Worker.
 const CLIENT_FIELDS = ['kind', 'date', 'time', 'at', 'amountMinor', 'currency', 'merchant', 'vendorId', 'categoryId',
-  'incomeType', 'methodId', 'note', 'tripId', 'tripManual', 'spreadStart', 'spreadMonths', 'needsCurrency', 'deletedAt'];
+  'incomeType', 'methodId', 'accountId', 'note', 'tripId', 'tripManual', 'spreadStart', 'spreadMonths', 'needsCurrency', 'deletedAt'];
 
 const INCOME_IDS = new Set(INCOME_TYPES.map((t) => t.id));
 const isInt = (n) => Number.isInteger(n);
@@ -84,6 +84,8 @@ export async function saveEntry(ctx, id, body) {
     e.categoryId = null;
     e.vendorId = null;
   } else {
+    // Only income goes into an account; a payment's account comes from its card.
+    e.accountId = null;
     e.incomeType = null;
     e.spreadMonths = 1;
     e.spreadStart = null;

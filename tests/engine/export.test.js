@@ -42,18 +42,19 @@ test('csv: payments oldest first, with names, amounts as decimals and GBP values
     entries: [
       spend('2026-10-01', 757, 'eating-out', { amountMinor: 1250, currency: 'SGD', feePence: 22, gbpStatus: 'estimated', merchant: 'Lau Pa Sat', methodId: 'card', tripId: 't1', note: 'Dinner, with Sam', source: 'manual' }),
       spend('2026-09-30', 420, null, { merchant: 'PRET A MANGER', vendorId: null, source: 'applepay' }),
-      income('2026-09-28', 1200000, { incomeType: 'allowance', time: null, source: 'recurring' }),
+      income('2026-09-28', 1200000, { incomeType: 'allowance', time: null, source: 'recurring', accountId: 'hsbc' }),
       spend('2026-09-30', 1, 'other', { deletedAt: 1 }),
     ],
     categories: [{ id: 'eating-out', name: 'Eating out' }],
     methods: [{ id: 'card', name: 'Card' }],
+    accounts: [{ id: 'hsbc', name: 'HSBC UK' }],
     trips: [{ id: 't1', name: 'Singapore' }],
   });
   assert.equal(csv, [
-    'Date,Time,Type,Merchant,Category,Amount,Currency,GBP,Fee GBP,GBP is,Paid with,Trip,Description,Added by',
-    '2026-09-28,,Income,,Allowance / Stipend,12000.00,GBP,12000.00,,Final,,,,Plan',
-    '2026-09-30,12:00,Spending,PRET A MANGER,To Sort,4.20,GBP,4.20,,Final,,,,Apple Pay',
-    '2026-10-01,12:00,Spending,Lau Pa Sat,Eating out,12.50,SGD,7.57,0.22,Estimated,Card,Singapore,"Dinner, with Sam",You',
+    'Date,Time,Type,Merchant,Category,Amount,Currency,GBP,Fee GBP,GBP is,Paid with,Into,Trip,Description,Added by',
+    '2026-09-28,,Income,,Allowance / Stipend,12000.00,GBP,12000.00,,Final,,HSBC UK,,,Plan',
+    '2026-09-30,12:00,Spending,PRET A MANGER,To Sort,4.20,GBP,4.20,,Final,,,,,Apple Pay',
+    '2026-10-01,12:00,Spending,Lau Pa Sat,Eating out,12.50,SGD,7.57,0.22,Estimated,Card,,Singapore,"Dinner, with Sam",You',
     '',
   ].join('\r\n'));
 });

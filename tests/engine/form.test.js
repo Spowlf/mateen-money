@@ -93,4 +93,5 @@ test('summary line: what will be saved besides the amount and vendor', () => {
   assert.equal(summaryLine({ ...base, date: '2026-09-30', tripId: 't1' }, ctx), 'Eating out, on Card, 30 Sep 2026 at 12:30, Singapore trip');
   assert.equal(summaryLine({ ...base, categoryId: null, methodId: null, time: null }, ctx), 'Today');
   assert.equal(summaryLine({ ...base, kind: 'income', incomeType: 'allowance', spreadMonths: 12 }, ctx), 'Allowance / Stipend, today at 12:30, spread over 12 months');
+  assert.equal(summaryLine({ ...base, kind: 'income', incomeType: 'cash', accountId: 'rev' }, { ...ctx, accounts: [{ id: 'rev', name: 'Revolut' }] }), 'Existing Cash, into Revolut, today at 12:30');
 });
