@@ -94,11 +94,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; }
-/* Pinned to every edge, not given a height: as a home screen app with a see-through status bar, iOS
-   sometimes measures 100dvh short on opening, which left a gap under the tab bar until the app
-   was reopened. */
 body {
-  margin: 0; position: fixed; inset: 0;
+  margin: 0; height: 100dvh;
   display: flex; flex-direction: column;
   background: var(--paper); color: var(--ink);
   font: var(--t-m)/1.5 var(--font-text);
