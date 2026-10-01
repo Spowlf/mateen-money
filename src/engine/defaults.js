@@ -29,8 +29,7 @@ export const DEFAULT_METHODS = [
 export const INCOME_TYPES = [
   ['allowance', 'Allowance / Stipend'],
   ['cash', 'Existing Cash', true],
-  ['work', 'Part-Time Work'],
-  ['family', 'Family'],
+  ['family', 'Friends / Family'],
   ['refund', 'Refund'],
   ['other', 'Other'],
 ].map(([id, name, oneOff = false]) => ({ id, name, oneOff }));

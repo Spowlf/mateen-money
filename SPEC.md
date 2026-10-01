@@ -58,7 +58,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 
 ## Income and recurring
 
-- Income entries: allowance, part-time work, family, refunds, other. Same currency handling.
+- Income entries: allowance, existing cash, friends / family, refunds, other. Same currency handling.
 - Recurring costs and income: amount, currency, frequency, next date. Added automatically on the date by a scheduled Worker, shown as "added automatically", editable.
 
 ## Trips
