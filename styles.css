@@ -141,8 +141,6 @@ main {
 .headline.negative .num { color: var(--danger); }
 .reason { font-size: var(--t-s); color: var(--ink-2); }
 /* Overview: the figure is the screen's answer, at full size, on its own line. */
-.headline-big .headline-figure { display: grid; gap: var(--s1); }
-.headline-big .headline-figure .num { font-size: 4rem; font-variant-numeric: lining-nums proportional-nums; font-feature-settings: "lnum" 1; }
 .headline-quiet { box-shadow: none; border: 1px solid var(--line); border-top: 5px solid var(--line); animation: none; }
 
 @keyframes settle { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
@@ -201,6 +199,10 @@ main {
 .total-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 60px; padding: var(--s3) var(--s4); }
 .trip-row { align-items: flex-start; }
 .list-amount.danger { color: var(--danger); }
+/* Left over: the figure the period comes down to. */
+.total-row.standout { min-height: 72px; background: var(--accent-soft); }
+.total-row.standout .list-title { font-weight: 700; }
+.total-row.standout .list-amount { font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
 
 .cat-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 16px; overflow: hidden; }
 .cat-table tr + tr { border-top: 1px solid var(--line); }
@@ -382,7 +384,8 @@ a.button { text-decoration: none; }
   color: var(--ink); font: 600 var(--t-xs)/1.5 var(--font-text); letter-spacing: 0;
 }
 .empty-line { color: var(--ink-2); padding: var(--s3) 0; }
-.empty { padding: var(--s6) 0; display: grid; gap: var(--s3); max-width: 34ch; }
+.empty { padding: var(--s6) 0; display: grid; gap: var(--s3); }
+.empty h2, .empty p { max-width: 34ch; }
 .empty h2 { font: 700 var(--t-l)/1.1 var(--font-num); letter-spacing: -0.02em; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s4); margin: 0; font-size: var(--t-s); }
 .facts dt { color: var(--ink-2); }

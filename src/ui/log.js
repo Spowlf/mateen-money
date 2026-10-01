@@ -26,6 +26,8 @@ export function renderLog(root, { repo }) {
   fill(root, h('div', { class: 'screen' }, el.headline, el.review, el.toSort, el.entry));
 
   let showAllToSort = false;
+  // The details stay folded under the summary line until "Change" opens them.
+  let detailsOpen = false;
   let form = null;
   let busy = false;
   let offline = !navigator.onLine;
@@ -107,6 +109,10 @@ export function renderLog(root, { repo }) {
   });
   const vendorLabel = h('span', { class: 'field-label' });
   const vendorChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Recent merchants' });
+  const noteInput = h('input', {
+    class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'sentences', enterkeyhint: 'done', placeholder: 'Optional',
+    oninput: () => set({ note: noteInput.value }),
+  });
   const quick = h('div', { class: 'field' });
   const keypad = h('div', { class: 'keypad' }, KEYS.map((k) => h('button', {
     type: 'button', class: 'key',
@@ -114,13 +120,20 @@ export function renderLog(root, { repo }) {
     onclick: () => press(k),
   }, k === 'back' ? '⌫' : k)));
   const summaryText = h('span');
-  const summary = h('p', { class: 'summary' }, summaryText,
-    h('button', { type: 'button', class: 'text-button', onclick: () => details.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'Change'));
+  const changeButton = h('button', { type: 'button', class: 'text-button', 'aria-controls': 'details', onclick: () => showDetails(!detailsOpen) });
+  const summary = h('p', { class: 'summary' }, summaryText, changeButton);
   const offlineNote = h('p', { class: 'warning' }, 'You’re offline. Save when you’re back online.');
   const saveButton = h('button', { type: 'button', class: 'button primary', onclick: () => save() });
   const details = h('div', { class: 'details', id: 'details' });
 
-  fill(el.entry, kind, display, h('label', { class: 'field' }, vendorLabel, vendorInput), vendorChips, quick, keypad, summary, offlineNote, saveButton, details);
+  fill(el.entry, kind, display, h('label', { class: 'field' }, vendorLabel, vendorInput), vendorChips,
+    h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Description'), noteInput), quick, keypad, summary, details, offlineNote, saveButton);
+
+  function showDetails(open) {
+    detailsOpen = open;
+    renderForm({ details: open });
+    if (open) details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   function press(k) {
     set({ amount: pressKey(form.amount, k, form.currency) });
@@ -153,6 +166,7 @@ export function renderLog(root, { repo }) {
     vendorLabel.textContent = income ? 'From' : 'Merchant';
     vendorInput.placeholder = income ? 'Optional' : '';
     if (vendorInput.value !== form.vendorName) vendorInput.value = form.vendorName;
+    if (noteInput.value !== form.note) noteInput.value = form.note;
     vendorChips.hidden = income;
     if (income) return fill(vendorChips);
     fill(vendorChips, vendorChoices(S.vendors, S.entries, form.vendorId ? '' : form.vendorName).map((v) => h('button', {
@@ -182,7 +196,7 @@ export function renderLog(root, { repo }) {
       value: form.categoryId,
       onChange: (v) => set({ categoryId: v }, { details: true }),
     });
-    group.append(h('button', { type: 'button', class: 'chip', onclick: () => details.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'More'));
+    group.append(h('button', { type: 'button', class: 'chip', onclick: () => showDetails(true) }, 'More'));
     fill(quick, h('span', { class: 'field-label' }, `Category for ${form.vendorName.trim()}`), group);
   }
 
@@ -192,6 +206,9 @@ export function renderLog(root, { repo }) {
     saveButton.disabled = busy || !!need;
     saveButton.textContent = need ?? `Save ${formatMoney(minor, form.currency)}`;
     offlineNote.hidden = !offline;
+    details.hidden = !detailsOpen;
+    changeButton.textContent = detailsOpen ? 'Hide details' : 'Change';
+    changeButton.setAttribute('aria-expanded', String(detailsOpen));
     summaryText.textContent = summaryLine(form, { categories: S.categories, methods: S.methods, trips: S.trips, todayDate: today() });
   }
 
@@ -208,7 +225,6 @@ export function renderLog(root, { repo }) {
     const trip = h('select', { class: 'select', onchange: () => set({ tripId: trip.value || null, tripManual: true }) },
       h('option', { value: '', selected: !form.tripId }, 'No trip'),
       trips.map((t) => h('option', { value: t.id, selected: t.id === form.tripId }, t.name)));
-    const note = h('input', { class: 'input', type: 'text', value: form.note, autocomplete: 'off', oninput: () => set({ note: note.value }) });
     fill(details,
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       field('Currency', currency),
@@ -219,8 +235,7 @@ export function renderLog(root, { repo }) {
       income && form.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: form.spreadMonths === 12, onchange: (e) => set({ spreadMonths: e.target.checked ? 12 : 1 }) }),
         h('span', {}, 'Spread over October to September')),
-      !income && trips.length > 0 && field('Trip', trip, form.tripManual ? null : 'Suggested from the date.'),
-      field('Note', note));
+      !income && trips.length > 0 && field('Trip', trip, form.tripManual ? null : 'Suggested from the date.'));
   }
 
   function renderForm({ details: withDetails = false } = {}) {
@@ -259,6 +274,7 @@ export function renderLog(root, { repo }) {
       offline = false;
       const entry = result.entry;
       form = withTrip(nextForm(saving, { id: crypto.randomUUID(), time: saving.date === today() ? nowTime() : saving.time }));
+      detailsOpen = false;
       repo.draft.save(form).catch(() => {});
       renderForm({ details: true });
       const where = entry.kind === 'income' ? (entry.merchant ? ` from ${entry.merchant}` : ' income') : ` at ${entry.merchant}`;

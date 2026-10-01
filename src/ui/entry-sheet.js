@@ -131,7 +131,7 @@ export function openEntrySheet(repo, entry) {
       methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
         chips({ label: 'Paid with', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
       ((!income && trips.length > 0) || f.tripId) && field('Trip', trip, f.tripManual ? null : 'Suggested from the date.'),
-      field('Note', note),
+      field('Description', note),
       h('div', { class: 'sheet-actions' },
         save,
         h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, entry.kind === 'income' ? 'Delete income' : 'Delete payment')),

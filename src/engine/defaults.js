@@ -2,6 +2,7 @@
 
 export const DEFAULT_CATEGORIES = [
   ['delivery', 'Delivery'],
+  ['societies', 'Events and Societies'],
   ['food', 'Food'],
   ['gifts', 'Gifts'],
   ['groceries', 'Groceries'],
@@ -10,7 +11,6 @@ export const DEFAULT_CATEGORIES = [
   ['leisure', 'Leisure'],
   ['school', 'School'],
   ['snacks', 'Snacks'],
-  ['societies', 'Societies and events'],
   ['subscriptions', 'Subscriptions'],
   ['transport', 'Transport'],
   ['travel', 'Travel'],
@@ -21,7 +21,7 @@ export const DEFAULT_CATEGORIES = [
 export const DEFAULT_METHODS = [
   { id: 'cash', name: 'Cash', kind: 'cash', feeBps: 0, walletCard: null, symbolMemory: {} },
   { id: 'card', name: 'Card', kind: 'card', feeBps: 0, walletCard: null, symbolMemory: {} },
-  { id: 'transfer', name: 'Bank transfer', kind: 'transfer', feeBps: 0, walletCard: null, symbolMemory: {} },
+  { id: 'transfer', name: 'Bank Transfer', kind: 'transfer', feeBps: 0, walletCard: null, symbolMemory: {} },
 ];
 
 // oneOff: logged once on Log, never planned as a recurring item.

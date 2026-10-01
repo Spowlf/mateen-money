@@ -48,7 +48,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Sorting one To sort item also sorts the other waiting items from the same merchant.
 - 2026-10-01: A manual entry counts for duplicate detection too, so logging by hand before the Apple Pay payment arrives doesn't double count.
 - 2026-10-01: Settings holds only the backend address and token until the Settings stage, because nothing saves without them. Connecting checks them with a full sync first; a different address replaces the local copy.
-- 2026-10-01: On Log, the category question appears under the vendor only for a new vendor (or one with no category). A known vendor's choices show in the summary line, with "Change" scrolling to the details.
+- 2026-10-01: On Log, the category question appears under the vendor only for a new vendor (or one with no category). A known vendor's choices show in the summary line. The details (date, time, currency, paid with, category, trip) stay folded under it until "Change" (or "More" in the category question) opens them, and fold again after saving.
 - 2026-10-01: To sort shows 3 payments, then "Show N more". Each has one sideways-scrolling row of choices: the likely vendor, the top 4 categories, "Other". A category tap names the new vendor with `tidyName()`.
 - 2026-10-01: Undo after saving deletes the entry and puts what was typed back under a new id (the old id is now a deleted row).
 - 2026-10-01: Overview periods are a month, a year (academic or calendar, the synced `yearMode`) or a term. A year or term in progress runs to the end of this month, not today, so spread income counts this month's full share as the month view does.
@@ -72,6 +72,9 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Default categories are the user's own list, alphabetical with Other last. Old default ids are never reused.
 - 2026-10-01: Short confirmation toasts start with a past-tense verb and have no period ("Saved term dates", "Deleted Pret"). Toasts with a full sentence end with one.
 - 2026-10-01: "Today" on the Worker is in the synced `timeZone` setting (default Europe/London, one-tap "Use this phone's time zone" in Settings): it adds recurring items and sets the app's review week. The weekly summary Shortcut POSTs the phone's ISO time with its offset, and that date picks the week. Payment dates still come from the phone.
+- 2026-10-01: Log asks for an optional "Description" right under the merchant (the `note` field; "Description" in the edit sheet and CSV too).
+- 2026-10-01: "Events and Societies" and "Bank Transfer" are title case by the user's choice, an exception to sentence case.
+- 2026-10-01: Overview has no headline card (it lives on Log only). "Left over" / "Overspent" is the stand-out row of the totals, so the big figure always matches the selected period. When the six months are all zero the chart is replaced by "Nothing logged in the last six months yet."
 
 ## Writing style
 

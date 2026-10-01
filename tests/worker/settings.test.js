@@ -17,7 +17,7 @@ test('methods: a fee from 0 to 100% and a known kind are kept; anything else cha
   const bad = [
     [{ feeBps: 10001 }, 'Nothing changed: enter a fee from 0 to 100%.'],
     [{ feeBps: 2.5 }, 'Nothing changed: enter a fee from 0 to 100%.'],
-    [{ kind: 'crypto' }, 'Nothing changed: pick card, cash or bank transfer.'],
+    [{ kind: 'crypto' }, 'Nothing changed: pick Card, Cash or Bank Transfer.'],
     [{ name: '  ' }, 'Nothing changed: fill in every field.'],
   ];
   for (const [body, message] of bad) {

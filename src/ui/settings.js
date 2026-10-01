@@ -12,7 +12,7 @@ import {
 } from '../engine/index.js';
 import { OfflineError } from '../errors.js';
 
-const METHOD_KINDS = [{ value: 'card', label: 'Card' }, { value: 'cash', label: 'Cash' }, { value: 'transfer', label: 'Bank transfer' }];
+const METHOD_KINDS = [{ value: 'card', label: 'Card' }, { value: 'cash', label: 'Cash' }, { value: 'transfer', label: 'Bank Transfer' }];
 
 function dateSpan(from, to) {
   const [a, b] = [formatDay(from), formatDay(to)];

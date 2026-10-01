@@ -1,10 +1,9 @@
-// Overview: the headline, then a month, year or term: totals, spending by category,
+// Overview: a month, year or term: totals (left over stands out), spending by category,
 // income and spending over six months, and trips. Nothing here is edited in place;
 // a trip opens a sheet with its breakdown, and its payments in History.
 
 import { h, fill, chips, icon, sheet } from './dom.js';
 import { runAction } from './format.js';
-import { renderHeadline } from './headline.js';
 import { categoryTable, incomeSpendingChart } from './charts.js';
 import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
@@ -26,11 +25,10 @@ function dateSpan(from, to) {
 export function renderOverview(root, { repo }) {
   const S = repo.state;
   const el = {
-    headline: h('section', { 'aria-live': 'polite' }),
     filters: h('section', { class: 'filters', 'aria-label': 'Period' }),
     body: h('div', { class: 'screen' }),
   };
-  fill(root, h('div', { class: 'screen' }, el.headline, el.filters, el.body));
+  fill(root, h('div', { class: 'screen' }, el.filters, el.body));
 
   const terms = () => repo.setting('terms', []);
   const yearMode = () => repo.setting('yearMode', 'academic');
@@ -74,14 +72,14 @@ export function renderOverview(root, { repo }) {
   function totalsCard(data) {
     const t = data.totals;
     const tilde = t.estimated ? '~' : '';
-    const row = (label, value, sub, cls = '') => h('li', { class: 'total-row' },
+    const row = (label, value, sub, cls = '', rowCls = '') => h('li', { class: `total-row ${rowCls}` },
       h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, label), sub && h('span', { class: 'list-sub' }, sub)),
       h('span', { class: `list-amount ${cls}` }, value));
     return h('ul', { class: 'list totals' },
       row(data.range.current ? 'Spent so far' : 'Spent', `${tilde}${gbp(t.spent)}`,
         data.compare ?? (data.weekly !== null ? `About ${tilde}${gbpRounded(data.weekly)} a week` : null)),
       row('Income', `${tilde}${gbp(t.income)}`),
-      row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : ''));
+      row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', 'standout'));
   }
 
   const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
@@ -123,7 +121,6 @@ export function renderOverview(root, { repo }) {
   }
 
   function render() {
-    renderHeadline(el.headline, repo, { big: true });
     const data = overview({
       entries: S.entries, categories: S.categories, trips: liveTrips(), period, todayDate: today(),
       yearMode: yearMode(), terms: terms(), excludeTrips: excludeTrips(),
@@ -144,7 +141,7 @@ export function renderOverview(root, { repo }) {
         totalsCard(data),
         data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
         term && h('p', { class: 'reason' }, `${term.name} term runs ${dateSpan(term.start, term.end)}.`),
-        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline still counts them.')),
+        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.')),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by category'),
         data.rows.length
@@ -152,8 +149,10 @@ export function renderOverview(root, { repo }) {
           : h('p', { class: 'empty-line' }, `Nothing spent in ${data.range.label.replace(/ so far$/, '')} yet.`)),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Income and spending'),
-        h('p', { class: 'reason' }, `The six months to ${formatMonth(data.series.at(-1).month)}. The allowance counts an equal share in each month.`),
-        incomeSpendingChart(data.series, { width })),
+        data.series.some((m) => m.income || m.spent)
+          ? [h('p', { class: 'reason' }, `The six months to ${formatMonth(data.series.at(-1).month)}. The allowance counts an equal share in each month.`),
+            incomeSpendingChart(data.series, { width })]
+          : h('p', { class: 'empty-line' }, 'Nothing logged in the last six months yet.')),
       tripsSection(data));
   }
 

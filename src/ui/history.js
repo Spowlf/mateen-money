@@ -53,7 +53,7 @@ export function renderHistory(root, { repo }) {
         value: view.vendorQuery, oninput: () => { view.vendorQuery = search.value; renderBody(); } });
       return fill(el.controls, search);
     }
-    const search = h('input', { class: 'input', type: 'search', placeholder: 'Search names, notes or amounts', 'aria-label': 'Search payments', autocomplete: 'off',
+    const search = h('input', { class: 'input', type: 'search', placeholder: 'Search names, descriptions or amounts', 'aria-label': 'Search payments', autocomplete: 'off',
       value: view.query, oninput: () => { view.query = search.value; shown = PAGE; renderBody(); } });
     const categories = liveSorted(S.categories).filter((c) => !c.archived || c.id === view.categoryId);
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));

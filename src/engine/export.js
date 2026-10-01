@@ -42,7 +42,7 @@ export function csvCell(value) {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-const CSV_COLUMNS = ['Date', 'Time', 'Type', 'Merchant', 'Category', 'Amount', 'Currency', 'GBP', 'Fee GBP', 'GBP is', 'Paid with', 'Trip', 'Note', 'Added by'];
+const CSV_COLUMNS = ['Date', 'Time', 'Type', 'Merchant', 'Category', 'Amount', 'Currency', 'GBP', 'Fee GBP', 'GBP is', 'Paid with', 'Trip', 'Description', 'Added by'];
 const STATUS = { final: 'Final', estimated: 'Estimated', statement: 'From statement' };
 const SOURCE = { manual: 'You', applepay: 'Apple Pay', recurring: 'Plan' };
 

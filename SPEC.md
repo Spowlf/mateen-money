@@ -19,7 +19,7 @@ Right after paying, phone in one hand. Apple Pay payments log themselves; everyt
 - Apple Pay: an iOS Shortcut POSTs `{amount (text, may include a currency symbol), merchant, card, timestamp}` to `/applepay`. Duplicates (same amount + merchant within 2 minutes) are ignored. Entries can be deleted (declined payments can still trigger).
 - Known vendors get their category automatically. Unknown vendors land in "To sort" at the top of Log.
 - The backend replies with one plain-text line for the notification: "£4.20 at Pret, Food" or "New vendor: add a category in the app".
-- Manual entry on Log: date and time default to now (editable), category chips, vendor with autocomplete, amount on a number pad, currency, payment method, optional note and trip.
+- Manual entry on Log: date and time default to now (editable), category chips, vendor with autocomplete, amount on a number pad, currency, payment method, optional description and trip.
 - Vendor memory: category, currency and payment method per vendor; editable.
 - Vendor aliases: in To sort, an entry can be assigned to an existing vendor; the incoming merchant name is saved as an alias so later payments are categorised automatically. Aliases are editable.
 
@@ -69,14 +69,14 @@ At the top of Log and Overview: "£X left this month", red if negative.
 ## Screens
 
 1. **Log**: headline, weekly review card (when due), To sort, entry form.
-2. **Overview**: headline; month and year to date; spending by category (inline SVG chart + table); income vs spending; change vs last month; month picker. Year is calendar or academic (Oct–Sep), plus a term view (Michaelmas, Lent, Easter) with editable dates (blank by default). Trips section.
+2. **Overview**: totals with "Left over" standing out (no headline card); month and year to date; spending by category (inline SVG chart + table); income vs spending; change vs last month; month picker. Year is calendar or academic (Oct–Sep), plus a term view (Michaelmas, Lent, Easter) with editable dates (blank by default). Trips section.
 3. **History**: grouped by day, search, filters (category, trip, payment method), edit and delete.
 4. **Plan**: recurring items and income sources.
 - **Settings** (header icon): categories, payment methods and fees, term dates, trips, allowance schedule, backup, CSV export, backend token.
 
 ## Default categories
 
-Delivery, Food, Gifts, Groceries, Health, Kelly, Leisure, School, Snacks, Societies and events, Subscriptions, Transport, Travel, Utilities, Other. Editable.
+Delivery, Events and Societies, Food, Gifts, Groceries, Health, Kelly, Leisure, School, Snacks, Subscriptions, Transport, Travel, Utilities, Other. Editable.
 
 ## Later, not now
 

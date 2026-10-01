@@ -28,7 +28,7 @@ function check(name, row) {
   if (name === 'trips' && (!validDate(row.start) || !validDate(row.end))) return 'pick the dates.';
   if (name === 'trips' && row.end < row.start) return 'end the trip on or after its first day.';
   if (name === 'methods') {
-    if (!METHOD_KINDS.has(row.kind)) return 'pick card, cash or bank transfer.';
+    if (!METHOD_KINDS.has(row.kind)) return 'pick Card, Cash or Bank Transfer.';
     if (!validFeeBps(row.feeBps)) return 'enter a fee from 0 to 100%.';
   }
   if (name === 'recurring') {
