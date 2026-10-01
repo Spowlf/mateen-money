@@ -126,8 +126,9 @@ export function renderLog(root, { repo }) {
   const saveButton = h('button', { type: 'button', class: 'button primary', onclick: () => save() });
   const details = h('div', { class: 'details', id: 'details' });
 
-  fill(el.entry, kind, display, h('label', { class: 'field' }, vendorLabel, vendorInput), vendorChips,
-    h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Description'), noteInput), quick, keypad, summary, details, offlineNote, saveButton);
+  // Amount first: the keypad sits right under it, then who it was with and what it was for.
+  fill(el.entry, kind, display, keypad, h('label', { class: 'field' }, vendorLabel, vendorInput), vendorChips,
+    h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Description'), noteInput), quick, summary, details, offlineNote, saveButton);
 
   function showDetails(open) {
     detailsOpen = open;
