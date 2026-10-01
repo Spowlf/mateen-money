@@ -6,7 +6,7 @@
 // The API is on another origin, so it's never cached here; offline data comes from IndexedDB.
 // When you add a front-end file, add it to FILES (a test checks this).
 
-const CACHE = 'mateen-money-v7';
+const CACHE = 'mateen-money-v8';
 const FILES = [
   './',
   'index.html',
@@ -50,6 +50,7 @@ const FILES = [
   'src/engine/summary.js',
   'src/engine/totals.js',
   'src/engine/vendors.js',
+  'src/ui/accounts.js',
   'src/ui/backup.js',
   'src/ui/budget-sheet.js',
   'src/ui/charts.js',
@@ -58,6 +59,7 @@ const FILES = [
   'src/ui/format.js',
   'src/ui/headline.js',
   'src/ui/history.js',
+  'src/ui/ibkr.js',
   'src/ui/log.js',
   'src/ui/overview.js',
   'src/ui/networth.js',

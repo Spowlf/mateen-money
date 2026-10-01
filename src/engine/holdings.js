@@ -314,3 +314,86 @@ export function gbpOf(minor, currency, rates) {
   const r = rateFor(rates, currency, '9999-12-31', '0000-01-01');
   return r ? convertToGbp({ amountMinor: minor, currency, perGbp: r.perGbp }).gbpPence : null;
 }
+
+// --- The IBKR screen ---------------------------------------------------------------------------
+
+/** Millionths back to decimal text with no trailing zeros: 184856300 → "184.8563", 2000000 → "2". */
+export function fromMicro(micro) {
+  const sign = micro < 0 ? '-' : '';
+  const abs = Math.abs(micro);
+  const frac = String(abs % 1_000_000).padStart(6, '0').replace(/0+$/, '');
+  return `${sign}${Math.floor(abs / 1_000_000)}${frac ? `.${frac}` : ''}`;
+}
+
+/**
+ * The holdings as the IBKR screen lists them, largest first: each with its value now, today's
+ * move and its gain (value − IBKR's cost basis), all in the account's currency, and its share of
+ * everything held. live is liveInvestment()'s answer. Returns {
+ *   heldMinor, gainShare (gain ÷ cost, null without a cost),
+ *   holdings: [{ holding, valueMinor, todayMinor, gainMinor, gainShare, share }]
+ * }. A holding with no cost basis has gainMinor and gainShare null.
+ */
+export function holdingRows(live) {
+  const heldMinor = live.holdings.reduce((s, r) => s + r.valueMinor, 0);
+  const holdings = live.holdings.map((r) => {
+    const cost = r.holding.costBaseMinor;
+    const gainMinor = cost ? r.valueMinor - cost : null;
+    return {
+      holding: r.holding,
+      valueMinor: r.valueMinor,
+      todayMinor: r.todayMinor,
+      gainMinor,
+      gainShare: cost ? gainMinor / Math.abs(cost) : null,
+      share: heldMinor > 0 ? Math.max(r.valueMinor, 0) / heldMinor : 0,
+    };
+  }).sort((a, b) => b.valueMinor - a.valueMinor);
+  return {
+    heldMinor,
+    gainShare: live.costMinor ? live.gainMinor / Math.abs(live.costMinor) : null,
+    holdings,
+  };
+}
+
+// Fund-name acronyms that have vowels, so the rule below can't tell them from words.
+const ACRONYMS = new Set(['MSCI', 'FTSE', 'STOXX', 'ACWI', 'ETF', 'ETFS', 'ESG', 'REIT', 'ADR', 'US', 'UK', 'EU', 'UCITS', 'AI', 'EM', 'USA', 'ISA']);
+
+/**
+ * A holding's name as IBKR sends it, out of capitals: "SPDR GOLD SHARES" → "SPDR Gold Shares".
+ * Acronyms stay: words with no vowel (SPDR), with a digit or symbol (S&P, 500), or in ACRONYMS.
+ * A name already in mixed case is left alone.
+ */
+export function holdingName(name) {
+  const text = String(name ?? '').trim();
+  if (text !== text.toUpperCase()) return text;
+  const keep = (w) => !/[AEIOUY]/.test(w) || /[^A-Z]/.test(w) || ACRONYMS.has(w);
+  return text.split(/\s+/).map((w) => (keep(w) ? w : w.charAt(0) + w.slice(1).toLowerCase())).join(' ');
+}
+
+/** An account's activity, newest first (by date, then id), up to limit. */
+export function recentActivity(activity, accountId, limit = 10) {
+  return activity.filter((a) => isLive(a) && a.accountId === accountId)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id < b.id ? 1 : -1))
+    .slice(0, limit);
+}
+
+/** What an activity row was, in words: "Bought 2.5 SPUS", "Dividend from GLD", "Deposit". */
+export function activityTitle(a) {
+  const units = a.unitsMicro ? fromMicro(Math.abs(a.unitsMicro)) : null;
+  switch (a.type) {
+    case 'buy': return `Bought ${units ? `${units} ` : ''}${a.symbol}`;
+    case 'sell': return `Sold ${units ? `${units} ` : ''}${a.symbol}`;
+    case 'dividend': return a.symbol ? `Dividend from ${a.symbol}` : 'Dividend';
+    case 'tax': return a.symbol ? `Tax on ${a.symbol} dividend` : 'Tax';
+    case 'interest': return 'Interest';
+    case 'fee': return 'Fees';
+    case 'deposit': return 'Deposit';
+    case 'withdrawal': return 'Withdrawal';
+    default: return a.symbol ?? 'Activity';
+  }
+}
+
+/**
+ * The amount as it moved the account's cash: a buy took money out, a sell or dividend brought it in.
+ * Buys and sells are stored as positive amounts; cash rows carry their own sign.
+ */
+export const activityCash = (a) => (a.type === 'buy' ? -Math.abs(a.amountMinor) : a.type === 'sell' ? Math.abs(a.amountMinor) : a.amountMinor);

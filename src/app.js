@@ -7,6 +7,8 @@ import { renderOverview } from './ui/overview.js';
 import { renderHistory } from './ui/history.js';
 import { renderPlan } from './ui/plan.js';
 import { renderNetWorth } from './ui/networth.js';
+import { renderAccounts } from './ui/accounts.js';
+import { renderIbkr } from './ui/ibkr.js';
 import { renderSettings } from './ui/settings.js';
 import { toast } from './ui/dom.js';
 import { toSortEntries, syncedPhrase } from './engine/index.js';
@@ -21,6 +23,9 @@ const SCREENS = {
   history: { title: 'History', render: renderHistory },
   plan: { title: 'Plan', render: renderPlan },
   networth: { title: 'Net Worth', render: renderNetWorth },
+  // Under Net Worth: its tab stays lit, and a link above the title goes back.
+  accounts: { title: 'Accounts', render: renderAccounts, tab: 'networth', back: ['networth', 'Net Worth'] },
+  ibkr: { title: 'IBKR', render: renderIbkr, tab: 'networth', back: ['accounts', 'Accounts'] },
   settings: { title: 'Settings', render: renderSettings },
 };
 const RESYNC_MS = 30 * 1000;
@@ -52,8 +57,16 @@ function show() {
   const gear = document.getElementById('settings');
   if (name === 'settings') gear.setAttribute('aria-current', 'page');
   else gear.removeAttribute('aria-current');
+  const back = document.getElementById('back');
+  back.hidden = !SCREENS[name].back;
+  if (SCREENS[name].back) {
+    back.href = `#${SCREENS[name].back[0]}`;
+    back.querySelector('span').textContent = SCREENS[name].back[1];
+  }
+  const tab = SCREENS[name].tab ?? name;
   for (const a of document.querySelectorAll('.tabs a')) {
     if (a.dataset.screen === name) a.setAttribute('aria-current', 'page');
+    else if (a.dataset.screen === tab) a.setAttribute('aria-current', 'true');
     else a.removeAttribute('aria-current');
   }
   current = { name, view: SCREENS[name].render(root, app) };
