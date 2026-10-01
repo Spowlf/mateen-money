@@ -118,9 +118,9 @@ export function openAccountSheet(repo, account = null) {
     const hint = account && latest && latest.currency !== f.currency ? `The last balance was in ${latest.currency}.`
       : !latest ? (f.kind === 'current' ? 'Below zero for an overdraft: -25.00.' : null)
       : carried?.payments || carried?.income ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
-        : `${updatedPhrase(latest.date, today())}. Leave it as it is to keep it.`;
+        : `${updatedPhrase(latest.date, today())}.`;
     // Cards are toggles, not one choice: an account can have several.
-    const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Cards that pay from it' }, methods.map((m) => {
+    const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Payment methods that pay from it' }, methods.map((m) => {
       const chip = h('button', { type: 'button', class: 'chip', 'aria-pressed': String(linked.has(m.id)), onclick: () => {
         if (linked.has(m.id)) linked.delete(m.id); else linked.add(m.id);
         chip.setAttribute('aria-pressed', String(linked.has(m.id)));
@@ -140,8 +140,7 @@ export function openAccountSheet(repo, account = null) {
         hint && h('p', { class: 'field-hint' }, hint),
       ].filter(Boolean)),
       parts.ibkr = h('p', { class: 'field-hint' }, 'IBKR fills in its balance and currency when it next syncs.'),
-      parts.cards = methods.length > 0 ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Cards that pay from it'), cards,
-        h('span', { class: 'field-hint' }, 'Payments with these come off the balance until you next update it.')) : null,
+      parts.cards = methods.length > 0 ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Payment methods that pay from it'), cards) : null,
       h('div', { class: 'sheet-actions' },
         save,
         account && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete account')),
