@@ -3,12 +3,11 @@
 
 import { h, field, sheet, toast } from './dom.js';
 import { runAction } from './format.js';
-import { today, monthKey, formatMonth, gbp, toDecimalText, budgetFor, budgetChange, budgetId, budgetPence } from '../engine/index.js';
+import { today, monthKey, gbp, toDecimalText, budgetFor, budgetChange, budgetId, budgetPence } from '../engine/index.js';
 
 export function openBudgetSheet(repo) {
   const S = repo.state;
   const month = monthKey(today());
-  const monthName = formatMonth(month).split(' ')[0];
   const current = budgetFor(S.budgets, month);
   const f = { amount: current ? toDecimalText(current).replace(/\.00$/, '') : '' };
 
@@ -41,7 +40,7 @@ export function openBudgetSheet(repo) {
   }
 
   const s = sheet('Monthly Budget', h('div', { class: 'sheet-form' },
-    field('Spending budget, £ a month', amount, `Everything you spend counts, recurring costs and trips too. Applies from ${monthName}.`),
+    field('£ a month', amount, 'Recurring costs and trips count too.'),
     h('div', { class: 'sheet-actions' }, save, remove)));
   renderSave();
   amount.focus();
