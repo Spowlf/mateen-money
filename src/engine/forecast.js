@@ -25,8 +25,8 @@ export function safeToSpend(figure) {
 }
 
 /**
- * "Spend up to £12.40 a day to stay within budget." or "Over budget by £30.00 this month."
- * Worded as an allowance, so it can't be read as the pace.
+ * "To stay within budget, spend no more than £12.40 a day." or "Over budget by £30.00 this month."
+ * Worded as a limit, so it can't be read as the pace or as a target to spend.
  * basis is the headline's: 'budget', or 'income' with no budget.
  */
 export function safeToSpendLine(safe, month, { estimated = false, basis = 'income' } = {}) {
@@ -34,8 +34,8 @@ export function safeToSpendLine(safe, month, { estimated = false, basis = 'incom
   const tilde = estimated ? '~' : '';
   const within = basis === 'budget' ? 'within budget' : 'within this month’s income';
   if (safe.over !== undefined) return `${basis === 'budget' ? 'Over budget' : 'Over'} by ${tilde}${gbp(safe.over)} this month.`;
-  if (safe.daysLeft === 1) return `Spend up to ${tilde}${gbp(safe.perDay)} today, the last day of ${formatMonth(month).split(' ')[0]}, to stay ${within}.`;
-  return `Spend up to ${tilde}${gbp(safe.perDay)} a day to stay ${within}.`;
+  if (safe.daysLeft === 1) return `To stay ${within}, spend no more than ${tilde}${gbp(safe.perDay)} today, the last day of ${formatMonth(month).split(' ')[0]}.`;
+  return `To stay ${within}, spend no more than ${tilde}${gbp(safe.perDay)} a day.`;
 }
 
 const onTrip = (e, excludeTrips) => !!e.tripId && (excludeTrips === true || (excludeTrips instanceof Set && excludeTrips.has(e.tripId)));

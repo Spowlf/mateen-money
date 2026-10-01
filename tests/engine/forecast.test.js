@@ -13,7 +13,7 @@ test('safe to spend: left ÷ days left, today included', () => {
   const hl = hlFor([income('2026-10-01', 50000), spend('2026-10-02', 3500)], '2026-10-10');
   const safe = safeToSpend(hl);
   assert.deepEqual(safe, { perDay: Math.floor(46500 / 22), daysLeft: 22 });
-  assert.equal(safeToSpendLine(safe, '2026-10'), 'Spend up to £21.13 a day to stay within this month’s income.');
+  assert.equal(safeToSpendLine(safe, '2026-10'), 'To stay within this month’s income, spend no more than £21.13 a day.');
 });
 
 test('safe to spend: a negative headline says how far over', () => {
@@ -27,7 +27,7 @@ test('safe to spend: the last day of the month is all of what is left', () => {
   const hl = hlFor([income('2026-10-01', 10000), spend('2026-10-02', 2500)], '2026-10-31');
   const safe = safeToSpend(hl);
   assert.deepEqual(safe, { perDay: 7500, daysLeft: 1 });
-  assert.equal(safeToSpendLine(safe, '2026-10'), 'Spend up to £75.00 today, the last day of October, to stay within this month’s income.');
+  assert.equal(safeToSpendLine(safe, '2026-10'), 'To stay within this month’s income, spend no more than £75.00 today, the last day of October.');
 });
 
 test('safe to spend: recurring costs still due come off first', () => {
@@ -49,12 +49,12 @@ test('safe to spend: with a budget it divides what is left of the budget', () =>
   assert.equal(fig.basis, 'budget');
   const safe = safeToSpend(fig);
   assert.deepEqual(safe, { perDay: Math.floor(46500 / 22), daysLeft: 22 });
-  assert.equal(safeToSpendLine(safe, '2026-10', { basis: 'budget' }), 'Spend up to £21.13 a day to stay within budget.');
+  assert.equal(safeToSpendLine(safe, '2026-10', { basis: 'budget' }), 'To stay within budget, spend no more than £21.13 a day.');
   assert.equal(safeToSpendLine({ over: 3000, daysLeft: 9 }, '2026-10', { basis: 'budget' }), 'Over budget by £30.00 this month.');
 });
 
 test('safe to spend: an estimated headline carries a ~', () => {
-  assert.equal(safeToSpendLine({ perDay: 1240, daysLeft: 9 }, '2026-10', { estimated: true }), 'Spend up to ~£12.40 a day to stay within this month’s income.');
+  assert.equal(safeToSpendLine({ perDay: 1240, daysLeft: 9 }, '2026-10', { estimated: true }), 'To stay within this month’s income, spend no more than ~£12.40 a day.');
   assert.equal(safeToSpendLine(null, '2026-10'), null);
 });
 

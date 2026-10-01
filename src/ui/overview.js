@@ -71,12 +71,12 @@ export function renderOverview(root, { repo }) {
       nav, modeChips);
   }
 
-  // The last row is income minus spending, named for what it is: the budget has its own section,
-  // so this row never says "within budget" while the pace says otherwise.
+  // A finished period ends with income minus spending, named for what it is: the budget has its own
+  // section, so this row never says "within budget" while the pace says otherwise. A period in
+  // progress has no such row: it would be a second "left" figure beside the Log headline.
   function totalsCard(data) {
     const t = data.totals;
     const tilde = t.estimated ? '~' : '';
-    const leftLabel = t.net < 0 ? 'Overspent' : data.range.current ? 'Income not yet spent' : 'Left over';
     const row = (label, value, sub, cls = '', rowCls = '') => h('li', { class: `total-row ${rowCls}` },
       h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, label), sub && h('span', { class: 'list-sub' }, sub)),
       h('span', { class: `list-amount ${cls}` }, value));
@@ -84,7 +84,8 @@ export function renderOverview(root, { repo }) {
       row('Spent', `${tilde}${gbp(t.spent)}`,
         data.compare ?? (data.weekly !== null ? `About ${tilde}${gbp(data.weekly)} a week` : null), 'spend'),
       row('Income', `${tilde}${gbp(t.income)}`, null, 'income'),
-      row(leftLabel, `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', `standout${t.net < 0 ? ' state-over' : ''}`));
+      !data.range.current && row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null,
+        t.net < 0 ? 'danger' : '', `standout${t.net < 0 ? ' state-over' : ''}`));
   }
 
   // The month in progress: where spending ends up at this pace, as a row like the totals, then how it's counted.
