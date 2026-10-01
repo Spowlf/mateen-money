@@ -1,8 +1,9 @@
 // Safe to spend today and the month-end forecast.
 // Safe to spend is the headline ÷ the days left (today included), so it always counts trips.
 // The forecast adds day-to-day spending at this month's pace to what's spent and still due.
-// Day-to-day spending leaves out recurring items, and trips when the Overview toggle is on,
-// so one trip doesn't set the pace for the rest of the month.
+// Day-to-day spending leaves out recurring items, bookings for a trip (filed under it but paid
+// outside its dates), and trips when the Overview toggle is on, so one trip doesn't set the
+// pace for the rest of the month.
 
 import { addDays, daysBetween, monthKey, monthStart, monthEnd, parse, formatMonth } from './dates.js';
 import { monthHeadline } from './headline.js';
@@ -33,9 +34,21 @@ export function safeToSpendLine(safe, month, { estimated = false } = {}) {
 
 const onTrip = (e, excludeTrips) => !!e.tripId && (excludeTrips === true || (excludeTrips instanceof Set && excludeTrips.has(e.tripId)));
 
-/** Live, priced spending that isn't a recurring item (and isn't on a trip, when trips are left out). */
-export const isDayToDay = (e, excludeTrips = false) => e.kind === 'spend' && isLive(e) && e.gbpPence != null
-  && !e.recurringId && !(excludeTrips && onTrip(e, excludeTrips));
+/**
+ * A payment filed under a live trip but dated outside it: a flight booked in November for a
+ * January trip. tripsById holds live trips only, so a deleted trip's payments are ordinary.
+ */
+export const isTripBooking = (e, tripsById) => {
+  const trip = e.tripId ? tripsById.get(e.tripId) : null;
+  return !!trip && (e.date < trip.start || e.date > trip.end);
+};
+
+/**
+ * Live, priced spending that isn't a recurring item or a trip booking
+ * (and isn't on a trip, when trips are left out).
+ */
+export const isDayToDay = (e, excludeTrips = false, tripsById = new Map()) => e.kind === 'spend' && isLive(e) && e.gbpPence != null
+  && !e.recurringId && !(excludeTrips && onTrip(e, excludeTrips)) && !isTripBooking(e, tripsById);
 
 /**
  * Day-to-day pence per day for the month of todayDate, by key (keyOf(entry), e.g. its category).
@@ -44,7 +57,8 @@ export const isDayToDay = (e, excludeTrips = false) => e.kind === 'spend' && isL
  * History only counts days from the first logged payment; with none, this month stands alone.
  * Returns { rates: Map(key → pence a day, unrounded), elapsed, historyDays, weight }.
  */
-export function dailyRates(entries, todayDate, { excludeTrips = false, keyOf = () => 'all' } = {}) {
+export function dailyRates(entries, todayDate, { trips = [], excludeTrips = false, keyOf = () => 'all' } = {}) {
+  const tripsById = new Map(trips.filter(isLive).map((t) => [t.id, t]));
   const from = monthStart(monthKey(todayDate));
   const elapsed = parse(todayDate)[2];
   const spends = entries.filter((e) => e.kind === 'spend' && isLive(e));
@@ -58,7 +72,7 @@ export function dailyRates(entries, todayDate, { excludeTrips = false, keyOf = (
   const history = new Map();
   const add = (map, key, pence) => map.set(key, (map.get(key) ?? 0) + pence);
   for (const e of entries) {
-    if (!isDayToDay(e, excludeTrips)) continue;
+    if (!isDayToDay(e, excludeTrips, tripsById)) continue;
     if (e.date >= from && e.date <= todayDate) add(month, keyOf(e), e.gbpPence);
     else if (weight < 1 && e.date >= historyStart && e.date < from) add(history, keyOf(e), e.gbpPence);
   }
@@ -76,10 +90,10 @@ export function dailyRates(entries, todayDate, { excludeTrips = false, keyOf = (
  * spent so far + recurring costs still due + day-to-day pace × days after today.
  * spare = everything coming in this month − forecast (negative: more than you have).
  */
-export function monthForecast({ entries, recurring = [], rates = [], todayDate, excludeTrips = false }) {
+export function monthForecast({ entries, trips = [], recurring = [], rates = [], todayDate, excludeTrips = false }) {
   const month = monthKey(todayDate);
   const hl = monthHeadline({ entries, recurring, rates, month, todayDate });
-  const pace = dailyRates(entries, todayDate, { excludeTrips });
+  const pace = dailyRates(entries, todayDate, { trips, excludeTrips });
   const dailyPence = pace.rates.get('all') ?? 0;
   const daysAfter = daysBetween(todayDate, monthEnd(month));
   const projected = Math.round(dailyPence * daysAfter);
@@ -103,9 +117,9 @@ export function monthForecast({ entries, recurring = [], rates = [], todayDate, 
 /**
  * Each category's forecast for the month of todayDate (spending to sort is left out):
  * Map(categoryId → { spent, costsDue, dailyPence, forecast }). Spent counts trips, as the
- * month total does; the pace leaves them out when the toggle is on.
+ * month total does; the pace leaves out trip bookings, and trips when the toggle is on.
  */
-export function categoryForecasts({ entries, recurring = [], rates = [], todayDate, excludeTrips = false }) {
+export function categoryForecasts({ entries, trips = [], recurring = [], rates = [], todayDate, excludeTrips = false }) {
   const month = monthKey(todayDate);
   const from = monthStart(month);
   const to = monthEnd(month);
@@ -122,7 +136,7 @@ export function categoryForecasts({ entries, recurring = [], rates = [], todayDa
     if (item.kind !== 'spend' || !item.categoryId) continue;
     for (const _ of upcomingBetween(item, from, to)) row(item.categoryId).costsDue += estimateGbp(item.amountMinor, item.currency, rates);
   }
-  const pace = dailyRates(entries.filter((e) => e.categoryId != null), todayDate, { excludeTrips, keyOf: (e) => e.categoryId });
+  const pace = dailyRates(entries.filter((e) => e.categoryId != null), todayDate, { trips, excludeTrips, keyOf: (e) => e.categoryId });
   for (const [id, daily] of pace.rates) row(id).dailyPence = daily;
   const daysAfter = daysBetween(todayDate, to);
   for (const r of out.values()) {

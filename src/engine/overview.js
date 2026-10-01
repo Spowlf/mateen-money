@@ -86,7 +86,7 @@ export function overview({ entries, categories, trips = [], recurring = [], rate
     trips: tripTotals(entries, trips, categories),
     // The month in progress only: where spending ends up at this pace.
     forecast: period.kind === 'month' && range.current
-      ? monthForecast({ entries, recurring, rates, todayDate, excludeTrips: options.excludeTrips })
+      ? monthForecast({ entries, trips, recurring, rates, todayDate, excludeTrips: options.excludeTrips })
       : null,
   };
 }

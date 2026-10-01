@@ -17,7 +17,7 @@ export function renderReview(el, { repo, showToSort }) {
   const todayDate = partsInZone(Date.now(), repo.setting('timeZone', DEFAULT_TIME_ZONE)).date;
   const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
   const card = repo.connected() && reviewCard({
-    entries: S.entries, categories: S.categories, reviews: S.reviews, todayDate,
+    entries: S.entries, categories: S.categories, trips: S.trips, reviews: S.reviews, todayDate,
     budgets: S.budgets, recurring: S.recurring, rates: S.rates, excludeTrips,
   });
   el.hidden = !card;

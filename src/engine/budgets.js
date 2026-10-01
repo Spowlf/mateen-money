@@ -43,11 +43,11 @@ export function budgetChange(budgets, categoryId, month, amountPence) {
  * The month in progress also has a forecast; status is 'over' (spent more than the budget),
  * 'heading' (forecast to go over) or 'ok'. Past months have no forecast.
  */
-export function budgetRows({ entries, categories, budgets = [], recurring = [], rates = [], month, todayDate, excludeTrips = false }) {
+export function budgetRows({ entries, categories, trips = [], budgets = [], recurring = [], rates = [], month, todayDate, excludeTrips = false }) {
   const amounts = monthBudgets(budgets, month);
   if (!amounts.size) return [];
   const current = month === monthKey(todayDate);
-  const forecasts = current ? categoryForecasts({ entries, recurring, rates, todayDate, excludeTrips }) : null;
+  const forecasts = current ? categoryForecasts({ entries, trips, recurring, rates, todayDate, excludeTrips }) : null;
   const spentRows = current ? null : new Map(categoryRows(entries, categories, { from: monthStart(month), to: monthEnd(month) }).map((r) => [r.categoryId, r.pence]));
   const byId = new Map(categories.map((c) => [c.id, c]));
   const out = [];

@@ -103,6 +103,39 @@ test('daily rate: leaves out recurring items, and trips when the toggle is on', 
   assert.equal(dailyRates(entries, '2026-10-10', { excludeTrips: new Set(['t2']) }).rates.get('all'), 10000 / 10);
 });
 
+test('daily rate: leaves out a booking for a trip, paid outside its dates, whatever the toggle', () => {
+  const trips = [{ id: 't1', name: 'Singapore', start: '2027-01-05', end: '2027-01-20' }];
+  const entries = [
+    spend('2026-11-02', 1000),
+    spend('2026-11-03', 40000, 'travel', { tripId: 't1', tripManual: 1 }),
+  ];
+  assert.equal(dailyRates(entries, '2026-11-10', { trips }).rates.get('all'), 1000 / 10);
+  assert.equal(dailyRates(entries, '2026-11-10', { trips, excludeTrips: new Set(['t1']) }).rates.get('all'), 1000 / 10);
+  // A booking under a deleted trip counts as ordinary spending again.
+  const deleted = [{ ...trips[0], deletedAt: 1 }];
+  assert.equal(dailyRates(entries, '2026-11-10', { trips: deleted }).rates.get('all'), 41000 / 10);
+  // Nor does it count in the history blended into the next month's first days (29 days from 2 Nov).
+  assert.equal(Math.round(dailyRates(entries, '2026-12-01', { trips }).rates.get('all')), Math.round((6 / 7) * (1000 / 29)));
+});
+
+test('daily rate: spending during the trip still sets the pace when trips are in', () => {
+  const trips = [{ id: 't1', name: 'Singapore', start: '2027-01-05', end: '2027-01-20' }];
+  const entries = [spend('2027-01-06', 3000, 'food', { tripId: 't1' })];
+  assert.equal(dailyRates(entries, '2027-01-10', { trips }).rates.get('all'), 3000 / 10);
+});
+
+test('forecast: a trip booking counts in spent so far but not in the pace', () => {
+  const trips = [{ id: 't1', name: 'Singapore', start: '2027-01-05', end: '2027-01-20' }];
+  const entries = [income('2026-11-01', 100000), spend('2026-11-02', 1000), spend('2026-11-03', 40000, 'travel', { tripId: 't1', tripManual: 1 })];
+  const f = monthForecast({ entries, trips, todayDate: '2026-11-10' });
+  assert.equal(f.spent, 41000);
+  assert.equal(f.dailyPence, 100);
+  assert.equal(f.forecast, 41000 + 100 * 20);
+  const travel = categoryForecasts({ entries, trips, todayDate: '2026-11-10' }).get('travel');
+  assert.equal(travel.spent, 40000);
+  assert.equal(travel.forecast, 40000);
+});
+
 test('forecast: spent + still due + pace × days after today', () => {
   const recurring = [{ id: 'r1', kind: 'spend', label: 'Phone', amountMinor: 1500, currency: 'GBP', frequency: 'monthly', nextDate: '2026-10-20', active: 1 }];
   const entries = [income('2026-10-01', 100000), spend('2026-10-03', 20000), spend('2026-10-08', 10000)];

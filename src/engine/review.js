@@ -74,7 +74,7 @@ export const reviewSteps = ({ toSort }) => (toSort > 0 ? ['sort', 'week', 'unusu
  * Everything the review card on Log shows, or null when no review is due. budgetWarnings are this
  * month's categories over, or forecast to go over, their budget (shown with anything unusual).
  */
-export function reviewCard({ entries, categories, reviews = [], todayDate, budgets = [], recurring = [], rates = [], excludeTrips = false }) {
+export function reviewCard({ entries, categories, trips = [], reviews = [], todayDate, budgets = [], recurring = [], rates = [], excludeTrips = false }) {
   const { due, weekStart, weekEnd } = reviewDue({ todayDate, reviews, entries });
   if (!due) return null;
   const summary = weekSummary({ entries, categories, todayDate, start: weekStart });
@@ -86,6 +86,6 @@ export function reviewCard({ entries, categories, reviews = [], todayDate, budge
     streak: reviewStreak(reviews, todayDate),
     toSort: summary.toSort,
     month: monthKey(todayDate),
-    budgetWarnings: budgetWarnings(budgetRows({ entries, categories, budgets, recurring, rates, month: monthKey(todayDate), todayDate, excludeTrips })),
+    budgetWarnings: budgetWarnings(budgetRows({ entries, categories, trips, budgets, recurring, rates, month: monthKey(todayDate), todayDate, excludeTrips })),
   };
 }

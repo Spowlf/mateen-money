@@ -44,6 +44,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 - Overview, current month only: an "At this pace" section under the totals, with one row like theirs: "Spending by 31 Oct", the figure, and "£Y to spare" (or, in red, "£Y more than you have"). How it's counted sits under it.
 - `forecast = spent so far + recurring costs still due + daily day-to-day rate × days after today`. "More than you have" / "to spare" compares it with everything coming in this month (income received + recurring income still due).
 - Day-to-day spending leaves out recurring items (entries with a `recurringId`) and, when the Overview toggle leaves trips out, trip spending. Trip spending still counts in "spent so far": the toggle only keeps one trip from setting the pace.
+- A booking for a trip (spending filed under a live trip but dated outside its dates, like a flight paid in November for January) is always left out of day-to-day spending, whatever the toggle. It still counts in "spent so far" and in the month it was paid.
 - Daily rate: on days 1–7, `d/7 × this month's average + (1 − d/7) × the 8 weeks before the month`, so one big early purchase doesn't swing it; from day 7, this month's average alone. History counts only from the first logged payment; with none, this month stands alone.
 - Each category gets the same forecast at its own pace (for budgets).
 

@@ -102,7 +102,7 @@ export function renderOverview(root, { repo }) {
     if (period.kind !== 'month') return null;
     const todayDate = today();
     const rows = budgetRows({
-      entries: S.entries, categories: S.categories, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
+      entries: S.entries, categories: S.categories, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
       month: period.month, todayDate, excludeTrips: excludeTrips() && new Set(liveTrips().map((t) => t.id)),
     });
     const current = data.range.current;

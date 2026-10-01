@@ -208,7 +208,7 @@ export function renderLog(root, { repo }) {
     const month = monthKey(todayDate);
     const budgeted = form.kind === 'spend' && form.categoryId && budgetFor(S.budgets, form.categoryId, month) > 0;
     const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
-    const row = budgeted && budgetRows({ entries: S.entries, categories: S.categories, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month, todayDate, excludeTrips })
+    const row = budgeted && budgetRows({ entries: S.entries, categories: S.categories, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month, todayDate, excludeTrips })
       .find((r) => r.categoryId === form.categoryId);
     budgetNote.hidden = !row;
     budgetNote.textContent = row ? budgetLogLine(row) : '';
