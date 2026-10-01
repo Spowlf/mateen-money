@@ -194,6 +194,6 @@ export function openEntrySheet(repo, entry) {
     toast(`Deleted ${label(entry)}`, { label: 'Undo', run: () => runAction(() => repo.restoreEntry(entry.id)) });
   }
 
-  const s = sheet(entry.kind === 'income' ? 'Edit income' : 'Edit payment', body);
+  const s = sheet(entry.kind === 'income' ? 'Edit Income' : 'Edit Payment', body);
   render();
 }

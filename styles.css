@@ -155,7 +155,7 @@ main {
 .budget-row.static { cursor: default; }
 @media (hover: hover) { .budget-row.static:hover { background: transparent; } }
 .budget-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
-.budget-row .cat-bar { margin-top: var(--s1); }
+.budget-row .meter { margin-top: var(--s1); }
 .reason { font-size: var(--t-s); color: var(--ink-2); }
 /* Overview: the figure is the screen's answer, at full size, on its own line. */
 .headline-quiet { box-shadow: none; }
@@ -227,14 +227,15 @@ main {
 .cat-table td + td { padding-left: 0; }
 .cat-table .share { color: var(--ink-2); font-weight: 600; min-width: 3.5em; }
 .cat-name { display: block; }
-.cat-bar { display: block; width: 100%; height: 8px; margin-top: var(--s2); }
+.meter { display: block; height: 8px; margin-top: var(--s2); border-radius: 4px; background: var(--line); overflow: hidden; }
+.meter-fill { display: block; height: 100%; border-radius: 4px; }
+.fill-1 { background: var(--series-1); }
+.fill-muted { background: var(--series-muted); }
+.fill-warn { background: var(--warn); }
+.fill-danger { background: var(--danger); }
 
 .mark-1 { fill: var(--series-1); }
-.mark-warn { fill: var(--warn); }
-.mark-danger { fill: var(--danger); }
-.mark-track { fill: var(--line); }
 .mark-2 { fill: var(--series-2); }
-.mark-muted { fill: var(--series-muted); }
 
 .chart-figure { margin: 0; padding: var(--s4); background: var(--surface); border-radius: 16px; display: grid; gap: var(--s3); }
 .chart-wrap { position: relative; }

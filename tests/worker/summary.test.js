@@ -15,7 +15,7 @@ test('summary: plain text for this week on Sunday, with top categories and the T
   assert.equal(res.status, 200);
   assert.match(res.headers.get('Content-Type'), /^text\/plain/);
   // The To sort payment counts in the total. Usual = the one full week since the first spend (£9.99).
-  assert.equal(res.body, 'Week of 28 Sep: £57.50, 476% above your usual £10. Top: Food £42, Groceries £13. 1 to sort.');
+  assert.equal(res.body, 'Week of 28 Sep: £57.50, 476% above your usual £9.99. Top: Food £42.00, Groceries £12.50. 1 to sort.');
 });
 
 test('summary: an empty week says so plainly', async () => {

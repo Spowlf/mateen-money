@@ -40,7 +40,8 @@ export function toDecimalText(minor, currency = 'GBP') {
 export const prefix = (currency) => PREFIX[currency] ?? `${currency} `;
 
 /**
- * "£1,234.50", "S$12.50", "-£4.20". With { whole: true }, whole amounts drop the pence ("£1,000").
+ * "£1,234.50", "S$12.50", "-£4.20". With { whole: true }, whole amounts drop the pence ("£1,000"):
+ * only for chart axis ticks, which mark a scale rather than an amount.
  */
 export function formatMoney(minor, currency = 'GBP', { whole = false } = {}) {
   const e = exponent(currency);
@@ -50,10 +51,8 @@ export function formatMoney(minor, currency = 'GBP', { whole = false } = {}) {
   return `${minor < 0 ? '-' : ''}${prefix(currency)}${number}`;
 }
 
-export const gbp = (pence, options) => formatMoney(pence, 'GBP', options);
-
-/** Rounds pence to whole pounds for prose ("about £127"). */
-export const gbpRounded = (pence) => gbp(Math.round(pence / 100) * 100, { whole: true });
+/** Pounds, always with pence ("£108.00"); a fraction of a penny (an average) rounds to the nearest. */
+export const gbp = (pence, options) => formatMoney(Math.round(pence), 'GBP', options);
 
 // Symbols as they appear in payment text, longest first so "S$" wins over "$".
 const SYMBOLS = ['US$', 'S$', 'HK$', 'AU$', 'A$', 'CA$', 'C$', 'NZ$', 'NT$', 'R$', 'CN¥', 'JP¥', 'CHF', 'zł', 'Kč', 'RM', 'Rp',

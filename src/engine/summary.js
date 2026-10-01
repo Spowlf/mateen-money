@@ -1,7 +1,7 @@
 // The weekly summary (Monday to Sunday) and its plain-text notification.
 
 import { addDays, weekStart, weekday, formatDayShort } from './dates.js';
-import { gbp, gbpRounded } from './money.js';
+import { gbp } from './money.js';
 import { categoryRows, isLive } from './totals.js';
 
 export const USUAL_WEEKS = 8;
@@ -84,7 +84,7 @@ export function weekSummary({ entries, categories, todayDate, start = reviewWeek
 /** How this week compares, as a phrase: "12% above your usual £127". */
 export function comparePhrase(s) {
   if (s.usualPence === null) return null;
-  const usual = gbpRounded(s.usualPence);
+  const usual = gbp(s.usualPence);
   if (s.usualPence === 0) return s.totalPence ? `your usual is ${usual}` : null;
   if (Math.abs(s.changePct) < 5) return `about your usual ${usual}`;
   return `${Math.abs(s.changePct)}% ${s.changePct > 0 ? 'above' : 'below'} your usual ${usual}`;
@@ -99,7 +99,7 @@ export function weeklyText(s) {
   const head = `Week of ${formatDayShort(s.start)}: ${gbp(s.totalPence)}`;
   const compare = comparePhrase(s);
   parts.push(compare ? `${head}, ${compare}.` : `${head}.`);
-  if (s.top.length) parts.push(`Top: ${s.top.map((r) => `${r.name} ${gbpRounded(r.pence)}`).join(', ')}.`);
+  if (s.top.length) parts.push(`Top: ${s.top.map((r) => `${r.name} ${gbp(r.pence)}`).join(', ')}.`);
   parts.push(s.toSort === 0 ? 'Nothing to sort.' : `${s.toSort} to sort.`);
   return parts.join(' ');
 }

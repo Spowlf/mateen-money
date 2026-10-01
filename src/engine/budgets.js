@@ -10,7 +10,7 @@
 import { monthKey, monthStart, monthEnd, formatMonth } from './dates.js';
 import { periodTotals, isLive } from './totals.js';
 import { monthForecast } from './forecast.js';
-import { gbp, gbpRounded } from './money.js';
+import { gbp } from './money.js';
 
 export const MONTH_BUDGET = 'month';
 
@@ -68,32 +68,32 @@ export function budgetStatus({ entries, trips = [], budgets = [], recurring = []
   };
 }
 
-/** Beside the budget: "£180.00 left", "£20.00 over" or "On track for £540". */
+/** Beside the budget: "£180.00 left", "£20.00 over" or "On track for £540.00". */
 export function budgetStatusText(b) {
   if (b.status === 'over') return `${gbp(-b.leftPence)} over`;
-  if (b.status === 'heading') return `On track for ${gbpRounded(b.forecastPence)}`;
+  if (b.status === 'heading') return `On track for ${gbp(b.forecastPence)}`;
   return `${gbp(b.leftPence)} left`;
 }
 
-/** How the budget is used so far: "£300 spent and £15 still due". */
+/** How the budget is used so far: "£300.00 spent and £15.00 still due". */
 export function budgetDetail(b) {
-  const due = b.costsDue ? ` and ${gbp(b.costsDue, { whole: true })} still due` : '';
-  return `${gbp(b.spentPence, { whole: true })} spent${due}`;
+  const due = b.costsDue ? ` and ${gbp(b.costsDue)} still due` : '';
+  return `${gbp(b.spentPence)} spent${due}`;
 }
 
-/** The line on Log for a payment: "£180 of your £500 budget left this month." */
+/** The line on Log for a payment: "£180.00 of your £500.00 budget left this month." */
 export function budgetLogLine(b) {
-  const of = `your ${gbp(b.budgetPence, { whole: true })} budget`;
-  if (b.leftPence < 0) return `${gbp(-b.leftPence, { whole: true })} over ${of} this month.`;
-  return `${gbp(b.leftPence, { whole: true })} of ${of} left this month.`;
+  const of = `your ${gbp(b.budgetPence)} budget`;
+  if (b.leftPence < 0) return `${gbp(-b.leftPence)} over ${of} this month.`;
+  return `${gbp(b.leftPence)} of ${of} left this month.`;
 }
 
 /** The weekly review's warning, or null when the budget is on track. */
 export function budgetWarningLine(b) {
   if (!b || b.status === 'ok') return null;
-  const of = `your ${gbp(b.budgetPence, { whole: true })} budget for ${formatMonth(b.month).split(' ')[0]}`;
-  if (b.status === 'over') return `${gbp(-b.leftPence, { whole: true })} over ${of}.`;
-  return `On track for ${gbpRounded(b.forecastPence)} of ${of}.`;
+  const of = `your ${gbp(b.budgetPence)} budget for ${formatMonth(b.month).split(' ')[0]}`;
+  if (b.status === 'over') return `${gbp(-b.leftPence)} over ${of}.`;
+  return `On track for ${gbp(b.forecastPence)} of ${of}.`;
 }
 
 /** Pounds as typed ("500", "500.50") to pence; '' is no budget (0). null if it can't be read. */

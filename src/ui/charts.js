@@ -21,75 +21,77 @@ function column(x, y, w, baseline) {
   return `M${x},${baseline}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${baseline}Z`;
 }
 
-/** A bar growing right from the start: 4px rounded data end. */
-function bar(w, hgt) {
-  if (w <= 0) return null;
-  const r = Math.min(4, w, hgt / 2);
-  return `M0,0H${w - r}Q${w},0 ${w},${r}V${hgt - r}Q${w},${hgt} ${w - r},${hgt}H0Z`;
+/**
+ * A share as a meter: the track is the whole (a budget, or all the spending), the fill the part,
+ * full when over. A share above zero always shows a sliver.
+ */
+function meter(share, cls) {
+  const pct = Math.min(Math.max(share, 0), 1) * 100;
+  const fill = share > 0 && h('span', { class: `meter-fill ${cls}` });
+  if (fill) fill.style.width = `max(4px, ${pct.toFixed(2)}%)`;
+  return h('span', { class: 'meter', 'aria-hidden': 'true' }, fill);
 }
 
 /**
- * Spending by category as a table whose first column carries a bar.
- * rows: [{ categoryId, name, pence, share }], largest first. "To sort" (categoryId null) is grey.
+ * Spending by category as a table whose first column carries its share as a meter.
+ * rows: [{ categoryId, name, pence, share }], largest first; share is of the budget, or of all
+ * the spending when there's none. "To sort" (categoryId null) is grey.
  */
 export function categoryTable(rows, { caption }) {
-  const max = Math.max(...rows.map((r) => r.pence), 1);
-  const width = 100;
   return h('table', { class: 'cat-table' },
     h('caption', { class: 'visually-hidden' }, caption),
     h('thead', { class: 'visually-hidden' }, h('tr', {}, h('th', { scope: 'col' }, 'Category'), h('th', { scope: 'col' }, 'Spent'), h('th', { scope: 'col' }, 'Share'))),
     h('tbody', {}, rows.map((r) => h('tr', {},
       h('th', { scope: 'row' },
         h('span', { class: 'cat-name' }, r.name),
-        s('svg', { class: 'cat-bar', viewBox: `0 0 ${width} 8`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
-          s('path', { d: bar(Math.max((r.pence / max) * width, 1), 8), class: r.categoryId === null ? 'mark-muted' : 'mark-1' }))),
+        meter(r.share, r.categoryId === null ? 'fill-muted' : 'fill-1')),
       h('td', { class: 'num' }, gbp(r.pence)),
       h('td', { class: 'num share' }, `${Math.round(r.share * 100)}%`)))));
 }
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const monthOf = (key) => Number(key.slice(5, 7)) - 1;
-
 /**
- * Income and spending per month as paired columns on one axis, with a legend, a tooltip on
- * each month (hover, tap or keyboard focus) and the same numbers as a table.
- * series: [{ month: 'YYYY-MM', income, spent }], oldest first.
+ * Income and spending per step of a period (weeks of a month or term, months of a year) as paired
+ * columns on one axis, with a legend, a tooltip on each step (hover, tap or keyboard focus) and the
+ * same numbers as a table. Steps still to come (income and spent null) stay empty.
+ * series: [{ label, title, income, spent }], oldest first. step names a step for the table: 'Week' or 'Month'.
  */
-export function incomeSpendingChart(series, { width = 358 } = {}) {
+export function incomeSpendingChart(series, { width = 358, name, step }) {
   const height = 196;
   const pad = { top: 10, right: 4, bottom: 26, left: 52 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
   const baseline = pad.top + plotH;
-  const scale = niceScale(Math.max(...series.flatMap((m) => [m.income, m.spent])));
+  const scale = niceScale(Math.max(...series.flatMap((m) => [m.income ?? 0, m.spent ?? 0])));
   const y = (pence) => baseline - (pence / scale.max) * plotH;
   const band = plotW / series.length;
-  const barW = Math.min(24, (band - 14) / 2);
+  const barW = Math.min(24, (band - Math.min(14, band * 0.3)) / 2);
   const GAP = 2;
+  // Twelve months don't fit as "Oct", "Nov" on a phone; their initials do (the tooltip and table say them in full).
+  const axisLabel = (m) => (band < 34 ? m.label[0] : m.label);
 
   const tooltip = h('div', { class: 'chart-tip', hidden: true, role: 'status' });
   const groups = [];
 
-  const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, class: 'chart', role: 'group', 'aria-label': 'Income and spending for the last six months' },
+  const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, class: 'chart', role: 'group', 'aria-label': `Income and spending, ${name}` },
     scale.ticks.map((t) => s('g', {},
       s('line', { x1: pad.left, x2: width - pad.right, y1: y(t), y2: y(t), class: 'grid' }),
       s('text', { x: pad.left - 8, y: y(t), class: 'axis', 'text-anchor': 'end', 'dominant-baseline': 'middle' }, document.createTextNode(gbp(t, { whole: true }))))),
     series.map((m, i) => {
       const x0 = pad.left + i * band;
       const mid = x0 + band / 2;
+      const label = s('text', { x: mid, y: height - 8, class: 'axis', 'text-anchor': 'middle' }, document.createTextNode(axisLabel(m)));
+      if (m.spent === null) return s('g', { role: 'img', 'aria-label': `${m.title}: still to come` }, label);
       const hit = s('rect', { x: x0, y: pad.top, width: band, height: plotH, class: 'hit', rx: 8 });
-      const g = s('g', { tabindex: '0', class: 'month', role: 'img',
-        'aria-label': `${MONTH_LONG[monthOf(m.month)]}: income ${gbp(m.income)}, spending ${gbp(m.spent)}` },
+      const g = s('g', { tabindex: '0', class: 'month', role: 'img', 'aria-label': `${m.title}: income ${gbp(m.income)}, spending ${gbp(m.spent)}` },
         hit,
         s('path', { d: column(mid - GAP / 2 - barW, y(m.income), barW, baseline), class: 'mark-2' }),
         s('path', { d: column(mid + GAP / 2, y(m.spent), barW, baseline), class: 'mark-1' }),
-        s('text', { x: mid, y: height - 8, class: 'axis', 'text-anchor': 'middle' }, document.createTextNode(MONTH_SHORT[monthOf(m.month)])));
+        label);
       const show = () => {
         for (const other of groups) other.classList.remove('on');
         g.classList.add('on');
         tooltip.replaceChildren(
-          h('p', { class: 'tip-title' }, `${MONTH_LONG[monthOf(m.month)]} ${m.month.slice(0, 4)}`),
+          h('p', { class: 'tip-title' }, m.title),
           h('p', { class: 'tip-row' }, h('span', { class: 'line-key key-2' }), h('strong', {}, gbp(m.income)), ' income'),
           h('p', { class: 'tip-row' }, h('span', { class: 'line-key key-1' }), h('strong', {}, gbp(m.spent)), ' spent'));
         tooltip.hidden = false;
@@ -114,9 +116,9 @@ export function incomeSpendingChart(series, { width = 358 } = {}) {
   const table = h('details', { class: 'table-view' },
     h('summary', {}, 'Show as a table'),
     h('table', { class: 'data-table' },
-      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Month'), h('th', { scope: 'col' }, 'Income'), h('th', { scope: 'col' }, 'Spent'))),
-      h('tbody', {}, series.map((m) => h('tr', {},
-        h('th', { scope: 'row' }, `${MONTH_SHORT[monthOf(m.month)]} ${m.month.slice(0, 4)}`),
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, step), h('th', { scope: 'col' }, 'Income'), h('th', { scope: 'col' }, 'Spent'))),
+      h('tbody', {}, series.filter((m) => m.spent !== null).map((m) => h('tr', {},
+        h('th', { scope: 'row' }, m.title),
         h('td', { class: 'num' }, gbp(m.income)),
         h('td', { class: 'num' }, gbp(m.spent)))))));
 
@@ -124,13 +126,9 @@ export function incomeSpendingChart(series, { width = 358 } = {}) {
 }
 
 /**
- * A category's budget as a meter: the track is the budget, the fill what's spent (full when over).
+ * The monthly budget as a meter: the track is the budget, the fill what's spent (full when over).
  * Colour follows the status (ok, heading over, over); the status is always written beside it too.
  */
 export function budgetBar(r) {
-  const width = 100;
-  const mark = { ok: 'mark-1', heading: 'mark-warn', over: 'mark-danger' }[r.status];
-  return s('svg', { class: 'cat-bar', viewBox: `0 0 ${width} 8`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
-    s('rect', { x: 0, y: 0, width, height: 8, rx: 4, class: 'mark-track' }),
-    r.share > 0 && s('path', { d: bar(Math.max(r.share * width, 1), 8), class: mark }));
+  return meter(r.share, { ok: 'fill-1', heading: 'fill-warn', over: 'fill-danger' }[r.status]);
 }

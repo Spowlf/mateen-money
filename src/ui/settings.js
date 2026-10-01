@@ -35,7 +35,7 @@ function openCategorySheet(repo, category) {
   };
   name.addEventListener('input', renderSave);
   const used = category ? S.entries.filter((e) => !e.deletedAt && e.categoryId === category.id).length : 0;
-  const s = sheet(category ? category.name : 'Add a category', h('div', { class: 'sheet-form' },
+  const s = sheet(category ? category.name : 'Add a Category', h('div', { class: 'sheet-form' },
     field('Name', name, null),
     h('div', { class: 'sheet-actions' },
       save,
@@ -83,7 +83,7 @@ function categoriesSection(repo) {
         h('span', { class: 'list-title' }, c.name)),
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Move ${c.name} up`, disabled: i === 0, onclick: () => move(c.id, -1) }, icon('up')),
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Move ${c.name} down`, disabled: i === live.length - 1, onclick: () => move(c.id, 1) }, icon('down'))))),
-    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openCategorySheet(repo, null) }, 'Add a category')),
+    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openCategorySheet(repo, null) }, 'Add a Category')),
     archived.length > 0 && h('details', { class: 'table-view' },
       h('summary', {}, `Removed categories, ${archived.length}`),
       h('ul', { class: 'list' }, archived.map((c) => h('li', { class: 'total-row' },
@@ -99,7 +99,7 @@ function budgetSection(repo) {
     h('h2', { class: 'subhead' }, 'Budget'),
     h('ul', { class: 'list' }, h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openBudgetSheet(repo) },
       h('span', { class: 'list-title' }, 'Monthly Budget'),
-      h('span', { class: pence ? 'list-amount' : 'list-sub' }, pence ? `${gbp(pence, { whole: true })} a month` : 'No budget')))));
+      h('span', { class: pence ? 'list-amount' : 'list-sub' }, pence ? `${gbp(pence)} a month` : 'No budget')))));
 }
 
 // Payment methods
@@ -157,7 +157,7 @@ function openMethodSheet(repo, method) {
     });
   }
 
-  const s = sheet(method ? method.name : 'Add a payment method', h('div', { class: 'sheet-form' },
+  const s = sheet(method ? method.name : 'Add a Payment Method', h('div', { class: 'sheet-form' },
     field('Name', name),
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Kind'),
       chips({ label: 'Kind', options: METHOD_KINDS, value: f.kind, onChange: (v) => { f.kind = v; } })),
@@ -181,12 +181,12 @@ function openMethodSheet(repo, method) {
 function methodsSection(repo) {
   const methods = liveSorted(repo.state.methods, 'name');
   return h('section', { class: 'section' },
-    h('h2', { class: 'subhead' }, 'Payment methods'),
+    h('h2', { class: 'subhead' }, 'Payment Methods'),
     methods.length
       ? h('ul', { class: 'list' }, methods.map((m) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openMethodSheet(repo, m) },
         h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, m.name), h('span', { class: 'list-sub' }, methodSub(m)))))))
       : h('p', { class: 'empty-line' }, 'Add the cards and accounts you pay with.'),
-    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openMethodSheet(repo, null) }, 'Add a payment method')));
+    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openMethodSheet(repo, null) }, 'Add a Payment Method')));
 }
 
 // Trips
@@ -203,7 +203,7 @@ export function openTripSheet(repo, trip) {
     save.disabled = !!need;
     save.textContent = need ?? (trip ? 'Save changes' : `Add ${f.name.trim()}`);
   };
-  const s = sheet(trip ? trip.name : 'Add a trip', h('div', { class: 'sheet-form' },
+  const s = sheet(trip ? trip.name : 'Add a Trip', h('div', { class: 'sheet-form' },
     field('Name', name),
     h('div', { class: 'row-2' }, field('First day', start), field('Last day', end)),
     h('div', { class: 'sheet-actions' },
@@ -279,7 +279,7 @@ function termsSection(repo) {
   };
   const label = `${termsYear}–${String(termsYear + 1).slice(2)}`;
   return fill(section,
-    h('h2', { class: 'subhead' }, 'Term dates'),
+    h('h2', { class: 'subhead' }, 'Term Dates'),
     h('div', { class: 'period-nav' },
       h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Previous year', disabled: termsYear <= TERM_YEARS[0], onclick: () => step(-1) }, icon('back')),
       h('p', { class: 'period-label period-label-small', 'aria-live': 'polite' }, label),
@@ -305,7 +305,7 @@ function allowanceSection(repo) {
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Allowance'),
     h('p', { class: 'reason' }, logged.length
-      ? `${year.label}: ${gbp(loggedPence)} logged${spread ? `, about ${gbp(Math.floor(loggedPence / 12), { whole: true })} a month from October to September` : ''}.`
+      ? `${year.label}: ${gbp(loggedPence)} logged${spread ? `, about ${gbp(Math.floor(loggedPence / 12))} a month from October to September` : ''}.`
       : `No allowance logged for ${year.label} yet.`),
     items.length > 0 && h('ul', { class: 'list' }, items.map((r) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openRecurringSheet(repo, r) },
       h('span', { class: 'list-main' },
@@ -341,7 +341,7 @@ function openTimeZoneSheet(repo) {
     save.disabled = select.value === current;
     save.textContent = select.value === current ? 'Pick another time zone' : `Use ${zoneName(select.value)}`;
   };
-  const s = sheet('Time zone', h('div', { class: 'sheet-form' },
+  const s = sheet('Time Zone', h('div', { class: 'sheet-form' },
     field('Time zone', select, 'Listed by region, then city.'),
     h('div', { class: 'sheet-actions' }, save)));
   save.addEventListener('click', async () => {
@@ -357,7 +357,7 @@ function timeZoneSection(repo) {
   const phone = phoneZone();
   const differs = validTimeZone(phone) && phone !== current;
   return h('section', { class: 'section' },
-    h('h2', { class: 'subhead' }, 'Time zone'),
+    h('h2', { class: 'subhead' }, 'Time Zone'),
     h('ul', { class: 'list' }, h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openTimeZoneSheet(repo) },
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, zoneName(current)),
@@ -375,7 +375,7 @@ function backupSection(repo) {
     onchange: async () => { const f = file.files[0]; file.value = ''; if (f) await importBackup(repo, f); } });
   const last = repo.state.lastBackupAt;
   return h('section', { class: 'section' },
-    h('h2', { class: 'subhead' }, 'Backup and export'),
+    h('h2', { class: 'subhead' }, 'Backup and Export'),
     h('p', { class: 'reason' }, last ? `Last backup ${formatDay(today(new Date(last)))}.` : 'No backup yet.'),
     h('div', { class: 'button-stack' },
       h('button', { type: 'button', class: 'button secondary', onclick: () => runAction(() => exportBackup(repo)) }, 'Export backup'),

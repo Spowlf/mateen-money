@@ -62,14 +62,14 @@ test('weekly summary: top 3 categories and To sort count', () => {
 test('weekly summary text', () => {
   const entries = [...history(), spend('2026-09-29', 4800, 'eating-out'), spend('2026-09-30', 3500, 'groceries'), spend('2026-10-01', 2000, 'coffee-snacks'), spend('2026-10-02', 930, 'transport'), spend('2026-10-02', 1000, null)];
   const s = weekSummary({ entries, categories: CATEGORIES, todayDate: '2026-10-04' });
-  assert.equal(weeklyText(s), 'Week of 28 Sep: £122.30, 22% above your usual £100. Top: Eating out £48, Groceries £35, Coffee and snacks £20. 1 to sort.');
+  assert.equal(weeklyText(s), 'Week of 28 Sep: £122.30, 22% above your usual £100.00. Top: Eating out £48.00, Groceries £35.00, Coffee and snacks £20.00. 1 to sort.');
 });
 
 test('weekly summary text: close to usual, nothing to sort, no history', () => {
   const near = weekSummary({ entries: [...history(), spend('2026-09-29', 10300)], categories: CATEGORIES, todayDate: '2026-10-04' });
-  assert.match(weeklyText(near), /: £103\.00, about your usual £100\. .*Nothing to sort\.$/);
+  assert.match(weeklyText(near), /: £103\.00, about your usual £100\.00\. .*Nothing to sort\.$/);
   const fresh = weekSummary({ entries: [spend('2026-09-29', 500)], categories: CATEGORIES, todayDate: '2026-10-04' });
-  assert.equal(weeklyText(fresh), 'Week of 28 Sep: £5.00. Top: Groceries £5. Nothing to sort.');
+  assert.equal(weeklyText(fresh), 'Week of 28 Sep: £5.00. Top: Groceries £5.00. Nothing to sort.');
 });
 
 test('review is due from Sunday until completed', () => {

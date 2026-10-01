@@ -34,7 +34,7 @@ export function renderReview(el, { repo, showToSort }) {
   const next = () => go(steps[index + 1]);
 
   const head = h('div', { class: 'review-head' },
-    h('h2', { class: 'subhead' }, 'Weekly review'),
+    h('h2', { class: 'subhead' }, 'Weekly Review'),
     card.streak > 0 && h('span', { class: 'tag' }, weeks(card.streak)));
 
   if (!place.open) {
@@ -47,9 +47,9 @@ export function renderReview(el, { repo, showToSort }) {
   let body;
   if (place.step === 'sort') {
     body = [
-      h('p', {}, card.toSort === 1 ? '1 payment is waiting in To sort.' : `${card.toSort} payments are waiting in To sort.`),
+      h('p', {}, card.toSort === 1 ? '1 payment is waiting in To Sort.' : `${card.toSort} payments are waiting in To Sort.`),
       h('div', { class: 'review-actions' },
-        h('button', { type: 'button', class: 'button secondary', onclick: showToSort }, 'Go to To sort'),
+        h('button', { type: 'button', class: 'button secondary', onclick: showToSort }, 'Go to To Sort'),
         h('button', { type: 'button', class: 'text-button', onclick: next }, 'Skip for now')),
     ];
   } else if (place.step === 'week') {
@@ -57,7 +57,7 @@ export function renderReview(el, { repo, showToSort }) {
       h('p', { class: 'review-figure' }, h('span', { class: 'num' }, gbp(s.totalPence)), h('span', { class: 'unit' }, 'spent that week')),
       compare && h('p', { class: 'reason' }, `${compare.charAt(0).toUpperCase()}${compare.slice(1)}, averaged over ${s.usualWeeks === 1 ? 'the week' : `the ${s.usualWeeks} weeks`} before.`),
       s.rows.length > 0 && categoryTable(s.rows, { caption: `Spending by category, week of ${formatDayShort(card.weekStart)}` }),
-      s.largest.length > 0 && h('h3', { class: 'review-sub' }, 'Largest purchases'),
+      s.largest.length > 0 && h('h3', { class: 'review-sub' }, 'Largest Purchases'),
       s.largest.length > 0 && h('ul', { class: 'list' }, s.largest.map((e) => h('li', { class: 'total-row' },
         h('span', { class: 'list-main' },
           h('span', { class: 'list-title' }, S.vendors.find((v) => v.id === e.vendorId)?.name ?? e.merchant ?? 'Payment'),

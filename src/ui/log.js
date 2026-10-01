@@ -19,8 +19,8 @@ export function renderLog(root, { repo }) {
   const S = repo.state;
   const el = {
     headline: h('section', { 'aria-live': 'polite' }),
-    review: h('section', { class: 'section', 'aria-label': 'Weekly review' }),
-    toSort: h('section', { class: 'section', 'aria-label': 'To sort' }),
+    review: h('section', { class: 'section', 'aria-label': 'Weekly Review' }),
+    toSort: h('section', { class: 'section', 'aria-label': 'To Sort' }),
     entry: h('section', { class: 'entry', 'aria-label': 'Log a payment' }),
   };
   fill(root, h('div', { class: 'screen' }, el.headline, el.review, el.toSort, el.entry));
@@ -71,7 +71,7 @@ export function renderLog(root, { repo }) {
     const shown = showAllToSort ? items : items.slice(0, TO_SORT_SHOWN);
     const nudge = toSortNudge(items.length);
     fill(el.toSort,
-      h('h2', { class: 'subhead' }, 'To sort', h('span', { class: 'tag' }, items.length)),
+      h('h2', { class: 'subhead' }, 'To Sort', h('span', { class: 'tag' }, items.length)),
       nudge && h('p', { class: 'hint' }, nudge),
       h('ul', { class: 'list' }, shown.map(sortRow)),
       items.length > shown.length && h('div', {},

@@ -3,7 +3,7 @@
 import { addDays, monthKey } from './dates.js';
 import { reviewWeek, usualWeeks, weekSummary } from './summary.js';
 import { categoryRows, isLive } from './totals.js';
-import { gbp, gbpRounded } from './money.js';
+import { gbp } from './money.js';
 import { budgetStatus } from './budgets.js';
 
 export const UNUSUAL_RATIO = 1.5;        // more than 50% above the 8-week average
@@ -64,7 +64,7 @@ export function unusualCategories({ entries, categories, weekStart }) {
 /** "Groceries: £95.00, 58% above your usual £60." */
 export function unusualLine(u) {
   if (u.pct === null) return `${u.name}: ${gbp(u.pence)}, with nothing here in the weeks before.`;
-  return `${u.name}: ${gbp(u.pence)}, ${u.pct}% above your usual ${gbpRounded(u.averagePence)}.`;
+  return `${u.name}: ${gbp(u.pence)}, ${u.pct}% above your usual ${gbp(u.averagePence)}.`;
 }
 
 /** The review's steps. Sorting comes first, and only while something is waiting. */

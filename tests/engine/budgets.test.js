@@ -52,8 +52,8 @@ test('budget status: this month has spent, left and a forecast; income doesn’t
   assert.equal(b.status, 'ok');
   assert.equal(b.share, 0.1);
   assert.equal(budgetStatusText(b), '£450.00 left');
-  assert.equal(budgetDetail(b), '£50 spent');
-  assert.equal(budgetLogLine(b), '£450 of your £500 budget left this month.');
+  assert.equal(budgetDetail(b), '£50.00 spent');
+  assert.equal(budgetLogLine(b), '£450.00 of your £500.00 budget left this month.');
   assert.equal(budgetWarningLine(b), null);
 });
 
@@ -62,14 +62,14 @@ test('budget status: forecast to go over, and over', () => {
   const heading = budgetStatus({ entries: [spend('2026-10-03', 30000)], budgets, month: '2026-10', todayDate: '2026-10-10' });
   assert.equal(heading.status, 'heading');
   assert.equal(heading.forecastPence, 30000 + 3000 * 21);
-  assert.equal(budgetStatusText(heading), 'On track for £930');
-  assert.equal(budgetWarningLine(heading), 'On track for £930 of your £500 budget for October.');
+  assert.equal(budgetStatusText(heading), 'On track for £930.00');
+  assert.equal(budgetWarningLine(heading), 'On track for £930.00 of your £500.00 budget for October.');
   const over = budgetStatus({ entries: [spend('2026-10-03', 52050)], budgets, month: '2026-10', todayDate: '2026-10-10' });
   assert.equal(over.status, 'over');
   assert.equal(over.share, 1);
   assert.equal(budgetStatusText(over), '£20.50 over');
-  assert.equal(budgetLogLine(over), '£20.50 over your £500 budget this month.');
-  assert.equal(budgetWarningLine(over), '£20.50 over your £500 budget for October.');
+  assert.equal(budgetLogLine(over), '£20.50 over your £500.00 budget this month.');
+  assert.equal(budgetWarningLine(over), '£20.50 over your £500.00 budget for October.');
 });
 
 test('budget status: recurring costs count, still due ones as used', () => {
@@ -80,7 +80,7 @@ test('budget status: recurring costs count, still due ones as used', () => {
   assert.equal(b.costsDue, 1199);
   assert.equal(b.leftPence, 5000 - 1500 - 1199);
   assert.equal(b.forecastPence, 1500 + 1199);
-  assert.equal(budgetDetail(b), '£15 spent and £11.99 still due');
+  assert.equal(budgetDetail(b), '£15.00 spent and £11.99 still due');
 });
 
 test('budget status: trips count; the toggle only takes them out of the pace', () => {

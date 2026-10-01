@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodTotals, categoryRows, yearRange, yearToDate, termOf, suggestTrip, tripTotals, retrip, change, monthlySeries } from '../../src/engine/totals.js';
+import { periodTotals, categoryRows, yearRange, yearToDate, termOf, suggestTrip, tripTotals, retrip, change } from '../../src/engine/totals.js';
 import { topCategories, sortChoices, toSortNudge } from '../../src/engine/sort.js';
 import { CATEGORIES, spend, income } from './fixtures.js';
 
@@ -23,7 +23,7 @@ test('trip exclusion: totals leave out trip entries only when asked', () => {
 test('trip exclusion: category rows and yearly totals follow the toggle', () => {
   const rows = categoryRows(entries, CATEGORIES, { ...OCT, excludeTrips: true });
   assert.deepEqual(rows.map((r) => r.categoryId), ['groceries', null]);
-  assert.equal(rows[1].name, 'To sort');
+  assert.equal(rows[1].name, 'To Sort');
   const year = yearRange('2026-10-15', 'academic');
   assert.equal(periodTotals(entries, { ...year, excludeTrips: true }).spent, 4000);
 });
@@ -110,11 +110,6 @@ test('terms: blank dates match nothing', () => {
 test('change vs last month', () => {
   assert.deepEqual(change(12000, 10000), { delta: 2000, pct: 20 });
   assert.deepEqual(change(5000, 0), { delta: 5000, pct: null });
-});
-
-test('monthly series for income vs spending', () => {
-  const s = monthlySeries(entries, '2026-10', 2);
-  assert.deepEqual(s, [{ month: '2026-09', spent: 0, income: 0 }, { month: '2026-10', spent: 14000, income: 50000 }]);
 });
 
 test('To sort: top 4 categories by recent use, topped up in order', () => {

@@ -44,7 +44,7 @@ export function openSortSheet(repo, entry) {
     h('dt', {}, 'When'), h('dd', {}, whenPhrase(entry)),
     entry.card && [h('dt', {}, 'Card'), h('dd', {}, entry.card)],
     h('dt', {}, 'Arrived as'), h('dd', {}, entry.merchant));
-  const s = sheet(income ? 'Sort refund' : 'Sort payment', h('div', { class: 'sheet-form' },
+  const s = sheet(income ? 'Sort Refund' : 'Sort Payment', h('div', { class: 'sheet-form' },
     facts,
     suggestion && h('p', { class: 'hint' }, `Looks like ${suggestion.name}. `,
       h('button', { type: 'button', class: 'text-button', onclick: () => sortPayment(repo, entry, { vendorId: suggestion.id, ...(entry.needsCurrency && currency ? { currency } : {}) }, s.close) }, `File under ${suggestion.name}`)),

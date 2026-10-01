@@ -52,7 +52,7 @@ test('csv: payments oldest first, with names, amounts as decimals and GBP values
   assert.equal(csv, [
     'Date,Time,Type,Merchant,Category,Amount,Currency,GBP,Fee GBP,GBP is,Paid with,Trip,Description,Added by',
     '2026-09-28,,Income,,Allowance / Stipend,12000.00,GBP,12000.00,,Final,,,,Plan',
-    '2026-09-30,12:00,Spending,PRET A MANGER,To sort,4.20,GBP,4.20,,Final,,,,Apple Pay',
+    '2026-09-30,12:00,Spending,PRET A MANGER,To Sort,4.20,GBP,4.20,,Final,,,,Apple Pay',
     '2026-10-01,12:00,Spending,Lau Pa Sat,Eating out,12.50,SGD,7.57,0.22,Estimated,Card,Singapore,"Dinner, with Sam",You',
     '',
   ].join('\r\n'));

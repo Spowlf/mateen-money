@@ -1,5 +1,5 @@
 // Overview: a month, year or term: totals (left over stands out), spending by category,
-// income and spending over six months, and trips. Nothing here is edited in place;
+// income and spending through the period, and trips. Nothing here is edited in place;
 // a trip opens a sheet with its breakdown, and its payments in History.
 
 import { h, fill, segmented, icon, sheet } from './dom.js';
@@ -9,7 +9,7 @@ import { openBudgetSheet } from './budget-sheet.js';
 import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
 import {
-  today, monthKey, gbp, gbpRounded, formatDay, formatDayShort, formatMonth, overview, shiftPeriod, termNow, termLabel, inTermSpan, clampTerm, yearTerms, daysBetween,
+  today, monthKey, gbp, formatDay, formatDayShort, overview, shiftPeriod, termNow, termLabel, inTermSpan, clampTerm, yearTerms, daysBetween,
   forecastRow, forecastReason, budgetStatus, budgetStatusText, budgetDetail,
 } from '../engine/index.js';
 
@@ -62,7 +62,7 @@ export function renderOverview(root, { repo }) {
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Next ${unit}`, disabled: !canStep(1), onclick: () => step(1) }, icon('forward')));
     const modeChips = period.kind === 'year' && segmented({
       label: 'Kind of year',
-      options: [{ value: 'academic', label: 'Academic year' }, { value: 'calendar', label: 'Calendar year' }],
+      options: [{ value: 'academic', label: 'Academic Year' }, { value: 'calendar', label: 'Calendar Year' }],
       value: yearMode(),
       onChange: (v) => runAction(() => repo.setSetting('yearMode', v)).then(render),
     });
@@ -79,7 +79,7 @@ export function renderOverview(root, { repo }) {
       h('span', { class: `list-amount ${cls}` }, value));
     return h('ul', { class: 'list totals' },
       row(data.range.current ? 'Spent so far' : 'Spent', `${tilde}${gbp(t.spent)}`,
-        data.compare ?? (data.weekly !== null ? `About ${tilde}${gbpRounded(data.weekly)} a week` : null)),
+        data.compare ?? (data.weekly !== null ? `About ${tilde}${gbp(data.weekly)} a week` : null)),
       row('Income', `${tilde}${gbp(t.income)}`),
       row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', 'standout'));
   }
@@ -88,7 +88,7 @@ export function renderOverview(root, { repo }) {
   function forecastSection(f) {
     const r = forecastRow(f);
     return h('section', { class: 'section' },
-      h('h2', { class: 'subhead' }, 'At this pace'),
+      h('h2', { class: 'subhead' }, 'At This Pace'),
       h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
         h('span', { class: 'list-main' },
           h('span', { class: 'list-title' }, r.title),
@@ -105,9 +105,9 @@ export function renderOverview(root, { repo }) {
     const monthEndShort = formatDayShort(data.range.to);
     const content = (b) => [
       h('span', { class: 'budget-top' },
-        h('span', { class: 'list-title' }, `${gbp(b.budgetPence, { whole: true })} a month`),
+        h('span', { class: 'list-title' }, `${gbp(b.budgetPence)} a month`),
         h('span', { class: `budget-status ${b.status}` }, budgetStatusText(b))),
-      h('span', { class: 'list-sub' }, `${budgetDetail(b)}${b.status === 'heading' ? `, ${gbp(b.leftPence, { whole: true })} left` : b.forecastPence > b.spentPence + b.costsDue ? `, about ${gbpRounded(b.forecastPence)} by ${monthEndShort}` : ''}`),
+      h('span', { class: 'list-sub' }, `${budgetDetail(b)}${b.status === 'heading' ? `, ${gbp(b.leftPence)} left` : b.forecastPence > b.spentPence + b.costsDue ? `, about ${gbp(b.forecastPence)} by ${monthEndShort}` : ''}`),
       budgetBar(b),
     ];
     return h('section', { class: 'section' },
@@ -131,7 +131,7 @@ export function renderOverview(root, { repo }) {
         h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
           h('span', { class: 'list-main' },
             h('span', { class: 'list-title' }, trip.end < todayDate ? 'Spent' : 'Spent so far'),
-            count > 0 && days > 0 && h('span', { class: 'list-sub' }, `About ${tilde}${gbpRounded(pence / days)} a day`)),
+            count > 0 && days > 0 && h('span', { class: 'list-sub' }, `About ${tilde}${gbp(pence / days)} a day`)),
           h('span', { class: 'list-amount' }, `${tilde}${gbp(pence)}`))),
         rows.length > 0
           ? categoryTable(rows, { caption: `Spending by category, ${trip.name}` })
@@ -150,7 +150,7 @@ export function renderOverview(root, { repo }) {
           h('span', { class: 'list-main' },
             h('span', { class: 'list-title' }, t.trip.name),
             h('span', { class: 'list-sub' }, `${dateSpan(t.trip.start, t.trip.end)}, ${t.count ? countPhrase(t.count) : 'nothing yet'}`),
-            t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence, { whole: true })}`).join(', '))),
+            t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence)}`).join(', '))),
           h('span', { class: 'list-amount' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
         : h('p', { class: 'empty-line' }, 'No trips yet.'),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
@@ -164,7 +164,7 @@ export function renderOverview(root, { repo }) {
     renderFilters(data);
     if (!data) {
       fill(el.body, h('section', { class: 'empty' },
-        h('h2', {}, `No dates for ${termLabel(period)} yet`),
+        h('h2', {}, `No Dates for ${termLabel(period)} Yet`),
         h('p', {}, 'Add them in Settings.'),
         h('a', { class: 'button primary', href: '#settings' }, 'Add term dates')));
       return;
@@ -188,17 +188,17 @@ export function renderOverview(root, { repo }) {
       data.forecast && forecastSection(data.forecast),
       budgetSection(data, budget),
       h('section', { class: 'section' },
-        h('h2', { class: 'subhead' }, 'Spending by category'),
+        h('h2', { class: 'subhead' }, 'Spending by Category'),
         data.rows.length
           ? [categoryTable(budget ? data.rows.map((r) => ({ ...r, share: r.pence / budget.budgetPence })) : data.rows, { caption: `Spending by category, ${data.range.label}` }),
-            budget && h('p', { class: 'reason' }, `Shares are of your ${gbp(budget.budgetPence, { whole: true })} budget.`)]
-          : h('p', { class: 'empty-line' }, `Nothing spent in ${data.range.label.replace(/ so far$/, '')} yet.`)),
+            budget && h('p', { class: 'reason' }, `Shares are of your ${gbp(budget.budgetPence)} budget.`)]
+          : h('p', { class: 'empty-line' }, `Nothing spent in ${data.range.label} yet.`)),
       h('section', { class: 'section' },
-        h('h2', { class: 'subhead' }, 'Income and spending'),
+        h('h2', { class: 'subhead' }, 'Income and Spending'),
         data.series.some((m) => m.income || m.spent)
-          ? [h('p', { class: 'reason' }, `The six months to ${formatMonth(data.series.at(-1).month)}.`),
-            incomeSpendingChart(data.series, { width })]
-          : h('p', { class: 'empty-line' }, 'Nothing logged in the last six months yet.')),
+          ? [h('p', { class: 'reason' }, period.kind === 'year' ? 'Month by month.' : 'Week by week.'),
+            incomeSpendingChart(data.series, { width, name: data.range.label, step: period.kind === 'year' ? 'Month' : 'Week' })]
+          : h('p', { class: 'empty-line' }, `Nothing logged in ${data.range.label} yet.`)),
       tripsSection(data));
   }
 

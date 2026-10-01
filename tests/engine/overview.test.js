@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodRange, shiftPeriod, overview, changeVsPrevious, niceScale, perWeek } from '../../src/engine/overview.js';
+import { periodRange, periodSeries, shiftPeriod, overview, changeVsPrevious, niceScale, perWeek } from '../../src/engine/overview.js';
 import { CATEGORIES, spend, income } from './fixtures.js';
 
 const TODAY = '2026-10-15';
@@ -13,24 +13,24 @@ const MICHAELMAS = { kind: 'term', year: 2026, name: 'Michaelmas' };
 
 test('periods: a month is the whole calendar month', () => {
   assert.deepEqual(periodRange({ kind: 'month', month: '2026-10' }, { todayDate: TODAY }),
-    { kind: 'month', from: '2026-10-01', to: '2026-10-31', label: 'October 2026', current: true });
+    { kind: 'month', from: '2026-10-01', to: '2026-10-31', end: '2026-10-31', label: 'October 2026', current: true });
   assert.equal(periodRange({ kind: 'month', month: '2026-09' }, { todayDate: TODAY }).current, false);
 });
 
-test('periods: this year runs to the end of this month and says so; past years are whole', () => {
+test('periods: this year runs to the end of this month; past years are whole', () => {
   // To the end of the month, not today, so the allowance counts this month's full share, as in the month view.
   assert.deepEqual(periodRange({ kind: 'year', date: TODAY }, { todayDate: TODAY, yearMode: 'academic' }),
-    { kind: 'year', from: '2026-10-01', to: '2026-10-31', label: '2026–27 so far', current: true });
+    { kind: 'year', from: '2026-10-01', to: '2026-10-31', end: '2027-09-30', label: '2026–27', current: true });
   assert.deepEqual(periodRange({ kind: 'year', date: '2025-10-15' }, { todayDate: TODAY, yearMode: 'academic' }),
-    { kind: 'year', from: '2025-10-01', to: '2026-09-30', label: '2025–26', current: false });
-  assert.equal(periodRange({ kind: 'year', date: TODAY }, { todayDate: TODAY, yearMode: 'calendar' }).label, '2026 so far');
+    { kind: 'year', from: '2025-10-01', to: '2026-09-30', end: '2026-09-30', label: '2025–26', current: false });
+  assert.equal(periodRange({ kind: 'year', date: TODAY }, { todayDate: TODAY, yearMode: 'calendar' }).label, '2026');
 });
 
 test('periods: a term uses its year\'s dates, and a term with blank dates has none', () => {
   assert.deepEqual(periodRange(MICHAELMAS, { todayDate: TODAY, terms }),
-    { kind: 'term', from: '2026-10-06', to: '2026-10-31', label: 'Michaelmas Term 2026 so far', current: true });
+    { kind: 'term', from: '2026-10-06', to: '2026-10-31', end: '2026-12-04', label: 'Michaelmas Term 2026', current: true });
   assert.deepEqual(periodRange({ ...MICHAELMAS, year: 2025 }, { todayDate: TODAY, terms }),
-    { kind: 'term', from: '2025-10-07', to: '2025-12-05', label: 'Michaelmas Term 2025', current: false });
+    { kind: 'term', from: '2025-10-07', to: '2025-12-05', end: '2025-12-05', label: 'Michaelmas Term 2025', current: false });
   const endsSoon = [{ id: 'michaelmas-2026', name: 'Michaelmas', year: 2026, start: '2026-10-06', end: '2026-10-20' }];
   assert.equal(periodRange(MICHAELMAS, { todayDate: TODAY, terms: endsSoon }).to, '2026-10-20');
   assert.equal(periodRange({ kind: 'term', year: 2026, name: 'Easter' }, { todayDate: TODAY, terms }).label, 'Easter Term 2027');
@@ -63,12 +63,13 @@ const entries = [
 ];
 const base = { entries, categories: CATEGORIES, trips: [trip], todayDate: TODAY, yearMode: 'academic', terms };
 
-test('overview: a month\'s totals, categories, comparison and six months of history', () => {
+test('overview: a month\'s totals, categories, comparison and its weeks', () => {
   const o = overview({ ...base, period: { kind: 'month', month: '2026-10' } });
   assert.deepEqual([o.totals.spent, o.totals.income, o.totals.net], [11000, 50000, 39000]);
   assert.deepEqual(o.rows.map((r) => r.categoryId), ['travel', 'groceries']);
   assert.equal(o.compare, '10% more than by this point in September');
-  assert.deepEqual(o.series.map((s) => s.month), ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10']);
+  assert.deepEqual(o.series.map((s) => s.title), ['Week 1, 1 to 7 Oct', 'Week 2, 8 to 14 Oct', 'Week 3, 15 to 21 Oct', 'Week 4, 22 to 28 Oct', 'Week 5, 29 to 31 Oct']);
+  assert.deepEqual(o.series.map((s) => s.spent), [3000, 8000, 0, null, null]);   // today is the 15th
   assert.equal(o.trips[0].pence, 8000);
 });
 
@@ -84,16 +85,18 @@ test('overview: leaving trips out changes the totals, not the trips section', ()
   const o = overview({ ...base, period: { kind: 'month', month: '2026-10' }, excludeTrips: true });
   assert.equal(o.totals.spent, 3000);
   assert.deepEqual(o.rows.map((r) => r.categoryId), ['groceries']);
-  assert.equal(o.series.at(-1).spent, 3000);
+  assert.deepEqual(o.series.map((s) => s.spent), [3000, 0, 0, null, null]);
   assert.equal(o.trips[0].pence, 8000);
 });
 
-test('overview: a year shows history up to this month, and no month comparison', () => {
+test('overview: a year shows its months, the ones still to come empty, and no month comparison', () => {
   const o = overview({ ...base, period: { kind: 'year', date: TODAY } });
-  assert.equal(o.range.label, '2026–27 so far');
+  assert.equal(o.range.label, '2026–27');
   assert.deepEqual([o.totals.spent, o.totals.income], [11000, 50000]);
   assert.equal(o.compare, null);
-  assert.equal(o.series.at(-1).month, '2026-10');
+  assert.deepEqual(o.series.map((s) => s.label), ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']);
+  assert.deepEqual([o.series[0].spent, o.series[0].income], [11000, 50000]);
+  assert.deepEqual([o.series[1].spent, o.series[1].income], [null, null]);
 });
 
 test('overview: a term with no dates yet gives no figures', () => {
@@ -125,4 +128,23 @@ test('axis: round steps of 1, 2 or 5, at most four of them', () => {
   assert.deepEqual(niceScale(4000), { step: 1000, max: 4000, ticks: [0, 1000, 2000, 3000, 4000] });
   assert.deepEqual(niceScale(4001).ticks, [0, 2000, 4000, 6000]);
   assert.deepEqual(niceScale(0), { step: 5000, max: 10000, ticks: [0, 5000, 10000] });
+});
+
+test('series: a term goes week by week from its first day, the last week cut at its end', () => {
+  const range = periodRange(MICHAELMAS, { todayDate: TODAY, terms });
+  const s = periodSeries(entries, range, { todayDate: TODAY });
+  assert.equal(s.length, 9);                                         // 6 Oct to 4 Dec
+  assert.deepEqual([s[0].label, s[0].title], ['1', 'Week 1, 6 to 12 Oct']);
+  assert.deepEqual([s[8].from, s[8].to, s[8].title], ['2026-12-01', '2026-12-04', 'Week 9, 1 to 4 Dec']);
+  assert.deepEqual(s.map((w) => w.spent), [8000, 0, null, null, null, null, null, null, null]);   // today is the 15th
+  const before = periodSeries(entries, range, { todayDate: '2026-10-01' });
+  assert.ok(before.every((w) => w.income === null));                // nothing has happened yet
+});
+
+test('series: spread income splits across the steps and adds up to the period\'s income', () => {
+  const allowance = income('2026-09-28', 1200000, { spreadMonths: 12, spreadStart: '2026-10' });
+  const range = periodRange({ kind: 'month', month: '2026-10' }, { todayDate: TODAY });
+  const s = periodSeries([allowance], range, { todayDate: '2026-10-31' });
+  assert.equal(s.reduce((sum, w) => sum + w.income, 0), 100000);
+  assert.equal(s[0].income, Math.floor((100000 * 7) / 31));
 });

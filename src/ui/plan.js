@@ -143,7 +143,7 @@ export function openRecurringSheet(repo, item = {}) {
     toast(`Deleted ${existing.label}`, { label: 'Undo', run: () => runAction(() => repo.restoreRow('recurring', existing.id)) });
   }
 
-  const s = sheet(existing ? existing.label : 'Add to your plan', body);
+  const s = sheet(existing ? existing.label : 'Add to Your Plan', body);
   render();
 }
 
@@ -172,14 +172,14 @@ export function renderPlan(root, { repo }) {
   function render() {
     if (!repo.connected()) {
       return fill(root, h('section', { class: 'empty' },
-        h('h2', {}, 'Connect to your backend first'),
+        h('h2', {}, 'Connect to Your Backend First'),
         h('p', {}, 'Add your backend in Settings.'),
         h('button', { type: 'button', class: 'button primary', onclick: () => { location.hash = '#settings'; } }, 'Open Settings')));
     }
     const p = planSummary(S.recurring, { rates: S.rates });
     if (!p.costs.length && !p.income.length) {
       return fill(root, h('section', { class: 'empty' },
-        h('h2', {}, 'Nothing planned yet'),
+        h('h2', {}, 'Nothing Planned Yet'),
         h('p', {}, 'Each item is logged for you on its date.'),
         h('button', { type: 'button', class: 'button primary', onclick: () => openRecurringSheet(repo, { kind: 'spend' }) }, 'Add a recurring cost'),
         h('button', { type: 'button', class: 'button secondary', onclick: () => openRecurringSheet(repo, { kind: 'income' }) }, 'Add recurring income')));
@@ -188,8 +188,8 @@ export function renderPlan(root, { repo }) {
     fill(root, h('div', { class: 'screen' },
       h('section', { class: 'plan-summary', 'aria-label': 'Each month' },
         h('ul', { class: 'list totals' },
-          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyIncome, { whole: true })}`)),
-          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyCosts, { whole: true })}`))),
+          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyIncome)}`)),
+          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyCosts)}`))),
         h('p', { class: 'reason' }, 'In an average month.')),
       section('Costs', p.costs, 'No recurring costs.', 'Add a recurring cost', 'spend'),
       section('Income', p.income, 'No recurring income.', 'Add recurring income', 'income')));

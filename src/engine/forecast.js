@@ -8,7 +8,7 @@
 import { addDays, daysBetween, monthKey, monthStart, monthEnd, parse, formatMonth } from './dates.js';
 import { monthHeadline } from './headline.js';
 import { isLive } from './totals.js';
-import { gbp, gbpRounded } from './money.js';
+import { gbp } from './money.js';
 
 export const BLEND_DAYS = 7;          // days 1–7 blend this month with the 8 weeks before it
 export const HISTORY_DAYS = 56;       // the 8 weeks before the month
@@ -112,13 +112,13 @@ export function monthForecast({ entries, trips = [], recurring = [], rates = [],
   };
 }
 
-/** "At this pace: £1,240 by 31 October, £40 more than you have." */
+/** "At this pace: £1,240.00 by 31 October, £40.00 more than you have." */
 export function forecastLine(f) {
   const tilde = f.estimated ? '~' : '';
   const [, , d] = parse(f.end);
-  const by = `${tilde}${gbpRounded(f.forecast)} by ${d} ${formatMonth(f.month).split(' ')[0]}`;
-  if (f.spare < 0) return `At this pace: ${by}, ${tilde}${gbpRounded(-f.spare)} more than you have.`;
-  return `At this pace: ${by}, ${tilde}${gbpRounded(f.spare)} to spare.`;
+  const by = `${tilde}${gbp(f.forecast)} by ${d} ${formatMonth(f.month).split(' ')[0]}`;
+  if (f.spare < 0) return `At this pace: ${by}, ${tilde}${gbp(-f.spare)} more than you have.`;
+  return `At this pace: ${by}, ${tilde}${gbp(f.spare)} to spare.`;
 }
 
 /**
@@ -130,16 +130,16 @@ export function forecastRow(f) {
   const [, , d] = parse(f.end);
   return {
     title: `Spending by ${d} ${formatMonth(f.month).split(' ')[0].slice(0, 3)}`,
-    amount: `${tilde}${gbpRounded(f.forecast)}`,
-    spare: f.spare < 0 ? `${tilde}${gbpRounded(-f.spare)} more than you have` : `${tilde}${gbpRounded(f.spare)} to spare`,
+    amount: `${tilde}${gbp(f.forecast)}`,
+    spare: f.spare < 0 ? `${tilde}${gbp(-f.spare)} more than you have` : `${tilde}${gbp(f.spare)} to spare`,
     over: f.spare < 0,
   };
 }
 
 /** How the forecast is counted, next to it. */
 export function forecastReason(f) {
-  const parts = [`${gbpRounded(f.spent)} spent`];
-  if (f.costsDue) parts.push(`${gbpRounded(f.costsDue)} of recurring costs still due`);
+  const parts = [`${gbp(f.spent)} spent`];
+  if (f.costsDue) parts.push(`${gbp(f.costsDue)} of recurring costs still due`);
   if (!f.daysAfter) return `Counts ${parts.join(' and ')}. Today is the last day of the month.`;
   const days = f.daysAfter === 1 ? 'the 1 day left' : `the ${f.daysAfter} days left`;
   parts.push(`about ${gbp(f.dailyPence)} a day for ${days}`);

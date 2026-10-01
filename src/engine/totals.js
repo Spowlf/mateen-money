@@ -2,7 +2,7 @@
 // { excludeTrips } leaves out spending on a trip (Overview toggle only): a Set of the live trips'
 // ids, so a payment still pointing at a deleted trip counts, or true for any trip.
 
-import { addMonthsKey, monthStart, monthEnd } from './dates.js';
+import { monthStart, monthEnd } from './dates.js';
 import { amountInRange } from './allowance.js';
 
 export const isLive = (row) => !row.deletedAt;
@@ -53,7 +53,7 @@ export function categoryRows(entries, categories, { from, to, excludeTrips = fal
   return [...byId.values()]
     .map((r) => ({
       ...r,
-      name: r.categoryId === null ? 'To sort' : names.get(r.categoryId)?.name ?? 'Removed category',
+      name: r.categoryId === null ? 'To Sort' : names.get(r.categoryId)?.name ?? 'Removed category',
       share: total ? r.pence / total : 0,
     }))
     .sort((a, b) => b.pence - a.pence || order(a.categoryId) - order(b.categoryId));
@@ -133,15 +133,3 @@ export function tripTotals(entries, trips, categories) {
 export function change(current, previous) {
   return { delta: current - previous, pct: previous ? Math.round(((current - previous) / previous) * 100) : null };
 }
-
-/** Spending and income per month for the n months ending at key (oldest first). */
-export function monthlySeries(entries, key, n, options = {}) {
-  const out = [];
-  for (let i = n - 1; i >= 0; i--) {
-    const k = addMonthsKey(key, -i);
-    const t = periodTotals(entries, { ...monthRange(k), ...options });
-    out.push({ month: k, spent: t.spent, income: t.income });
-  }
-  return out;
-}
-

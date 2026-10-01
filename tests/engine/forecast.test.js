@@ -141,16 +141,16 @@ test('forecast: spent + still due + pace × days after today', () => {
   assert.equal(f.dailyPence, 3000);
   assert.equal(f.forecast, 30000 + 1500 + 3000 * 21);
   assert.equal(f.spare, 100000 - f.forecast);
-  assert.equal(forecastLine(f), 'At this pace: £945 by 31 October, £55 to spare.');
-  assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£945', spare: '£55 to spare', over: false });
-  assert.equal(forecastReason(f), 'Counts £300 spent, £15 of recurring costs still due and about £30.00 a day for the 21 days left.');
+  assert.equal(forecastLine(f), 'At this pace: £945.00 by 31 October, £55.00 to spare.');
+  assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 to spare', over: false });
+  assert.equal(forecastReason(f), 'Counts £300.00 spent, £15.00 of recurring costs still due and about £30.00 a day for the 21 days left.');
 });
 
 test('forecast: more than you have', () => {
   const f = monthForecast({ entries: [income('2026-10-01', 40000), spend('2026-10-05', 30000)], todayDate: '2026-10-10' });
   assert.equal(f.forecast, 30000 + 3000 * 21);
-  assert.equal(forecastLine(f), 'At this pace: £930 by 31 October, £530 more than you have.');
-  assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£930', spare: '£530 more than you have', over: true });
+  assert.equal(forecastLine(f), 'At this pace: £930.00 by 31 October, £530.00 more than you have.');
+  assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£930.00', spare: '£530.00 more than you have', over: true });
 });
 
 test('forecast: trips count in spent so far but not in the pace when left out', () => {
@@ -167,7 +167,7 @@ test('forecast: the last day adds no pace', () => {
   const f = monthForecast({ entries: [income('2026-10-01', 50000), spend('2026-10-05', 31000)], todayDate: '2026-10-31' });
   assert.equal(f.daysAfter, 0);
   assert.equal(f.forecast, 31000);
-  assert.equal(forecastReason(f), 'Counts £310 spent. Today is the last day of the month.');
+  assert.equal(forecastReason(f), 'Counts £310.00 spent. Today is the last day of the month.');
 });
 
 test('forecast: the first week blends the pace without explaining it', () => {

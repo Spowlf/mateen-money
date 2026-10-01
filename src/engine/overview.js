@@ -1,20 +1,20 @@
 // The Overview's figures for a month, a year or a term.
 
-import { addMonthsKey, monthKey, monthEnd, formatMonth, addMonths, daysBetween } from './dates.js';
-import { periodTotals, categoryRows, yearRange, monthRange, tripTotals, change, monthlySeries, isLive } from './totals.js';
+import { addMonthsKey, addDays, monthKey, monthEnd, formatMonth, formatDayShort, addMonths, daysBetween } from './dates.js';
+import { periodTotals, categoryRows, yearRange, monthRange, tripTotals, change, isLive } from './totals.js';
 import { yearTerms, termLabel, shiftTerm } from './terms.js';
 import { monthForecast } from './forecast.js';
-
-const MONTHS_OF_HISTORY = 6;
 
 /**
  * The dates a period covers. period is { kind: 'month', month: 'YYYY-MM' },
  * { kind: 'year', date } or { kind: 'term', year, name } (year as in terms.js).
- * Returns { kind, from, to, label, current }, or null for a term without dates.
+ * Returns { kind, from, to, end, label, current }, or null for a term without dates:
+ * to is where the figures stop (see below), end is the period's last day.
  */
 export function periodRange(period, { todayDate, yearMode = 'calendar', terms = [] }) {
   if (period.kind === 'month') {
-    return { kind: 'month', ...monthRange(period.month), label: formatMonth(period.month), current: period.month === monthKey(todayDate) };
+    const { from, to } = monthRange(period.month);
+    return { kind: 'month', from, to, end: to, label: formatMonth(period.month), current: period.month === monthKey(todayDate) };
   }
   let from;
   let to;
@@ -32,7 +32,7 @@ export function periodRange(period, { todayDate, yearMode = 'calendar', terms = 
   const current = todayDate >= from && todayDate <= to;
   const thisMonthEnd = monthEnd(monthKey(todayDate));
   const end = current && thisMonthEnd < to ? thisMonthEnd : to;
-  return { kind: period.kind, from, to: end, label: current ? `${label} so far` : label, current };
+  return { kind: period.kind, from, to: end, end: to, label, current };
 }
 
 /** The period n months, years or terms away. */
@@ -60,6 +60,46 @@ export function changeVsPrevious(current, previous, previousKey, currentKey, { s
   return `${Math.abs(pct)}% ${pct > 0 ? 'more' : 'less'} than ${label}`;
 }
 
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "6 to 12 Oct", "29 Sep to 5 Oct" */
+function daySpan(from, to) {
+  const [a, b] = [formatDayShort(from), formatDayShort(to)];
+  return a.split(' ')[1] === b.split(' ')[1] ? `${a.split(' ')[0]} to ${b}` : `${a} to ${b}`;
+}
+
+/**
+ * The period's income and spending in steps: a month and a term week by week (numbered; a month's
+ * weeks start on the 1st, 8th, 15th, 22nd and 29th, a term's on its first day), a year month by month.
+ * Steps that start after today (or after range.to) haven't happened, so they're null. Spread income is counted up to the end
+ * of each step and differenced, so the steps add up to the period's income exactly.
+ * Returns [{ from, to, label, title, income, spent }], oldest first.
+ */
+export function periodSeries(entries, range, { todayDate, excludeTrips = false }) {
+  const steps = [];
+  if (range.kind === 'year') {
+    for (let k = monthKey(range.from); monthRange(k).from <= range.end; k = addMonthsKey(k, 1)) {
+      steps.push({ ...monthRange(k), label: MONTH_SHORT[Number(k.slice(5)) - 1], title: formatMonth(k) });
+    }
+  } else {
+    for (let from = range.from, i = 1; from <= range.end; from = addDays(from, 7), i++) {
+      const to = addDays(from, 6) < range.end ? addDays(from, 6) : range.end;
+      steps.push({ from, to, label: String(i), title: `Week ${i}, ${daySpan(from, to)}` });
+      if (to === range.end) break;
+    }
+  }
+  let incomeBefore = 0;
+  return steps.map((step) => {
+    if (step.from > range.to || step.from > todayDate) return { ...step, income: null, spent: null };
+    const to = step.to < range.to ? step.to : range.to;
+    const income = periodTotals(entries, { from: range.from, to, excludeTrips }).income;
+    const spent = periodTotals(entries, { from: step.from, to, excludeTrips }).spent;
+    const out = { ...step, income: income - incomeBefore, spent };
+    incomeBefore = income;
+    return out;
+  });
+}
+
 /** Everything the Overview shows for a period, or null if the period has no dates. */
 export function overview({ entries, categories, trips = [], recurring = [], rates = [], period, todayDate, yearMode, terms, excludeTrips = false }) {
   const range = periodRange(period, { todayDate, yearMode, terms });
@@ -74,15 +114,13 @@ export function overview({ entries, categories, trips = [], recurring = [], rate
     const prevRange = range.current ? { from: monthRange(prev).from, to: addMonths(todayDate, -1) } : monthRange(prev);
     compare = changeVsPrevious(totals.spent, periodTotals(entries, { ...prevRange, excludeTrips: options.excludeTrips }).spent, prev, period.month, { soFar: range.current });
   }
-  const thisMonth = monthKey(todayDate);
-  const lastMonth = monthKey(range.to) < thisMonth ? monthKey(range.to) : thisMonth;
   return {
     range,
     totals,
     rows: categoryRows(entries, categories, options),
     compare,
     weekly: period.kind === 'term' && range.from <= todayDate ? perWeek(totals.spent, range.from, range.to, todayDate) : null,
-    series: monthlySeries(entries, lastMonth, MONTHS_OF_HISTORY, { excludeTrips: options.excludeTrips }),
+    series: periodSeries(entries, range, { todayDate, excludeTrips: options.excludeTrips }),
     trips: tripTotals(entries, trips, categories),
     // The month in progress only: where spending ends up at this pace.
     forecast: period.kind === 'month' && range.current

@@ -59,7 +59,7 @@ export function entriesCsv({ entries, vendors = [], categories = [], methods = [
       e.time ?? '',
       income ? 'Income' : 'Spending',
       name(vendors, e.vendorId) || e.merchant || '',
-      income ? INCOME_TYPES.find((t) => t.id === e.incomeType)?.name ?? '' : name(categories, e.categoryId) || 'To sort',
+      income ? INCOME_TYPES.find((t) => t.id === e.incomeType)?.name ?? '' : name(categories, e.categoryId) || 'To Sort',
       toDecimalText(e.amountMinor, e.currency),
       e.currency,
       e.gbpPence == null ? '' : toDecimalText(e.gbpPence, 'GBP'),

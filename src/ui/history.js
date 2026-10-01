@@ -105,7 +105,7 @@ export function renderHistory(root, { repo }) {
     return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => (waiting ? openSortSheet(repo, e) : openEntrySheet(repo, e)) },
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, title,
-          waiting && h('span', { class: 'tag tag-warn' }, 'To sort'),
+          waiting && h('span', { class: 'tag tag-warn' }, 'To Sort'),
           e.source === 'recurring' && h('span', { class: 'tag' }, 'Added automatically'),
           e.gbpStatus === 'statement' && h('span', { class: 'tag' }, 'From statement')),
         sub && h('span', { class: 'list-sub' }, sub),
@@ -118,7 +118,7 @@ export function renderHistory(root, { repo }) {
     const kind = income ? 'income' : 'spend';
     if (!S.entries.some((e) => !e.deletedAt && e.kind === kind)) {
       return fill(el.body, h('section', { class: 'empty' },
-        h('h2', {}, income ? 'No income yet' : 'No payments yet'),
+        h('h2', {}, income ? 'No Income Yet' : 'No Payments Yet'),
         h('a', { class: 'button primary', href: '#log' }, income ? 'Log income' : 'Log a payment')));
     }
     const found = searchEntries(S.entries, filters(), { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
@@ -162,7 +162,7 @@ export function renderHistory(root, { repo }) {
       || S.aliases.some((a) => !a.deletedAt && a.vendorId === v.id && a.alias.toLowerCase().includes(q)));
     if (!S.vendors.some((v) => !v.deletedAt)) {
       return fill(el.body, h('section', { class: 'empty' },
-        h('h2', {}, 'No merchants yet')));
+        h('h2', {}, 'No Merchants Yet')));
     }
     if (!vendors.length) return fill(el.body, h('p', { class: 'empty-line' }, 'No merchant has that name.'));
     fill(el.body, h('ul', { class: 'list' }, vendors.map((v) => h('li', {},

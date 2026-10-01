@@ -21,7 +21,7 @@ export function openBudgetSheet(repo) {
   function renderSave() {
     const pence = budgetPence(f.amount);
     save.disabled = !pence;
-    save.textContent = pence ? `${current ? 'Save' : 'Set'} ${gbp(pence, { whole: true })} a month` : 'Enter an amount';
+    save.textContent = pence ? `${current ? 'Save' : 'Set'} ${gbp(pence)} a month` : 'Enter an amount';
     remove.hidden = !current;
   }
 
