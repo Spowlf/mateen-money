@@ -67,22 +67,32 @@ function openCategorySheet(repo, category) {
   name.focus();
 }
 
-function categoriesSection(repo) {
+// The category list starts folded to its first few, so the rest of Settings isn't far down.
+const CATEGORIES_SHOWN = 5;
+
+function categoriesSection(repo, view) {
   const S = repo.state;
   const live = liveSorted(S.categories).filter((c) => !c.archived);
   const archived = liveSorted(S.categories).filter((c) => c.archived);
+  const shown = view.showAll ? live : live.slice(0, CATEGORIES_SHOWN);
   const move = async (id, dir) => {
+    // Moving one past the fold opens the list, so it doesn't vanish.
+    if (live.findIndex((c) => c.id === id) + dir >= CATEGORIES_SHOWN) view.showAll = true;
     for (const row of moveCategory(S.categories, id, dir)) {
       if (!(await runAction(() => repo.saveRow('categories', row.id, { sort: row.sort })))) return;
     }
   };
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Categories'),
-    h('ul', { class: 'list' }, live.map((c, i) => h('li', { class: 'reorder-row' },
+    h('ul', { class: 'list' }, shown.map((c, i) => h('li', { class: 'reorder-row' },
       h('button', { type: 'button', class: 'list-row', onclick: () => openCategorySheet(repo, c) },
         h('span', { class: 'list-title' }, c.name)),
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Move ${c.name} up`, disabled: i === 0, onclick: () => move(c.id, -1) }, icon('up')),
       h('button', { type: 'button', class: 'icon-button', 'aria-label': `Move ${c.name} down`, disabled: i === live.length - 1, onclick: () => move(c.id, 1) }, icon('down'))))),
+    live.length > CATEGORIES_SHOWN && h('div', {}, h('button', {
+      type: 'button', class: 'text-button', 'aria-expanded': String(view.showAll),
+      onclick: () => { view.showAll = !view.showAll; view.render(); },
+    }, view.showAll ? 'Show fewer' : `Show ${live.length - CATEGORIES_SHOWN} more`)),
     h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openCategorySheet(repo, null) }, 'Add a Category')),
     archived.length > 0 && h('details', { class: 'table-view' },
       h('summary', {}, `Removed categories, ${archived.length}`),
@@ -464,6 +474,7 @@ function backendSection(repo, onConnected) {
 }
 
 export function renderSettings(root, { repo, onConnected }) {
+  const categoryView = { showAll: false, render: () => render() };
   function render() {
     const active = document.activeElement;
     // Don't redraw under someone typing a date or the token.
@@ -475,7 +486,7 @@ export function renderSettings(root, { repo, onConnected }) {
         appSection()));
     }
     fill(root, h('div', { class: 'screen settings' },
-      categoriesSection(repo),
+      categoriesSection(repo, categoryView),
       budgetSection(repo),
       methodsSection(repo),
       tripsSection(repo),
