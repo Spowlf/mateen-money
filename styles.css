@@ -113,6 +113,18 @@ body::before {
   content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 40;
   height: env(safe-area-inset-top); background: var(--status-bar); pointer-events: none;
 }
+/* Pull to refresh: a pill under the status bar that follows the finger. Words, not a spinner (no
+   looping motion); the arrow turns once when letting go would refresh. */
+.pull {
+  position: fixed; z-index: 45; top: calc(env(safe-area-inset-top) + var(--s2)); left: 50%;
+  display: inline-flex; align-items: center; gap: var(--s2); min-height: 40px; padding: 0 var(--s4);
+  border-radius: 999px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-float);
+  font-size: var(--t-s); font-weight: 600; white-space: nowrap; pointer-events: none;
+  transform: translate(-50%, 0); opacity: 0;
+}
+.pull.leaving { transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out); }
+.pull-arrow { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.15s var(--ease-out); }
+.pull.ready .pull-arrow { transform: rotate(180deg); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Shell */

@@ -11,6 +11,7 @@ import { renderAccounts } from './ui/accounts.js';
 import { renderIbkr } from './ui/ibkr.js';
 import { renderSettings } from './ui/settings.js';
 import { toast } from './ui/dom.js';
+import { pullToRefresh } from './ui/pull.js';
 import { toSortEntries, syncedPhrase } from './engine/index.js';
 import { OfflineError, ApiError } from './errors.js';
 
@@ -106,6 +107,13 @@ async function boot() {
   });
   show();
   renderStatus();
+  // Pulling down from the top: sync now, and fetch prices (the Worker asks at most once a minute).
+  pullToRefresh(document.getElementById('scroller'), async () => {
+    if (!repo.connected()) { toast('Add your backend in Settings to sync.'); return; }
+    if (!navigator.onLine) { toast('You’re offline. This is what was last synced.'); return; }
+    await sync({ quiet: false });
+    await repo.refreshPrices().catch(() => {});
+  });
   navigator.storage?.persist?.().catch(() => {});
   sync();
 }
