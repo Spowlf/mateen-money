@@ -54,6 +54,9 @@
   --r-panel: 22px;
   --touch: 48px;
   --tabbar: 64px;
+  /* Below the tab bar: the home indicator's safe area less 14px. The full 34pt left a gap under
+     the labels; 20pt still keeps them clear of the indicator. 0 on phones without one. */
+  --tabbar-inset: max(calc(env(safe-area-inset-bottom) - 14px), 0px);
   /* Motion only explains a change of state, with no overshoot. */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   color-scheme: light;
@@ -155,7 +158,7 @@ main {
   flex: none; position: relative; z-index: 10;
   /* Five tabs: each as wide as its label, the spare space shared between them so no two labels touch. */
   display: grid; grid-template-columns: repeat(5, auto); justify-content: space-evenly;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--tabbar-inset);
   background: var(--paper);
   border-top: 1px solid var(--line);
 }
@@ -593,7 +596,7 @@ a.button { text-decoration: none; }
 
 #toast {
   position: fixed; left: var(--s4); right: var(--s4); z-index: 20;
-  bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + var(--s3));
+  bottom: calc(var(--tabbar) + var(--tabbar-inset) + var(--s3));
   max-width: 528px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
   padding: var(--s3) var(--s4); border-radius: 14px;
