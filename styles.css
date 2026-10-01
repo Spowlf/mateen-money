@@ -272,6 +272,8 @@ main {
 .data-table th, .data-table td { padding: var(--s2) 0; border-top: 1px solid var(--line); text-align: left; }
 .data-table thead th { border-top: 0; color: var(--ink-2); font-weight: 600; }
 .data-table td, .data-table thead th + th { text-align: right; }
+/* Amounts never wrap and keep a gap from the column before, so neighbouring figures can't run together. */
+.data-table td, .data-table thead th + th { padding-left: var(--s3); white-space: nowrap; }
 
 /* History, Plan, Settings */
 
