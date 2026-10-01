@@ -33,9 +33,9 @@ test('settings: term dates are checked before they are kept', async () => {
   assert.equal((await w.call('PUT', '/settings/terms', { body: { value: TERMS } })).status, 200);
   const overlap = [...TERMS, { id: 'lent-2026', name: 'Lent', year: 2026, start: '2026-12-01', end: '2027-03-01' }];
   const res = await w.call('PUT', '/settings/terms', { body: { value: overlap } });
-  assert.equal(res.body.error, 'Nothing changed: start Lent term after Michaelmas term ends on 4 Dec 2026.');
+  assert.equal(res.body.error, 'Nothing changed: start Lent Term after Michaelmas Term ends on 4 Dec 2026.');
   const twice = [...TERMS, { ...TERMS[1], id: 'michaelmas-2026b', start: '2027-10-05', end: '2027-12-03' }];
-  assert.equal((await w.call('PUT', '/settings/terms', { body: { value: twice } })).body.error, 'Nothing changed: enter Michaelmas term 2026 once.');
+  assert.equal((await w.call('PUT', '/settings/terms', { body: { value: twice } })).body.error, 'Nothing changed: enter Michaelmas Term 2026 once.');
   assert.equal((await w.call('PUT', '/settings/yearMode', { body: { value: 'fiscal' } })).status, 400);
   assert.deepEqual(JSON.parse(w.rows('settings', "id = 'terms'")[0].value), TERMS);
 });

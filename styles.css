@@ -72,7 +72,7 @@
   }
 }
 
-/* Base */
+/* Base. Hover styles sit in @media (hover: hover), so on a phone a tapped control never stays highlighted. */
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
@@ -122,7 +122,7 @@ main {
   font-size: var(--t-s); font-weight: 600; line-height: 1.2; white-space: nowrap;
 }
 .tabs svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.tabs a:hover { color: var(--ink); }
+@media (hover: hover) { .tabs a:hover { color: var(--ink); } }
 .tabs a:active { color: var(--accent-press); background: var(--accent-soft); }
 .tabs a[aria-current="page"] { color: var(--accent); }
 .tabs a:focus-visible { outline-offset: -3px; }
@@ -153,7 +153,7 @@ main {
 .budget-status.heading { color: var(--warn); }
 .list-row.budget-row { display: grid; gap: var(--s1); align-items: stretch; justify-content: stretch; }
 .budget-row.static { cursor: default; }
-.budget-row.static:hover { background: transparent; }
+@media (hover: hover) { .budget-row.static:hover { background: transparent; } }
 .budget-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
 .budget-row .cat-bar { margin-top: var(--s1); }
 .budget-note { margin-top: calc(-1 * var(--s2)); }
@@ -181,7 +181,7 @@ main {
   width: 100%; min-height: 60px; padding: var(--s3) var(--s4);
   border: 0; background: transparent; text-align: left; cursor: pointer;
 }
-.list-row:hover { background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft)); }
+@media (hover: hover) { .list-row:hover { background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft)); } }
 .list-row:active { background: var(--accent-soft); }
 .list-row:focus-visible { outline-offset: -3px; }
 .list-main { display: grid; min-width: 0; }
@@ -266,7 +266,8 @@ main {
   border-radius: 10px; color: var(--accent); font-weight: 700; cursor: pointer; list-style: none;
 }
 .table-view summary::-webkit-details-marker { display: none; }
-.table-view summary:hover, .table-view summary:active { background: var(--accent-soft); color: var(--accent-press); }
+.table-view summary:active { background: var(--accent-soft); color: var(--accent-press); }
+@media (hover: hover) { .table-view summary:hover { background: var(--accent-soft); color: var(--accent-press); } }
 .data-table { width: 100%; border-collapse: collapse; font-size: var(--t-s); }
 .data-table th, .data-table td { padding: var(--s2) 0; border-top: 1px solid var(--line); text-align: left; }
 .data-table thead th { border-top: 0; color: var(--ink-2); font-weight: 600; }
@@ -303,7 +304,7 @@ main {
   border: 1px solid var(--line); border-radius: 999px;
   background: var(--surface); font-size: var(--t-s); font-weight: 600; cursor: pointer;
 }
-.chip:hover { border-color: var(--ink-2); }
+@media (hover: hover) { .chip:hover { border-color: var(--ink-2); } }
 .chip:active { border-color: var(--accent); background: var(--accent-soft); }
 .chip[aria-checked="true"], .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .chip:disabled { background: var(--paper); color: var(--ink-2); border-style: dashed; cursor: default; }
@@ -319,7 +320,7 @@ main {
   background: transparent; color: var(--ink); font-size: var(--t-s); font-weight: 600; cursor: pointer;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.segment:hover { background: color-mix(in srgb, var(--track) 50%, var(--surface)); }
+@media (hover: hover) { .segment:hover { background: color-mix(in srgb, var(--track) 50%, var(--surface)); } }
 .segment:active { background: var(--surface); }
 /* The chosen segment: the surface colour, outlined in --ink-2 so it stands out at 3:1 or more. */
 .segment[aria-checked="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-2); }
@@ -336,7 +337,8 @@ main {
   min-height: 40px; padding: 0 var(--s2); border: 0; border-radius: 10px; background: transparent;
   font: 700 var(--t-l) var(--font-num); color: var(--ink-2); cursor: pointer;
 }
-.pad-display .currency:hover, .pad-display .currency:active { background: var(--accent-soft); color: var(--ink); }
+.pad-display .currency:active { background: var(--accent-soft); color: var(--ink); }
+@media (hover: hover) { .pad-display .currency:hover { background: var(--accent-soft); color: var(--ink); } }
 .pad-display .num { font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
 .pad-display .num.placeholder { color: var(--ink-2); }
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
@@ -344,7 +346,7 @@ main {
   min-height: 56px; border: 0; border-radius: 16px; background: var(--surface);
   font: 700 var(--t-l) var(--font-num); cursor: pointer;
 }
-.key:hover { background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft)); }
+@media (hover: hover) { .key:hover { background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft)); } }
 .key:active { background: var(--accent-soft); color: var(--accent-press); }
 .summary { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); font-size: var(--t-s); color: var(--ink-2); }
 
@@ -358,7 +360,7 @@ main {
   border: 1px solid var(--line); border-radius: var(--r-control);
   background: var(--surface); font-size: var(--t-m);
 }
-.input:hover, .select:hover { border-color: var(--ink-2); }
+@media (hover: hover) { .input:hover, .select:hover { border-color: var(--ink-2); } }
 .input:focus-visible, .select:focus-visible { outline-offset: 0; border-color: var(--accent); }
 .select {
   appearance: none; padding-right: var(--s6);
@@ -382,29 +384,34 @@ main {
 }
 a.button { text-decoration: none; }
 .button.primary { min-height: 52px; border: 0; background: var(--accent); color: var(--on-accent); font-size: var(--t-m); }
-.button.primary:hover, .button.primary:active { background: var(--accent-press); }
+.button.primary:active { background: var(--accent-press); }
+@media (hover: hover) { .button.primary:hover { background: var(--accent-press); } }
 .button.primary:disabled { background: var(--line); color: var(--ink-2); cursor: default; }
 .button.secondary, .button.danger {
   width: fit-content; max-width: 100%; justify-self: start; justify-content: flex-start;
   min-height: 40px; padding: 0 var(--s3); margin-left: calc(-1 * var(--s3));
   border: 0; border-radius: 10px; background: transparent; color: var(--accent); text-align: left;
 }
-.button.secondary:hover, .button.secondary:active { background: var(--accent-soft); color: var(--accent-press); }
+.button.secondary:active { background: var(--accent-soft); color: var(--accent-press); }
+@media (hover: hover) { .button.secondary:hover { background: var(--accent-soft); color: var(--accent-press); } }
 .button.secondary:disabled { color: var(--ink-2); background: transparent; cursor: default; }
 .button.danger { color: var(--danger); }
-.button.danger:hover, .button.danger:active { background: var(--danger-soft); }
+.button.danger:active { background: var(--danger-soft); }
+@media (hover: hover) { .button.danger:hover { background: var(--danger-soft); } }
 .text-button {
   min-height: 40px; padding: 0 var(--s3); margin-left: calc(-1 * var(--s3));
   border: 0; border-radius: 10px; background: transparent; color: var(--accent); font-weight: 700; cursor: pointer;
 }
-.text-button:hover, .text-button:active { background: var(--accent-soft); color: var(--accent-press); }
+.text-button:active { background: var(--accent-soft); color: var(--accent-press); }
+@media (hover: hover) { .text-button:hover { background: var(--accent-soft); color: var(--accent-press); } }
 .summary .text-button { margin: 0 calc(-1 * var(--s3)) 0 0; flex: none; }
 .icon-button {
   display: inline-grid; place-items: center; flex: none;
   width: var(--touch); height: var(--touch); border: 0; border-radius: 50%;
   background: transparent; color: var(--ink-2); cursor: pointer;
 }
-.icon-button:hover, .icon-button:active { background: var(--accent-soft); color: var(--ink); }
+.icon-button:active { background: var(--accent-soft); color: var(--ink); }
+@media (hover: hover) { .icon-button:hover { background: var(--accent-soft); color: var(--ink); } }
 .icon-button:disabled { opacity: 0.35; cursor: default; background: transparent; }
 .icon-button[aria-current="page"] { color: var(--accent); }
 .icon-button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -462,14 +469,16 @@ a.button { text-decoration: none; }
   flex: none; min-height: 40px; padding: 0 var(--s3); border: 0; border-radius: 10px;
   background: transparent; color: var(--accent-soft); font-weight: 700; cursor: pointer;
 }
-.toast-action:hover, .toast-action:active { background: color-mix(in srgb, var(--ink) 80%, var(--paper)); }
+.toast-action:active { background: color-mix(in srgb, var(--ink) 80%, var(--paper)); }
+@media (hover: hover) { .toast-action:hover { background: color-mix(in srgb, var(--ink) 80%, var(--paper)); } }
 .update {
   position: fixed; top: calc(env(safe-area-inset-top) + var(--s2)); left: 50%; z-index: 30;
   min-height: 40px; padding: 0 var(--s4); border: 0; border-radius: 999px;
   background: var(--accent); color: var(--on-accent); font: 600 var(--t-s) var(--font-text);
   box-shadow: var(--shadow-float); cursor: pointer; transform: translateX(-50%);
 }
-.update:hover, .update:active { background: var(--accent-press); }
+.update:active { background: var(--accent-press); }
+@media (hover: hover) { .update:hover { background: var(--accent-press); } }
 
 /* Figures always line up. */
 .num, .list-amount, .key, .pad-display, .badge, .headline, .facts dd, .cat-table td, .data-table td, .day-total {

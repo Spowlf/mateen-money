@@ -30,11 +30,11 @@ test('terms: blank terms and properly dated terms are fine', () => {
 });
 
 test('terms: half-dated, backwards or overlapping terms say what to fix', () => {
-  assert.equal(checkTerms(terms(['2026-10-06', null])), 'give Michaelmas term both a first and a last day.');
-  assert.equal(checkTerms(terms(['2026-12-04', '2026-10-06'])), 'end Michaelmas term on or after its first day.');
+  assert.equal(checkTerms(terms(['2026-10-06', null])), 'give Michaelmas Term both a first and a last day.');
+  assert.equal(checkTerms(terms(['2026-12-04', '2026-10-06'])), 'end Michaelmas Term on or after its first day.');
   assert.equal(checkTerms(terms(['2026-10-06', '2026-12-04'], ['2026-12-04', '2027-03-19'])),
-    'start Lent term after Michaelmas term ends on 4 Dec 2026.');
-  assert.equal(checkTerms(terms(['6 Oct', '4 Dec'])), 'pick the dates for Michaelmas term.');
+    'start Lent Term after Michaelmas Term ends on 4 Dec 2026.');
+  assert.equal(checkTerms(terms(['6 Oct', '4 Dec'])), 'pick the dates for Michaelmas Term.');
   assert.equal(checkTerms('terms'), 'send the terms as a list.');
 });
 

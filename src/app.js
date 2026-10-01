@@ -11,6 +11,9 @@ import { toast } from './ui/dom.js';
 import { toSortEntries, syncedPhrase } from './engine/index.js';
 import { OfflineError, ApiError } from './errors.js';
 
+// iOS Safari only shows :active (pressed) styles once the page listens for touches.
+document.addEventListener('touchstart', () => {}, { passive: true });
+
 const SCREENS = {
   log: { title: 'Log', render: renderLog },
   overview: { title: 'Overview', render: renderOverview },

@@ -39,9 +39,9 @@ test('terms: saving one year keeps the others and drops blanks', () => {
 });
 
 test('terms: labels name the calendar year the term falls in', () => {
-  assert.equal(termLabel({ name: 'Michaelmas', year: 2026 }), 'Michaelmas term 2026');
-  assert.equal(termLabel({ name: 'Lent', year: 2026 }), 'Lent term 2027');
-  assert.equal(termLabel({ name: 'Easter', year: 2026, start: '2027-04-20' }), 'Easter term 2027');
+  assert.equal(termLabel({ name: 'Michaelmas', year: 2026 }), 'Michaelmas Term 2026');
+  assert.equal(termLabel({ name: 'Lent', year: 2026 }), 'Lent Term 2027');
+  assert.equal(termLabel({ name: 'Easter', year: 2026, start: '2027-04-20' }), 'Easter Term 2027');
 });
 
 test('terms: stepping goes term by term across years', () => {

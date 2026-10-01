@@ -28,12 +28,12 @@ test('periods: this year runs to the end of this month and says so; past years a
 
 test('periods: a term uses its year\'s dates, and a term with blank dates has none', () => {
   assert.deepEqual(periodRange(MICHAELMAS, { todayDate: TODAY, terms }),
-    { kind: 'term', from: '2026-10-06', to: '2026-10-31', label: 'Michaelmas term 2026 so far', current: true });
+    { kind: 'term', from: '2026-10-06', to: '2026-10-31', label: 'Michaelmas Term 2026 so far', current: true });
   assert.deepEqual(periodRange({ ...MICHAELMAS, year: 2025 }, { todayDate: TODAY, terms }),
-    { kind: 'term', from: '2025-10-07', to: '2025-12-05', label: 'Michaelmas term 2025', current: false });
+    { kind: 'term', from: '2025-10-07', to: '2025-12-05', label: 'Michaelmas Term 2025', current: false });
   const endsSoon = [{ id: 'michaelmas-2026', name: 'Michaelmas', year: 2026, start: '2026-10-06', end: '2026-10-20' }];
   assert.equal(periodRange(MICHAELMAS, { todayDate: TODAY, terms: endsSoon }).to, '2026-10-20');
-  assert.equal(periodRange({ kind: 'term', year: 2026, name: 'Easter' }, { todayDate: TODAY, terms }).label, 'Easter term 2027');
+  assert.equal(periodRange({ kind: 'term', year: 2026, name: 'Easter' }, { todayDate: TODAY, terms }).label, 'Easter Term 2027');
   assert.equal(periodRange({ kind: 'term', year: 2026, name: 'Lent' }, { todayDate: TODAY, terms }), null);
   assert.equal(periodRange({ kind: 'term', year: 2030, name: 'Michaelmas' }, { todayDate: TODAY, terms }), null);
 });

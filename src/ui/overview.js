@@ -183,7 +183,7 @@ export function renderOverview(root, { repo }) {
       h('section', { class: 'section', 'aria-label': 'Totals' },
         totalsCard(data),
         data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
-        term && h('p', { class: 'reason' }, `${term.name} term runs ${dateSpan(term.start, term.end)}.`),
+        term && h('p', { class: 'reason' }, `${term.name} Term runs ${dateSpan(term.start, term.end)}.`),
         excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.'),
         // Under the totals it changes, so the figures come first.
         liveTrips().length > 0 && h('label', { class: 'toggle' },

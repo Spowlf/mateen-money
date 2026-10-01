@@ -34,10 +34,10 @@ export function checkTerms(terms) {
     if (!t || typeof t.name !== 'string' || !t.name.trim() || typeof t.id !== 'string') return 'give every term a name.';
     const hasStart = t.start != null && t.start !== '';
     const hasEnd = t.end != null && t.end !== '';
-    if (hasStart !== hasEnd) return `give ${t.name} term both a first and a last day.`;
-    if (hasStart && (!DATE.test(t.start) || !DATE.test(t.end))) return `pick the dates for ${t.name} term.`;
-    if (hasStart && t.end < t.start) return `end ${t.name} term on or after its first day.`;
-    if (t.year != null && !Number.isInteger(t.year)) return `pick the year for ${t.name} term.`;
+    if (hasStart !== hasEnd) return `give ${t.name} Term both a first and a last day.`;
+    if (hasStart && (!DATE.test(t.start) || !DATE.test(t.end))) return `pick the dates for ${t.name} Term.`;
+    if (hasStart && t.end < t.start) return `end ${t.name} Term on or after its first day.`;
+    if (t.year != null && !Number.isInteger(t.year)) return `pick the year for ${t.name} Term.`;
   }
   const seen = new Map();
   for (const t of terms.filter((x) => x.start)) {
@@ -47,7 +47,7 @@ export function checkTerms(terms) {
   }
   const dated = terms.filter((t) => t.start).sort((a, b) => (a.start < b.start ? -1 : 1));
   for (let i = 1; i < dated.length; i++) {
-    if (dated[i].start <= dated[i - 1].end) return `start ${dated[i].name} term after ${dated[i - 1].name} term ends on ${formatDay(dated[i - 1].end)}.`;
+    if (dated[i].start <= dated[i - 1].end) return `start ${dated[i].name} Term after ${dated[i - 1].name} Term ends on ${formatDay(dated[i - 1].end)}.`;
   }
   return null;
 }

@@ -74,7 +74,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Short confirmation toasts start with a past-tense verb and have no period ("Saved term dates", "Deleted Pret"). Toasts with a full sentence end with one.
 - 2026-10-01: "Today" on the Worker is in the synced `timeZone` setting (default Europe/London, one-tap "Use this phone's time zone" in Settings): it adds recurring items and sets the app's review week. The weekly summary Shortcut POSTs the phone's ISO time with its offset, and that date picks the week. Payment dates still come from the phone.
 - 2026-10-01: Log asks for an optional "Description" right under the merchant (the `note` field; "Description" in the edit sheet and CSV too).
-- 2026-10-01: Category, payment method and income type names are title case by the user's choice ("Events and Societies", "Bank Transfer", "Friends / Family", "To Sort" in the History filter), an exception to sentence case.
+- 2026-10-01: Category, payment method and income type names are title case by the user's choice ("Events and Societies", "Bank Transfer", "Friends / Family", "To Sort" in the History filter), an exception to sentence case. Term names follow Cambridge style too: "Michaelmas Term 2026", "Lent Term", "Easter Term".
 - 2026-10-01: Overview has no headline card (it lives on Log only). "Left over" / "Overspent" is the stand-out row of the totals, so the big figure always matches the selected period. When the six months are all zero the chart is replaced by "Nothing logged in the last six months yet."
 - 2026-10-01: Income types are Allowance / Stipend, Existing Cash, Friends / Family, Refund and Other. "Part-time work" (`work`) was dropped; `family` was renamed. Never reuse the `work` id.
 - 2026-10-01: Income has no "Paid with": Log and the edit sheet hide it, the summary line leaves it out, and a manual income entry saves `methodId: null`. Apple Pay refunds keep their card.
@@ -86,7 +86,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: No home-screen widget, by the user's choice. A Scriptable widget can't open the home-screen app (iOS gives it no link) or handle a tap itself, and opening Safari instead was not wanted.
 - 2026-10-01: Statement import (not built yet) gets presets for the user's banks: DBS and Revolut (Singapore), HSBC (UK). It waits for the user's sample CSVs; build it all in one go then, presets included, and don't guess a bank's format without its sample.
 - 2026-10-01: The design principles below win over HANDOVER.md where they differ: no spring or press-scale motion (pressed = a stronger background), a neutral raised shadow with no top stripe, no tab bar blur, one small-print size (`--t-s`), segmented controls for view switches (Spent / Received, Cost / Income, Month / Year / Term, Academic / Calendar year, Payments / Income / Merchants), and text-style secondary buttons (danger is the same in red). The audit is in `docs/design-audit.md`.
-- 2026-10-01: 2026–27 is the user's last year at Cambridge, so only Easter 2026 to Easter 2027 are offered (`FIRST_TERM` / `LAST_TERM` in `src/engine/terms.js`). Overview's term arrows stop there, and Settings edits 2025–26 (Easter term only) and 2026–27.
+- 2026-10-01: 2026–27 is the user's last year at Cambridge, so only Easter 2026 to Easter 2027 are offered (`FIRST_TERM` / `LAST_TERM` in `src/engine/terms.js`). Overview's term arrows stop there, and Settings edits 2025–26 (Easter Term only) and 2026–27.
 
 ## Writing style
 

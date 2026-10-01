@@ -35,10 +35,10 @@ export function replaceYearTerms(terms = [], year, list) {
     .sort((a, b) => (a.start < b.start ? -1 : 1));
 }
 
-/** "Michaelmas term 2026", "Lent term 2027": the calendar year the term falls in. */
+/** "Michaelmas Term 2026", "Lent Term 2027": the calendar year the term falls in. */
 export function termLabel(term) {
   const year = term.start ? parse(term.start)[0] : term.year + (term.name === TERM_NAMES[0] ? 0 : 1);
-  return `${term.name} term ${year}`;
+  return `${term.name} Term ${year}`;
 }
 
 // The only terms the app offers: Easter 2026 (the end of 2025–26) to Easter 2027, the last
