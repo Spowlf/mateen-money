@@ -1,0 +1,153 @@
+// Net worth: what you own, beside the spending tracker and never inside it. Nothing here changes
+// the headline, budget, forecast or Overview.
+//
+// Accounts { id, name, kind, currency, sort } hold dated balance snapshots typed in by hand
+// { id: accountId:date, accountId, date, amountMinor, currency }: the latest live one is the balance.
+// Each account keeps its own currency; the total is in GBP at the latest stored rate.
+
+import { daysBetween, formatDay } from './dates.js';
+import { convertToGbp, rateFor } from './currency.js';
+import { toMinor } from './money.js';
+import { isLive } from './totals.js';
+
+/** Kinds of account, in the order Net Worth shows them. */
+export const ACCOUNT_KINDS = [
+  { id: 'investment', name: 'Investments', one: 'Investments' },
+  { id: 'savings', name: 'Savings', one: 'Savings' },
+  { id: 'current', name: 'Current Accounts', one: 'Current Account' },
+];
+
+/** A balance older than this many days gets a warning. */
+export const STALE_DAYS = 30;
+
+/** One balance per account per day: typing it again the same day replaces it. */
+export const balanceId = (accountId, date) => `${accountId}:${date}`;
+
+const byOrder = (a, b) => (a.sort ?? 0) - (b.sort ?? 0) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+
+/** An account's latest live balance (the latest date; the latest saved on a tie), or null. */
+export function latestBalance(balances, accountId) {
+  let best = null;
+  for (const b of balances) {
+    if (!isLive(b) || b.accountId !== accountId) continue;
+    if (!best || b.date > best.date || (b.date === best.date && (b.updatedAt ?? 0) > (best.updatedAt ?? 0))) best = b;
+  }
+  return best;
+}
+
+/**
+ * An amount in GBP at the latest rate stored for its currency (no fee: nothing is being paid).
+ * Returns { pence, forDate } (forDate null for GBP), or null when there's no rate yet.
+ */
+export function latestGbp(amountMinor, currency, rates) {
+  if (currency === 'GBP') return { pence: amountMinor, forDate: null };
+  const rate = rateFor(rates, currency, '9999-12-31', '0000-01-01');
+  if (!rate) return null;
+  return { pence: convertToGbp({ amountMinor, currency, perGbp: rate.perGbp }).gbpPence, forDate: rate.forDate };
+}
+
+/**
+ * Everything Net Worth shows.
+ * Returns {
+ *   totalPence,          every account with a balance and a rate, in GBP
+ *   estimated,           true when any of it was converted from another currency
+ *   rateDate,            the oldest rate date used ('YYYY-MM-DD'), or null
+ *   groups: [{ kind, name, pence, share, accounts: [row] }]   kinds with accounts, in ACCOUNT_KINDS order
+ *   stale: [row]         balances over STALE_DAYS old
+ *   noBalance: [row]     accounts with no balance yet
+ *   noRate: [row]        balances waiting for an exchange rate (left out of the total)
+ * }
+ * Each row is { account, balance, amountMinor, currency, pence, daysOld, stale }.
+ * share is the group's part of the total (0 when the total isn't above zero).
+ */
+export function netWorth({ accounts, balances, rates, todayDate }) {
+  const rows = accounts.filter(isLive).sort(byOrder).map((account) => {
+    const balance = latestBalance(balances, account.id);
+    const got = balance ? latestGbp(balance.amountMinor, balance.currency, rates) : null;
+    const daysOld = balance ? Math.max(0, daysBetween(balance.date, todayDate)) : null;
+    return {
+      account,
+      balance,
+      amountMinor: balance?.amountMinor ?? null,
+      currency: balance?.currency ?? account.currency,
+      pence: got?.pence ?? null,
+      forDate: got?.forDate ?? null,
+      daysOld,
+      stale: daysOld !== null && daysOld > STALE_DAYS,
+    };
+  });
+
+  const counted = rows.filter((r) => r.pence !== null);
+  const totalPence = counted.reduce((sum, r) => sum + r.pence, 0);
+  const rateDates = counted.map((r) => r.forDate).filter(Boolean).sort();
+  const groups = ACCOUNT_KINDS.map((k) => {
+    const mine = rows.filter((r) => r.account.kind === k.id);
+    const pence = mine.reduce((sum, r) => sum + (r.pence ?? 0), 0);
+    return { kind: k.id, name: k.name, pence, share: totalPence > 0 ? pence / totalPence : 0, accounts: mine };
+  }).filter((g) => g.accounts.length);
+
+  return {
+    totalPence,
+    estimated: rateDates.length > 0,
+    rateDate: rateDates[0] ?? null,
+    groups,
+    stale: rows.filter((r) => r.stale),
+    noBalance: rows.filter((r) => !r.balance),
+    noRate: rows.filter((r) => r.balance && r.pence === null),
+  };
+}
+
+/**
+ * A typed balance to minor units: like an amount, but it may be below zero (an overdraft) and
+ * may carry thousands commas ("-1,240.55" → -124055). Returns null if it isn't a number.
+ */
+export function balanceMinor(text, currency) {
+  const s = String(text ?? '').trim().replace(/,/g, '');
+  const negative = /^[-−]/.test(s);
+  const minor = toMinor(negative ? s.slice(1) : s, currency);
+  if (minor === null) return null;
+  return negative && minor ? -minor : minor;
+}
+
+/** "Updated today" / "Updated 27 Aug 2026". */
+export const updatedPhrase = (date, todayDate) => `Updated ${date === todayDate ? 'today' : formatDay(date)}`;
+
+/**
+ * The warning for balances that haven't been updated in over STALE_DAYS days, or null.
+ * "DBS was last updated 35 days ago." / "DBS and CIMB haven’t been updated in over 30 days."
+ */
+export function staleLine(stale) {
+  if (!stale.length) return null;
+  if (stale.length === 1) return `${stale[0].account.name} was last updated ${stale[0].daysOld} days ago.`;
+  const names = stale.map((r) => r.account.name);
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)} haven’t been updated in over ${STALE_DAYS} days.`;
+}
+
+/**
+ * The balance rows to write for amounts typed on date ({ accountId: amountMinor }). An account
+ * left blank (undefined or null) is skipped, and so is one whose balance on that date is already
+ * the same. Each row is in its account's currency.
+ */
+export function balanceRows({ accounts, balances, typed, date }) {
+  const out = [];
+  for (const account of accounts.filter(isLive)) {
+    const amountMinor = typed[account.id];
+    if (amountMinor === undefined || amountMinor === null) continue;
+    const id = balanceId(account.id, date);
+    const same = balances.find((b) => b.id === id && isLive(b));
+    if (same && same.amountMinor === amountMinor && same.currency === account.currency) continue;
+    out.push({ id, accountId: account.id, date, amountMinor, currency: account.currency, deletedAt: null });
+  }
+  return out;
+}
+
+/**
+ * What puts rows back as they were before writing them (Undo): each one's earlier version, or
+ * a delete when it's new.
+ */
+export function undoRows(rows, before, now) {
+  return rows.map((r) => {
+    const old = before.find((b) => b.id === r.id);
+    return old ? { ...old } : { ...r, deletedAt: now };
+  });
+}

@@ -2,17 +2,19 @@
 // and the first-run seed.
 
 import {
-  normaliseMerchant, parse, checkTerms, validFeeBps, validTimeZone, retrip, DEFAULT_TIME_ZONE, DEFAULT_CATEGORIES, DEFAULT_METHODS, INCOME_TYPES, FREQUENCIES,
+  normaliseMerchant, parse, checkTerms, validFeeBps, validTimeZone, retrip, balanceId, DEFAULT_TIME_ZONE, DEFAULT_CATEGORIES, DEFAULT_METHODS, INCOME_TYPES, FREQUENCIES, ACCOUNT_KINDS,
 } from '../../src/engine/index.js';
 import { TABLES } from './tables.js';
 import { refuse } from './http.js';
 import { validDate, validCurrency } from './entries.js';
+import { ensureRates } from './rates.js';
 
 const blank = (v) => v === undefined || v === null || (typeof v === 'string' && !v.trim());
 const METHOD_KINDS = new Set(['card', 'cash', 'transfer']);
 const FREQUENCY_IDS = new Set(FREQUENCIES.map((f) => f.id));
 const INCOME_IDS = new Set(INCOME_TYPES.map((t) => t.id));
 const ONE_OFF_IDS = new Set(INCOME_TYPES.filter((t) => t.oneOff).map((t) => t.id));
+const ACCOUNT_KIND_IDS = new Set(ACCOUNT_KINDS.map((k) => k.id));
 
 // Settings the app writes, and what each may hold.
 const SETTING_CHECKS = {
@@ -22,7 +24,7 @@ const SETTING_CHECKS = {
   timeZone: (v) => (validTimeZone(v) ? null : 'pick a time zone from the list.'),
 };
 
-function check(name, row) {
+function check(name, row, today) {
   if (row.deletedAt) return null;
   if (TABLES[name].required.some((f) => blank(row[f]))) return 'fill in every field.';
   if (name === 'trips' && (!validDate(row.start) || !validDate(row.end))) return 'pick the dates.';
@@ -46,6 +48,16 @@ function check(name, row) {
     if (!Number.isInteger(row.amountPence) || row.amountPence < 0) return 'enter a budget of £0.00 or more.';
   }
   if (name === 'settings' && SETTING_CHECKS[row.id]) return SETTING_CHECKS[row.id](row.value);
+  if (name === 'accounts') {
+    if (!ACCOUNT_KIND_IDS.has(row.kind)) return 'pick Current Account, Savings or Investments.';
+    if (!validCurrency(row.currency)) return 'pick a currency.';
+  }
+  if (name === 'balances') {
+    if (!validDate(row.date) || row.id !== balanceId(row.accountId, row.date)) return 'pick the date of the balance.';
+    if (row.date > today) return 'pick today or an earlier day.';
+    if (!Number.isInteger(row.amountMinor)) return 'enter the balance.';
+    if (!validCurrency(row.currency)) return 'pick a currency.';
+  }
   return null;
 }
 
@@ -59,14 +71,21 @@ function tidy(name, row) {
   }
 }
 
-/** PUT /:table/:id: add a row, or change the fields sent (others are kept). */
-export async function saveRow(ctx, name, id, body) {
-  const { store } = ctx;
+/** The stored row with the fields sent laid over it (a new row starts from the table's defaults). */
+async function merged(store, name, id, body) {
   const { fields, defaults } = TABLES[name];
   const existing = await store.get(name, id);
   const row = existing ? { ...existing } : { id, deletedAt: null, ...structuredClone(defaults) };
   for (const f of [...fields, 'deletedAt']) if (f in body) row[f] = body[f] ?? null;
   tidy(name, row);
+  return { existing, row };
+}
+
+/** PUT /:table/:id: add a row, or change the fields sent (others are kept). */
+export async function saveRow(ctx, name, id, body) {
+  if (BATCH_TABLES.includes(name)) return saveBatch(ctx, { [name]: [{ ...body, id }] });
+  const { store } = ctx;
+  const { existing, row } = await merged(store, name, id, body);
   const writes = { [name]: [row] };
 
   if (name === 'vendors') {
@@ -82,7 +101,7 @@ export async function saveRow(ctx, name, id, body) {
   if (name === 'recurring' && row.anchorDay == null && row.frequency !== 'weekly' && validDate(row.nextDate)) {
     row.anchorDay = parse(row.nextDate)[2];
   }
-  const problem = check(name, row);
+  const problem = check(name, row, ctx.today);
   if (problem) throw refuse(problem);
   if (name === 'trips') writes.entries = await tripEntries(store, existing, row);
   return store.write(writes, ctx.now);
@@ -119,6 +138,40 @@ async function vendorAliases(store, before, after, now) {
   const taken = await store.all('aliases', 'deletedAt IS NULL AND aliasNorm = ?', oldNorm);
   if (!taken.length) out.push({ id: crypto.randomUUID(), vendorId: after.id, alias: before.name, aliasNorm: oldNorm, deletedAt: null });
   return out;
+}
+
+/** Tables saved through saveBatch, so a balance and its new account land together. */
+export const BATCH_TABLES = ['accounts', 'balances'];
+
+/**
+ * POST /batch { accounts?: [row], balances?: [row] }: accounts and balances in one write, all or
+ * nothing ("Update balances" saves every account at once). Each row has its id and the fields to
+ * change. A live balance needs a live account in its own currency. Fetches a rate for a currency
+ * that has none, so the total can count it straight away.
+ */
+export async function saveBatch(ctx, body) {
+  const { store } = ctx;
+  const writes = {};
+  for (const name of BATCH_TABLES) {
+    const sent = body?.[name] ?? [];
+    if (!Array.isArray(sent)) throw refuse('send a list of rows.');
+    writes[name] = [];
+    for (const b of sent) {
+      if (!b || typeof b.id !== 'string' || !b.id) throw refuse('send each row with its id.');
+      const { row } = await merged(store, name, b.id, b);
+      const problem = check(name, row, ctx.today);
+      if (problem) throw refuse(problem);
+      writes[name].push(row);
+    }
+  }
+  for (const b of writes.balances.filter((r) => !r.deletedAt)) {
+    const account = writes.accounts.find((a) => a.id === b.accountId) ?? await store.get('accounts', b.accountId);
+    if (!account || account.deletedAt) throw refuse('add the account first.');
+    if (account.currency !== b.currency) throw refuse(`enter the balance in ${account.currency}, the account’s currency.`);
+  }
+  const needs = writes.balances.filter((b) => !b.deletedAt).map((b) => ({ currency: b.currency, date: ctx.today }));
+  const got = await ensureRates({ fetch: ctx.fetch, rates: await store.live('rates'), needs, today: ctx.today });
+  return store.write({ ...writes, rates: got.fresh }, ctx.now);
 }
 
 /** DELETE /:table/:id: a soft delete, so Undo is a PUT with deletedAt: null. */

@@ -6,6 +6,7 @@ import { renderLog } from './ui/log.js';
 import { renderOverview } from './ui/overview.js';
 import { renderHistory } from './ui/history.js';
 import { renderPlan } from './ui/plan.js';
+import { renderNetWorth } from './ui/networth.js';
 import { renderSettings } from './ui/settings.js';
 import { toast } from './ui/dom.js';
 import { toSortEntries, syncedPhrase } from './engine/index.js';
@@ -19,6 +20,7 @@ const SCREENS = {
   overview: { title: 'Overview', render: renderOverview },
   history: { title: 'History', render: renderHistory },
   plan: { title: 'Plan', render: renderPlan },
+  networth: { title: 'Net Worth', render: renderNetWorth },
   settings: { title: 'Settings', render: renderSettings },
 };
 const RESYNC_MS = 30 * 1000;

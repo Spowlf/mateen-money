@@ -176,3 +176,30 @@ CREATE TABLE IF NOT EXISTS budgets (
   rev INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS budgets_rev ON budgets (rev);
+
+-- Net worth: accounts and their balances, typed in by hand. Nothing here touches spending.
+CREATE TABLE IF NOT EXISTS accounts (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('current', 'savings', 'investment')),
+  currency TEXT NOT NULL,
+  sort INTEGER NOT NULL DEFAULT 0,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS accounts_rev ON accounts (rev);
+
+-- One balance per account per day (id is accountId:date), in the currency it was typed in.
+-- The latest live one is the account's balance.
+CREATE TABLE IF NOT EXISTS balances (
+  id TEXT PRIMARY KEY,
+  accountId TEXT NOT NULL,
+  date TEXT NOT NULL,
+  amountMinor INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS balances_rev ON balances (rev);

@@ -38,6 +38,8 @@ export const TABLES = {
   rates: table(['forDate', 'currency', 'perGbp'], { clientWrites: false }),
   settings: table(['value'], { required: ['value'], json: ['value'] }),
   budgets: table(['categoryId', 'fromMonth', 'amountPence'], { required: ['categoryId', 'fromMonth', 'amountPence'] }),
+  accounts: table(['name', 'kind', 'currency', 'sort'], { required: ['name', 'kind', 'currency'], defaults: { sort: 0 } }),
+  balances: table(['accountId', 'date', 'amountMinor', 'currency'], { required: ['accountId', 'date', 'amountMinor', 'currency'] }),
 };
 
 /** A row as the API sends it: JSON columns parsed. */

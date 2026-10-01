@@ -9,10 +9,10 @@
 // Money is integer minor units (see exponent() in src/engine/money.js). Dates are 'YYYY-MM-DD'.
 
 export const DB_NAME = 'mateen-money';
-export const DB_VERSION = 2;   // 2: budgets
+export const DB_VERSION = 3;   // 2: budgets; 3: accounts and balances
 
 /** Tables that sync from the backend. */
-export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets'];
+export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances'];
 
 // store name -> { keyPath, indexes: { name: keyPath } }
 export const STORES = {
@@ -27,6 +27,8 @@ export const STORES = {
   rates: { keyPath: 'id', indexes: {} },
   settings: { keyPath: 'id', indexes: {} },   // synced preferences: { id: key, value }
   budgets: { keyPath: 'id', indexes: {} },
+  accounts: { keyPath: 'id', indexes: {} },
+  balances: { keyPath: 'id', indexes: {} },
   meta: { keyPath: 'key', indexes: {} },      // device only: { key, value } (token, rev, lastSyncedAt, draft)
 };
 
@@ -153,4 +155,22 @@ export const STORES = {
  * @property {string} categoryId   always 'month' (rows from the old per-category budgets are ignored)
  * @property {string} fromMonth    'YYYY-MM'; a month's budget is the latest row on or before it
  * @property {number} amountPence  GBP; 0 = no budget from this month
+ */
+
+/**
+ * @typedef {Object} Account  Somewhere money is kept, for Net Worth (see src/engine/networth.js).
+ * @property {string} id
+ * @property {string} name
+ * @property {'current'|'savings'|'investment'} kind
+ * @property {string} currency   the currency its balance is typed in
+ * @property {number} sort
+ */
+
+/**
+ * @typedef {Object} Balance  An account's balance on a day, typed in by hand.
+ * @property {string} id           `${accountId}:${date}`, so the same day again replaces it
+ * @property {string} accountId
+ * @property {string} date         'YYYY-MM-DD'
+ * @property {number} amountMinor  may be below zero (an overdraft)
+ * @property {string} currency     as typed; the account's currency at the time
  */

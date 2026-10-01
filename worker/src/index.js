@@ -3,7 +3,9 @@
 //   GET    /sync?since=rev        everything changed after rev (0 = everything)
 //   PUT    /entries/:id           add or edit an entry; the Worker prices it
 //   POST   /entries/:id/sort      file a To sort entry: { vendorId?, categoryId?, vendorName?, currency? }
-//   PUT    /:table/:id            add or edit a vendor, alias, category, method, recurring item, trip, review or setting
+//   PUT    /:table/:id            add or edit a vendor, alias, category, method, recurring item, trip, review, setting,
+//                                  account or balance
+//   POST   /batch                 accounts and balances in one write: { accounts?: [row], balances?: [row] }
 //   DELETE /:table/:id            soft delete (Undo is a PUT with deletedAt: null)
 //   POST   /restore               replace everything with a backup file's contents
 //   POST   /applepay              the Shortcut's payment; replies with one line of text
@@ -17,7 +19,7 @@ import { TABLES } from './tables.js';
 import { createStore } from './store.js';
 import { HttpError, json, text, withCors, authorised, readJson, refuse } from './http.js';
 import { saveEntry, sortEntry, ingestApplePay } from './entries.js';
-import { saveRow, deleteRow, ensureSeeded } from './rows.js';
+import { saveRow, saveBatch, deleteRow, ensureSeeded } from './rows.js';
 import { addRecurring, refreshRates } from './jobs.js';
 
 const TEXT_ROUTES = new Set(['applepay', 'summary']);
@@ -65,6 +67,9 @@ async function route(request, ctx) {
     const tables = Object.fromEntries(BACKUP_TABLES.map((name) => [name, (backup.tables[name] ?? []).filter((r) => !r.deletedAt)]));
     if (!tables.categories.length) throw refuse('this backup has no categories.');
     return json(await ctx.store.replaceAll(tables, ctx.now));
+  }
+  if (method === 'POST' && first === 'batch' && !id) {
+    return json(await saveBatch(ctx, await readJson(request)));
   }
   if (first === 'entries' && id && action === 'sort' && method === 'POST') {
     return json(await sortEntry(ctx, id, await readJson(request)));

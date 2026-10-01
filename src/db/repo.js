@@ -132,6 +132,11 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
       return applyWrite(await api.put(`/${table}/${encodeURIComponent(id)}`, fields));
     },
 
+    /** Accounts and balances in one write, all or nothing: { accounts?: [row], balances?: [row] }. */
+    async saveBatch(changes) {
+      return applyWrite(await api.post('/batch', changes));
+    },
+
     async deleteRow(table, id) {
       return applyWrite(await api.del(`/${table}/${encodeURIComponent(id)}`));
     },

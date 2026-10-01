@@ -35,17 +35,19 @@ export async function addRecurring(ctx) {
 
 /**
  * Replaces estimates with each date's own rate once the date has passed, and keeps the latest
- * rates fresh for recurring items and entries still waiting. Statement amounts are never touched.
+ * rates fresh for recurring items, entries still waiting and accounts. Statement amounts are never touched.
  */
 export async function refreshRates(ctx) {
   const { store, today } = ctx;
-  const [waiting, items, methods, rates] = await Promise.all([
+  const [waiting, items, methods, rates, accounts] = await Promise.all([
     store.all('entries', "deletedAt IS NULL AND gbpStatus = 'estimated' AND currency != 'GBP'"),
     store.live('recurring'),
     store.live('methods'),
     store.live('rates'),
+    store.live('accounts'),
   ]);
-  const alsoLatest = [...new Set([...items.filter((i) => i.active), ...waiting].map((x) => x.currency))].filter((c) => c !== 'GBP');
+  // Net Worth converts each account at the latest rate, so its currencies stay fresh too.
+  const alsoLatest = [...new Set([...items.filter((i) => i.active), ...waiting, ...accounts].map((x) => x.currency))].filter((c) => c !== 'GBP');
   const got = await ensureRates({ fetch: ctx.fetch, rates, needs: waiting, today, alsoLatest });
   const changed = [];
   for (const e of waiting) {
