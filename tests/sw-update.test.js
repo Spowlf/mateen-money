@@ -77,7 +77,7 @@ function load(server = {}) {
     install: () => dispatch('install'),
     activate: () => dispatch('activate'),
     get: (path, mode = 'no-cors') => dispatch('fetch', { request: new FakeRequest(path, { mode }) }),
-    check: () => dispatch('message', { data: { type: 'check' } }),
+    check: (ports) => dispatch('message', { data: { type: 'check' }, ports }),
   };
 }
 
@@ -138,6 +138,18 @@ test('check: the app returning to the screen refreshes every file and announces 
   await sw.check();
   assert.equal(sw.announced.length, 1);
   assert.equal(await (await sw.get('styles.css')).res.text(), 'v2');
+});
+
+test('check: asked from Settings, it answers on the port whether the files were reached', async () => {
+  const sw = await installed();
+  const replies = [];
+  const port = { postMessage: (m) => replies.push(m) };
+  sw.server['styles.css'] = 'v2';
+  await sw.check([port]);
+  sw.setOnline(false);
+  await sw.check([port]);
+  // Made in the worker's realm, so compared as plain data.
+  assert.deepEqual(JSON.parse(JSON.stringify(replies)), [{ reached: true, changed: true }, { reached: false, changed: false }]);
 });
 
 test('check: offline, nothing is announced and the cache is kept', async () => {

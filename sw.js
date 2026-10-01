@@ -3,6 +3,7 @@
 // Refreshes ask the server ('no-cache'), since GitHub Pages lets browsers keep files for 10 minutes.
 // The app also sends { type: 'check' } when it comes back to the screen, because a home screen app
 // resumed from the background fetches nothing, so it would otherwise never see an update.
+// "Update the app" in Settings sends the same check with a port, and reloads once it's answered.
 // The API is on another origin, so it's never cached here; offline data comes from IndexedDB.
 // When you add a front-end file, add it to FILES (a test checks this).
 
@@ -111,7 +112,10 @@ self.addEventListener('message', (event) => {
   if (event.data?.type !== 'check') return;
   event.waitUntil(caches.open(CACHE).then(async (cache) => {
     const results = await Promise.all(FILES.map((f) => refresh(cache, new URL(f, self.location).href).catch(() => null)));
-    if (results.some((r) => r?.changed)) await announce();
+    const changed = results.some((r) => r?.changed);
+    if (changed) await announce();
+    // Settings asked: say whether the files could be reached at all.
+    event.ports?.[0]?.postMessage({ reached: results.some((r) => r?.res?.ok), changed });
   }));
 });
 

@@ -384,6 +384,39 @@ function backupSection(repo) {
       file));
 }
 
+// The app's own files
+
+/**
+ * Fetches every app file now (no waiting for the "Updated" bar), then reloads. It reloads even when
+ * nothing changed, since the files may have been refreshed in the background after this page loaded.
+ */
+async function updateApp(button) {
+  const sw = navigator.serviceWorker;
+  if (!sw?.controller) return location.reload();
+  button.disabled = true;
+  button.textContent = 'Checking for updates';
+  const reg = await sw.ready;
+  reg.update().catch(() => {});
+  const reply = await new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = (e) => resolve(e.data);
+    reg.active.postMessage({ type: 'check' }, [channel.port2]);
+    setTimeout(() => resolve(null), 20000);
+  });
+  if (reply?.reached) return location.reload();
+  toast('Nothing changed: the app’s files couldn’t be reached. Check your connection.');
+  button.disabled = false;
+  button.textContent = 'Update the app';
+}
+
+function appSection() {
+  const button = h('button', { type: 'button', class: 'button secondary', onclick: () => updateApp(button) }, 'Update the app');
+  return h('section', { class: 'section' },
+    h('h2', { class: 'subhead' }, 'App'),
+    h('p', { class: 'reason' }, 'Fetches the newest version and reloads.'),
+    button);
+}
+
 // Backend connection
 
 function backendSection(repo, onConnected) {
@@ -433,7 +466,8 @@ export function renderSettings(root, { repo, onConnected }) {
     if (!repo.connected()) {
       return fill(root, h('div', { class: 'screen' },
         h('p', { class: 'hint' }, 'Connect to your backend first.'),
-        backendSection(repo, onConnected)));
+        backendSection(repo, onConnected),
+        appSection()));
     }
     fill(root, h('div', { class: 'screen settings' },
       categoriesSection(repo),
@@ -444,6 +478,7 @@ export function renderSettings(root, { repo, onConnected }) {
       allowanceSection(repo),
       timeZoneSection(repo),
       backupSection(repo),
+      appSection(),
       backendSection(repo, onConnected)));
   }
   render();
