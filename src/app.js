@@ -18,6 +18,21 @@ import { OfflineError, ApiError } from './errors.js';
 // iOS Safari only shows :active (pressed) styles once the page listens for touches.
 document.addEventListener('touchstart', () => {}, { passive: true });
 
+// The home screen app always fills the whole screen, but iOS sometimes opens it with a window
+// shorter than the screen (by about the status bar), and both 100dvh and a fixed inset follow
+// that window, leaving a gap under the tab bar. So when installed, the page is sized to the
+// screen itself (portrait only, per the manifest), checked again on every resize and return.
+const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+function fitToScreen() {
+  if (!standalone) return;
+  const tall = Math.max(screen.height, screen.width);
+  const height = matchMedia('(orientation: landscape)').matches ? innerHeight : Math.max(innerHeight, tall);
+  document.documentElement.style.setProperty('--app-height', `${height}px`);
+}
+fitToScreen();
+for (const type of ['resize', 'orientationchange', 'pageshow']) window.addEventListener(type, fitToScreen);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fitToScreen(); });
+
 const SCREENS = {
   log: { title: 'Log', render: renderLog },
   overview: { title: 'Overview', render: renderOverview },
