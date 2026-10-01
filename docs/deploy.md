@@ -30,7 +30,7 @@ Copy the `database_id` it prints into `wrangler.toml`, replacing `paste-the-id-f
 npx wrangler d1 execute mateen-money --remote --file worker/schema.sql
 ```
 
-You can run the schema again safely. It only creates what's missing. If `--file` says "Authentication error [code: 10000]", run `npx wrangler login` again; the migrations below use `--command`, which isn't affected.
+You can run the schema again safely. It only creates what's missing. If `--file` says "Authentication error [code: 10000]" while `--command` works, run the statements with `--command` instead, as the migrations below do.
 
 ## 4. Set the API token
 
