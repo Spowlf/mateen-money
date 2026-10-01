@@ -53,7 +53,9 @@ async function pricesBody(ctx, env, prices) {
 
 async function route(request, ctx, env) {
   const url = new URL(request.url);
-  const [first, id, action, ...rest] = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  let parts;
+  try { parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent); } catch { return null; }
+  const [first, id, action, ...rest] = parts;
   const method = request.method;
   if (rest.length) return null;
 

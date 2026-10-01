@@ -55,6 +55,14 @@ test('ibkr: the sync writes the close as a balance, the holdings and the activit
   assert.ok(w.calls[1].includes('GetStatement?t=flex-token&q=REF1&v=3'));
 });
 
+test('ibkr: the token never goes to a statement address outside IBKR', async () => {
+  const send = sent().replace('https://ndcdyn.interactivebrokers.com/', 'https://evil.example/');
+  const w = worker({ ibkr: fakeIbkr({ send }) });
+  assert.equal((await w.call('POST', '/ibkr/sync')).status, 200);
+  assert.ok(w.calls[1].startsWith('https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/GetStatement?t=flex-token&q=REF1'));
+  assert.equal(w.rows('holdings').length, 3);
+});
+
 test('ibkr: an IBKR account added by hand is the one used', async () => {
   const w = worker();
   await w.call('POST', '/batch', { body: { accounts: [{ id: 'mine', name: 'Interactive Brokers', kind: 'investment', currency: 'GBP' }] } });

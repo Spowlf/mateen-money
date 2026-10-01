@@ -42,7 +42,9 @@ export async function fetchFlex({ fetch, token, queryId, sleep }) {
       return { message: `IBKR said: ${xmlText(sent, 'ErrorMessage') ?? 'the request was turned down'}.` };
     }
     const ref = xmlText(sent, 'ReferenceCode');
-    const base = xmlText(sent, 'Url') ?? `${FLEX}/GetStatement`;
+    // The token goes to this address too, so only IBKR's own https hosts are trusted.
+    const given = xmlText(sent, 'Url');
+    const base = given && /^https:\/\/[a-z0-9.-]+\.interactivebrokers\.com\//i.test(given) ? given : `${FLEX}/GetStatement`;
     for (let i = 0; i <= WAITS.length; i++) {
       const got = await get(`${base}?t=${encodeURIComponent(token)}&q=${encodeURIComponent(ref)}&v=3`);
       if (got && got.includes('<FlexQueryResponse')) return { xml: got };

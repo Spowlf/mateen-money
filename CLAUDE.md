@@ -31,7 +31,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 ## Commands
 
 - `npm test`: runs every test (`node --test`, no dependencies).
-- `npm run dev`: the app on http://localhost:3000 and the Worker on http://localhost:8787 (Node SQLite, data in `.dev.db`, token `dev-token`). `APP_PORT`, `API_PORT` and `DEV_DB` change the defaults.
+- `npm run dev`: the app on http://localhost:3000 and the Worker on http://localhost:8787 (Node SQLite, data in `.dev.db`, token `dev-token`). `APP_PORT`, `API_PORT` and `DEV_DB` change the defaults; it listens on 127.0.0.1 only unless `HOST` says otherwise.
 
 ## Decisions
 

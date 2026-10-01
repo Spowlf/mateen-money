@@ -5,6 +5,8 @@
 // Open http://localhost:8787/__scheduled to run the scheduled job once.
 //
 //   node scripts/dev.mjs
+//
+// It listens on this Mac only; HOST=0.0.0.0 opens it to your network.
 
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -17,6 +19,7 @@ import { handle, runScheduled } from '../worker/src/index.js';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const APP_PORT = Number(process.env.APP_PORT ?? 3000);
 const API_PORT = Number(process.env.API_PORT ?? 8787);
+const HOST = process.env.HOST ?? '127.0.0.1';
 
 function devVars() {
   const path = join(ROOT, '.dev.vars');
@@ -42,9 +45,10 @@ const TYPES = {
 };
 
 createServer(async (req, res) => {
-  const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-  const file = normalize(join(ROOT, path === '/' ? 'index.html' : path));
-  if (!file.startsWith(ROOT) || /[/\\]\.|[/\\](worker|tests|scripts)[/\\]/.test(file.slice(ROOT.length - 1))) {
+  let path;
+  try { path = decodeURIComponent(new URL(req.url, 'http://x').pathname); } catch { path = null; }
+  const file = path && normalize(join(ROOT, path === '/' ? 'index.html' : path));
+  if (!file || !file.startsWith(ROOT) || /[/\\]\.|[/\\](worker|tests|scripts)[/\\]/.test(file.slice(ROOT.length - 1))) {
     res.writeHead(404).end();
     return;
   }
@@ -55,7 +59,7 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404).end('Not found');
   }
-}).listen(APP_PORT, () => console.log(`App:    http://localhost:${APP_PORT}`));
+}).listen(APP_PORT, HOST, () => console.log(`App:    http://localhost:${APP_PORT}`));
 
 createServer(async (req, res) => {
   if (req.url === '/__scheduled') {
@@ -73,4 +77,4 @@ createServer(async (req, res) => {
   const response = await handle(request, env);
   res.writeHead(response.status, Object.fromEntries(response.headers));
   res.end(Buffer.from(await response.arrayBuffer()));
-}).listen(API_PORT, () => console.log(`Worker: http://localhost:${API_PORT}  (token: ${env.API_TOKEN})`));
+}).listen(API_PORT, HOST, () => console.log(`Worker: http://localhost:${API_PORT}  (token: ${env.API_TOKEN})`));

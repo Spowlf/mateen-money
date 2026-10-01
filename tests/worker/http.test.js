@@ -45,3 +45,9 @@ test('routes: a body that is not JSON is refused with nothing changed', async ()
   assert.equal(res.status, 400);
   assert.match(res.body.error, /^Nothing changed: /);
 });
+
+test('routes: a badly encoded address is not found, not a server error', async () => {
+  const w = makeWorker();
+  const res = await w.call('PUT', '/entries/%E0%A4%A', { body: {} });
+  assert.equal(res.status, 404);
+});
