@@ -7,7 +7,7 @@
 
 import { daysBetween, formatDay } from './dates.js';
 import { convertToGbp, rateFor } from './currency.js';
-import { toMinor } from './money.js';
+import { toMinor, exponent } from './money.js';
 import { isLive } from './totals.js';
 
 /** Kinds of account, in the order Net Worth shows them. */
@@ -46,29 +46,71 @@ export function latestGbp(amountMinor, currency, rates) {
   return { pence: convertToGbp({ amountMinor, currency, perGbp: rate.perGbp }).gbpPence, forDate: rate.forDate };
 }
 
+/** Pence to minor units of currency at the latest stored rate, or null with no rate. */
+function fromGbp(pence, currency, rates) {
+  if (currency === 'GBP') return pence;
+  const rate = rateFor(rates, currency, '9999-12-31', '0000-01-01');
+  return rate ? Math.round((pence * rate.perGbp * 10 ** exponent(currency)) / 100) : null;
+}
+
+/**
+ * Whether a payment came after a balance was typed: on a later day, or on its day after it
+ * was saved (the bank's figure already held that day's earlier payments).
+ */
+const afterBalance = (entry, balance) => entry.date > balance.date
+  || (entry.date === balance.date && entry.at != null && balance.updatedAt != null && entry.at > balance.updatedAt);
+
+/**
+ * An account's balance carried on from the last one typed: card payments logged since with a
+ * payment method linked to the account (methods[].accountId) come off, refunds to those cards
+ * go back on. Income with no card, and money moved between accounts, can't be seen.
+ * A payment in another currency is converted through its GBP value (fee included) at the latest
+ * rate. Returns { amountMinor, payments } (payments counted), or the balance as it is when
+ * nothing has happened since.
+ */
+export function carriedBalance({ balance, accountId, methods = [], entries = [], rates = [] }) {
+  if (!balance) return null;
+  const linked = new Set(methods.filter((m) => isLive(m) && m.accountId === accountId).map((m) => m.id));
+  let amountMinor = balance.amountMinor;
+  let payments = 0;
+  if (!linked.size) return { amountMinor, payments };
+  for (const e of entries) {
+    if (!isLive(e) || !linked.has(e.methodId) || !afterBalance(e, balance)) continue;
+    const minor = e.currency === balance.currency ? e.amountMinor : e.gbpPence == null ? null : fromGbp(e.gbpPence, balance.currency, rates);
+    if (minor === null) continue;
+    amountMinor += e.kind === 'income' ? minor : -minor;
+    payments += 1;
+  }
+  return { amountMinor, payments };
+}
+
 /**
  * Everything Net Worth shows.
  * Returns {
  *   totalPence,          every account with a balance and a rate, in GBP
- *   estimated,           true when any of it was converted from another currency
+ *   estimated,           true when any of it was converted from another currency or carried on
+ *   carried: [row]       balances carried on with card payments logged since
  *   rateDate,            the oldest rate date used ('YYYY-MM-DD'), or null
  *   groups: [{ kind, name, pence, share, accounts: [row] }]   kinds with accounts, in ACCOUNT_KINDS order
  *   stale: [row]         balances over STALE_DAYS old
  *   noBalance: [row]     accounts with no balance yet
  *   noRate: [row]        balances waiting for an exchange rate (left out of the total)
  * }
- * Each row is { account, balance, amountMinor, currency, pence, daysOld, stale }.
+ * Each row is { account, balance, amountMinor (carried on), payments, currency, pence, daysOld, stale }.
+ * methods and entries carry each balance on (see carriedBalance); without them it's as typed.
  * share is the group's part of the total (0 when the total isn't above zero).
  */
-export function netWorth({ accounts, balances, rates, todayDate }) {
+export function netWorth({ accounts, balances, rates, todayDate, methods = [], entries = [] }) {
   const rows = accounts.filter(isLive).sort(byOrder).map((account) => {
     const balance = latestBalance(balances, account.id);
-    const got = balance ? latestGbp(balance.amountMinor, balance.currency, rates) : null;
+    const carried = carriedBalance({ balance, accountId: account.id, methods, entries, rates });
+    const got = balance ? latestGbp(carried.amountMinor, balance.currency, rates) : null;
     const daysOld = balance ? Math.max(0, daysBetween(balance.date, todayDate)) : null;
     return {
       account,
       balance,
-      amountMinor: balance?.amountMinor ?? null,
+      amountMinor: carried?.amountMinor ?? null,
+      payments: carried?.payments ?? 0,
       currency: balance?.currency ?? account.currency,
       pence: got?.pence ?? null,
       forDate: got?.forDate ?? null,
@@ -88,7 +130,8 @@ export function netWorth({ accounts, balances, rates, todayDate }) {
 
   return {
     totalPence,
-    estimated: rateDates.length > 0,
+    estimated: rateDates.length > 0 || rows.some((r) => r.payments > 0),
+    carried: rows.filter((r) => r.payments > 0),
     rateDate: rateDates[0] ?? null,
     groups,
     stale: rows.filter((r) => r.stale),

@@ -127,4 +127,6 @@ The tests don't need any of this. `npm test` runs the Worker against Node's buil
 
 # Changing the schema later
 
+Migrations so far, to run once each on a database made before them: `worker/migrations/002-method-accounts.sql` (links a payment method to a Net Worth account).
+
 Add new columns with `ALTER TABLE` statements in a new file, for example `worker/migrations/002-….sql`. Run it with `d1 execute --remote --file`. Also add the column to `worker/src/tables.js`. A test checks the two match.

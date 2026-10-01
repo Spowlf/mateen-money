@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS methods (
   feeBps INTEGER NOT NULL DEFAULT 0,
   walletCard TEXT,
   symbolMemory TEXT NOT NULL DEFAULT '{}', -- JSON: { "$": "SGD" }
+  accountId TEXT, -- the Net Worth account it draws from (migrations/002)
   updatedAt INTEGER NOT NULL,
   deletedAt INTEGER,
   rev INTEGER NOT NULL

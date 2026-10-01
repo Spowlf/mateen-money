@@ -5,7 +5,7 @@
 //   POST   /entries/:id/sort      file a To sort entry: { vendorId?, categoryId?, vendorName?, currency? }
 //   PUT    /:table/:id            add or edit a vendor, alias, category, method, recurring item, trip, review, setting,
 //                                  account or balance
-//   POST   /batch                 accounts and balances in one write: { accounts?: [row], balances?: [row] }
+//   POST   /batch                 accounts, balances and linked cards in one write: { accounts?, balances?, methods? }
 //   DELETE /:table/:id            soft delete (Undo is a PUT with deletedAt: null)
 //   POST   /restore               replace everything with a backup file's contents
 //   POST   /applepay              the Shortcut's payment; replies with one line of text

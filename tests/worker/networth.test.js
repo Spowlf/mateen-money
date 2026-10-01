@@ -108,3 +108,17 @@ test('net worth: the scheduled run keeps each account’s currency rate fresh', 
   assert.ok(w.frankfurter.calls.some((u) => u.includes('/latest') && u.includes('SGD')));
   assert.ok(w.rows('rates', "currency = 'SGD'").length);
 });
+
+test('net worth: an account and the cards linked to it save together', async () => {
+  const w = makeWorker({ rates: SGD });
+  const res = await w.call('POST', '/batch', { body: { accounts: [hsbc], methods: [{ id: 'card', accountId: 'hsbc' }] } });
+  assert.equal(res.status, 200);
+  assert.equal(w.rows('methods', "id = 'card'")[0].accountId, 'hsbc');
+  // The rest of the card is kept.
+  assert.equal(w.rows('methods', "id = 'card'")[0].name, 'Card');
+  const bad = await w.call('POST', '/batch', { body: { methods: [{ id: 'cash', accountId: 'nowhere' }] } });
+  assert.equal(bad.body.error, 'Nothing changed: link the card to an account that exists.');
+  // Unlinking.
+  await w.call('POST', '/batch', { body: { methods: [{ id: 'card', accountId: null }] } });
+  assert.equal(w.rows('methods', "id = 'card'")[0].accountId, null);
+});

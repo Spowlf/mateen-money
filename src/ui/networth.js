@@ -26,8 +26,13 @@ function kindIcon(kind) {
   return svg;
 }
 
-const liveAccounts = (S) => netWorth({ accounts: S.accounts, balances: S.balances, rates: S.rates, todayDate: today() })
-  .groups.flatMap((g) => g.accounts.map((r) => r.account));
+// Each balance carried on with the card payments logged since it was typed.
+const worth = (S) => netWorth({ accounts: S.accounts, balances: S.balances, rates: S.rates, methods: S.methods, entries: S.entries, todayDate: today() });
+const rowsOf = (S) => worth(S).groups.flatMap((g) => g.accounts);
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** "Updated 27 Aug 2026, 14 payments since" */
+const updatedLine = (r, todayDate) => [updatedPhrase(r.balance.date, todayDate), r.payments && `${plural(r.payments, 'payment')} since`].filter(Boolean).join(', ');
 
 // The balance as an input shows it: "2016.76", "-25.00".
 const inputText = (minor, currency) => (minor === null || minor === undefined ? '' : toDecimalText(minor, currency));
@@ -37,6 +42,10 @@ const cleanBalance = (input) => { input.value = input.value.replace(/[^\d.,\-−
 export function openAccountSheet(repo, account = null) {
   const S = repo.state;
   const latest = account ? latestBalance(S.balances, account.id) : null;
+  const carried = account && rowsOf(S).find((r) => r.account.id === account.id);
+  const methods = S.methods.filter((m) => !m.deletedAt).sort((a, b) => (a.name < b.name ? -1 : 1));
+  const linkedBefore = new Set(account ? methods.filter((m) => m.accountId === account.id).map((m) => m.id) : []);
+  const linked = new Set(linkedBefore);
   const f = {
     name: account?.name ?? '',
     kind: account?.kind ?? 'current',
@@ -75,7 +84,18 @@ export function openAccountSheet(repo, account = null) {
     const balance = h('input', { class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', value: f.balance,
       placeholder: '0.00', oninput: () => set({ balance: cleanBalance(balance) }) });
     const date = h('input', { class: 'input', type: 'date', value: f.date, max: today(), required: true, onchange: () => set({ date: date.value }) });
-    const hint = latest ? `${updatedPhrase(latest.date, today())}. Leave it as it is to keep it.` : 'Below zero for an overdraft: -25.00.';
+    const hint = !latest ? 'Below zero for an overdraft: -25.00.'
+      : carried?.payments ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
+        : `${updatedPhrase(latest.date, today())}. Leave it as it is to keep it.`;
+    // Cards are toggles, not one choice: an account can have several.
+    const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Cards that pay from it' }, methods.map((m) => {
+      const chip = h('button', { type: 'button', class: 'chip', 'aria-pressed': String(linked.has(m.id)), onclick: () => {
+        if (linked.has(m.id)) linked.delete(m.id); else linked.add(m.id);
+        chip.setAttribute('aria-pressed', String(linked.has(m.id)));
+        renderSave();
+      } }, m.name);
+      return chip;
+    }));
     body.replaceChildren(...[
       field('Name', name),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Kind'),
@@ -85,6 +105,8 @@ export function openAccountSheet(repo, account = null) {
         field(`Balance in ${f.currency}`, balance),
         field('On', date)),
       h('p', { class: 'field-hint' }, account && latest && latest.currency !== f.currency ? `The last balance was in ${latest.currency}.` : hint),
+      methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Cards that pay from it'), cards,
+        h('span', { class: 'field-hint' }, 'Payments with these come off the balance until you next update it.')),
       h('div', { class: 'sheet-actions' },
         save,
         account && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete account')),
@@ -104,16 +126,23 @@ export function openAccountSheet(repo, account = null) {
     const balances = typed === null || unchanged ? [] : balanceRows({ accounts: [row], balances: S.balances, typed: { [id]: typed }, date: f.date });
     const before = account && Object.fromEntries(ACCOUNT_FIELDS.map((k) => [k, account[k] ?? null]));
     const beforeBalances = S.balances.filter((b) => balances.some((r) => r.id === b.id)).map((b) => ({ ...b }));
-    const result = await runAction(() => repo.saveBatch({ accounts: [row], balances }));
+    // A card moves here from any other account; one taken off is linked to none.
+    const methodRows = methods.filter((m) => linked.has(m.id) !== linkedBefore.has(m.id))
+      .map((m) => ({ id: m.id, accountId: linked.has(m.id) ? id : null }));
+    const methodsBefore = methodRows.map((m) => ({ id: m.id, accountId: S.methods.find((x) => x.id === m.id)?.accountId ?? null }));
+    const result = await runAction(() => repo.saveBatch({ accounts: [row], balances, methods: methodRows }));
     if (!result) return renderSave();
     s.close();
     if (account) {
       toast('Saved changes', {
         label: 'Undo',
-        run: () => runAction(() => repo.saveBatch({ accounts: [{ id, ...before }], balances: undoRows(balances, beforeBalances, Date.now()) })),
+        run: () => runAction(() => repo.saveBatch({ accounts: [{ id, ...before }], balances: undoRows(balances, beforeBalances, Date.now()), methods: methodsBefore })),
       });
     } else {
-      toast(`Added ${row.name}`, { label: 'Undo', run: () => runAction(() => repo.deleteRow('accounts', id)) });
+      toast(`Added ${row.name}`, { label: 'Undo', run: () => runAction(async () => {
+        if (methodsBefore.length) await repo.saveBatch({ methods: methodsBefore });
+        return repo.deleteRow('accounts', id);
+      }) });
     }
   }
 
@@ -130,7 +159,8 @@ export function openAccountSheet(repo, account = null) {
 /** Every account's balance on one day, at once. Only the ones typed are saved. */
 export function openBalancesSheet(repo) {
   const S = repo.state;
-  const accounts = liveAccounts(S);
+  const carried = rowsOf(S);
+  const accounts = carried.map((r) => r.account);
   const typed = {};
   const f = { date: today() };
   const body = h('div', { class: 'sheet-form' });
@@ -149,11 +179,12 @@ export function openBalancesSheet(repo) {
   }
 
   const date = h('input', { class: 'input', type: 'date', value: f.date, max: today(), required: true, onchange: () => { f.date = date.value; renderSave(); } });
-  const fields = accounts.map((account) => {
-    const latest = latestBalance(S.balances, account.id);
+  const fields = carried.map((r) => {
+    const { account, balance: latest } = r;
     const input = h('input', {
       class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off',
-      placeholder: latest && latest.currency === account.currency ? inputText(latest.amountMinor, latest.currency) : '0.00',
+      // What the app thinks it is now, to check against the bank.
+      placeholder: latest && latest.currency === account.currency ? inputText(r.amountMinor, latest.currency) : '0.00',
       oninput: () => {
         const text = cleanBalance(input).trim();
         const minor = text ? balanceMinor(text, account.currency) : null;
@@ -162,8 +193,8 @@ export function openBalancesSheet(repo) {
         renderSave();
       },
     });
-    // The box shows the last balance; the hint says how old it is.
-    const hint = latest ? `${updatedPhrase(latest.date, today())}.` : 'No balance yet.';
+    // The box shows the balance as the app has it now; the hint says how it got there.
+    const hint = latest ? `${updatedLine(r, today())}.` : 'No balance yet.';
     return field(`${account.name} in ${account.currency}`, input, hint);
   });
 
@@ -192,16 +223,17 @@ export function renderNetWorth(root, { repo }) {
   function accountRow(r, todayDate) {
     const { account, balance } = r;
     const foreign = balance && balance.currency !== 'GBP';
-    const tilde = foreign ? '~' : '';
-    const sub = balance ? updatedPhrase(balance.date, todayDate) : 'No balance yet';
+    const own = balance && `${r.payments ? '~' : ''}${formatMoney(r.amountMinor, balance.currency)}`;
+    const tilde = foreign || r.payments ? '~' : '';
+    const sub = balance ? updatedLine(r, todayDate) : 'No balance yet';
     return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openAccountSheet(repo, account) },
       h('span', { class: 'row-icon' }, kindIcon(account.kind)),
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, account.name),
         h('span', { class: `list-sub${r.stale ? ' stale' : ''}` }, sub)),
       balance && h('span', { class: 'list-end' },
-        h('span', { class: 'list-amount' }, r.pence === null ? formatMoney(balance.amountMinor, balance.currency) : `${tilde}${gbp(r.pence)}`),
-        foreign && r.pence !== null && h('span', { class: 'list-sub' }, formatMoney(balance.amountMinor, balance.currency)))));
+        h('span', { class: 'list-amount' }, r.pence === null ? own : `${tilde}${gbp(r.pence)}`),
+        foreign && r.pence !== null && h('span', { class: 'list-sub' }, own))));
   }
 
   function render() {
@@ -212,7 +244,7 @@ export function renderNetWorth(root, { repo }) {
         h('button', { type: 'button', class: 'button primary', onclick: () => { location.hash = '#settings'; } }, 'Open Settings')));
     }
     const todayDate = today();
-    const nw = netWorth({ accounts: S.accounts, balances: S.balances, rates: S.rates, todayDate });
+    const nw = worth(S);
     if (!nw.groups.length) {
       return fill(root, h('section', { class: 'empty' },
         h('h2', {}, 'No Accounts Yet'),
@@ -221,7 +253,8 @@ export function renderNetWorth(root, { repo }) {
     }
 
     const notes = [
-      nw.estimated && `Converted to pounds at the rates for ${formatDay(nw.rateDate)}.`,
+      nw.rateDate && `Converted to pounds at the rates for ${formatDay(nw.rateDate)}.`,
+      nw.carried.length && 'Card payments logged since a balance was typed are taken off it.',
       nw.noRate.length && `Leaves out ${nw.noRate.map((r) => r.account.name).join(', ')} until ${nw.noRate.length === 1 ? 'its exchange rate arrives' : 'their exchange rates arrive'}.`,
       nw.noBalance.length && `Leaves out ${nw.noBalance.map((r) => r.account.name).join(', ')}: add ${nw.noBalance.length === 1 ? 'its balance' : 'their balances'}.`,
     ].filter(Boolean);
@@ -238,7 +271,7 @@ export function renderNetWorth(root, { repo }) {
         h('button', { type: 'button', class: 'text-button', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
       !stale && h('div', {}, h('button', { type: 'button', class: 'button secondary', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
       nw.groups.map((g) => h('section', { class: 'section' },
-        h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate) ? '~' : ''}${gbp(g.pence)}`)),
+        h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate || r.payments) ? '~' : ''}${gbp(g.pence)}`)),
         h('ul', { class: 'list' }, g.accounts.map((r) => accountRow(r, todayDate))))),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo) }, 'Add an account'))));
   }

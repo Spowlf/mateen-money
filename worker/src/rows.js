@@ -142,17 +142,19 @@ async function vendorAliases(store, before, after, now) {
 
 /** Tables saved through saveBatch, so a balance and its new account land together. */
 export const BATCH_TABLES = ['accounts', 'balances'];
+// saveBatch also takes methods, so an account and the cards linked to it are saved together.
+const BATCH_BODY = [...BATCH_TABLES, 'methods'];
 
 /**
- * POST /batch { accounts?: [row], balances?: [row] }: accounts and balances in one write, all or
- * nothing ("Update balances" saves every account at once). Each row has its id and the fields to
+ * POST /batch { accounts?: [row], balances?: [row], methods?: [row] }: accounts, balances and the
+ * cards linked to them in one write, all or nothing ("Update balances" saves every account at once). Each row has its id and the fields to
  * change. A live balance needs a live account in its own currency. Fetches a rate for a currency
  * that has none, so the total can count it straight away.
  */
 export async function saveBatch(ctx, body) {
   const { store } = ctx;
   const writes = {};
-  for (const name of BATCH_TABLES) {
+  for (const name of BATCH_BODY) {
     const sent = body?.[name] ?? [];
     if (!Array.isArray(sent)) throw refuse('send a list of rows.');
     writes[name] = [];
@@ -168,6 +170,10 @@ export async function saveBatch(ctx, body) {
     const account = writes.accounts.find((a) => a.id === b.accountId) ?? await store.get('accounts', b.accountId);
     if (!account || account.deletedAt) throw refuse('add the account first.');
     if (account.currency !== b.currency) throw refuse(`enter the balance in ${account.currency}, the account’s currency.`);
+  }
+  for (const m of writes.methods.filter((r) => !r.deletedAt && r.accountId)) {
+    const account = writes.accounts.find((a) => a.id === m.accountId) ?? await store.get('accounts', m.accountId);
+    if (!account || account.deletedAt) throw refuse('link the card to an account that exists.');
   }
   const needs = writes.balances.filter((b) => !b.deletedAt).map((b) => ({ currency: b.currency, date: ctx.today }));
   const got = await ensureRates({ fetch: ctx.fetch, rates: await store.live('rates'), needs, today: ctx.today });

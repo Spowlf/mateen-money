@@ -26,7 +26,7 @@ export const TABLES = {
   vendors: table(['name', 'categoryId', 'currency', 'methodId', 'useCount', 'userEdited'], { required: ['name'], defaults: { useCount: 0, userEdited: 0 } }),
   aliases: table(['vendorId', 'alias', 'aliasNorm'], { required: ['vendorId', 'alias'] }),
   categories: table(['name', 'sort', 'archived'], { required: ['name'], defaults: { sort: 0, archived: 0 } }),
-  methods: table(['name', 'kind', 'feeBps', 'walletCard', 'symbolMemory'], {
+  methods: table(['name', 'kind', 'feeBps', 'walletCard', 'symbolMemory', 'accountId'], {
     required: ['name'], json: ['symbolMemory'], defaults: { kind: 'card', feeBps: 0, symbolMemory: {} },
   }),
   recurring: table([

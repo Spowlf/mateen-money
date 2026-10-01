@@ -99,6 +99,7 @@ export const STORES = {
  * @property {number} feeBps                   foreign-currency fee, basis points
  * @property {string|null} walletCard          card name the Shortcut sends, matched case-insensitively
  * @property {Object<string,string>} symbolMemory  answers to ambiguous symbols, e.g. { '$': 'SGD' }
+ * @property {string|null} accountId          the Net Worth account it draws from, or null
  */
 
 /**

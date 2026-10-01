@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  netWorth, balanceMinor, latestBalance, latestGbp, balanceId, balanceRows, undoRows, staleLine, updatedPhrase, STALE_DAYS,
+  netWorth, carriedBalance, balanceMinor, latestBalance, latestGbp, balanceId, balanceRows, undoRows, staleLine, updatedPhrase, STALE_DAYS,
 } from '../../src/engine/networth.js';
 
 const TODAY = '2026-10-01';
@@ -166,4 +166,70 @@ test('balance text: below zero and thousands commas are fine', () => {
   assert.equal(balanceMinor('1200', 'JPY'), 1200);
   assert.equal(balanceMinor('', 'GBP'), null);
   assert.equal(balanceMinor('12a', 'GBP'), null);
+});
+
+// Carrying a balance on with card payments logged since it was typed.
+const SAVED = Date.UTC(2026, 8, 27, 12, 0);   // 27 Sep 2026, 13:00 in London
+const card = (id, accountId, extra = {}) => ({ id, name: id, accountId, deletedAt: null, ...extra });
+const pay = (date, amountMinor, currency, methodId, extra = {}) => ({
+  id: `${date}:${amountMinor}:${methodId}`, kind: 'spend', date, at: null, amountMinor, currency, gbpPence: null, methodId, deletedAt: null, ...extra,
+});
+
+test('carried: payments with a linked card since the balance come off', () => {
+  const balance = balance0();
+  const methods = [card('dbs-visa', 'dbs'), card('monzo', 'hsbc')];
+  const entries = [
+    pay('2026-09-28', 450, 'SGD', 'dbs-visa'),
+    pay('2026-09-30', 1200, 'SGD', 'dbs-visa'),
+    pay('2026-09-29', 999, 'SGD', 'monzo'),        // another account's card
+    pay('2026-09-26', 777, 'SGD', 'dbs-visa'),     // before the balance
+    pay('2026-09-29', 5000, 'SGD', 'dbs-visa', { deletedAt: 3 }),
+    pay('2026-09-29', 300, 'SGD', null),            // no card
+  ];
+  assert.deepEqual(carriedBalance({ balance, accountId: 'dbs', methods, entries, rates: RATES }), { amountMinor: 230010 - 450 - 1200, payments: 2 });
+});
+
+function balance0() {
+  return { ...balance('dbs', '2026-09-27', 230010, 'SGD'), updatedAt: SAVED };
+}
+
+test('carried: on the balance’s own day, only payments after it was typed', () => {
+  const methods = [card('dbs-visa', 'dbs')];
+  const entries = [
+    pay('2026-09-27', 100, 'SGD', 'dbs-visa', { at: SAVED - 60000 }),   // already in the bank's figure
+    pay('2026-09-27', 200, 'SGD', 'dbs-visa', { at: SAVED + 60000 }),
+    pay('2026-09-27', 400, 'SGD', 'dbs-visa'),                           // no time: can't tell, left out
+  ];
+  assert.equal(carriedBalance({ balance: balance0(), accountId: 'dbs', methods, entries }).amountMinor, 230010 - 200);
+});
+
+test('carried: a refund to a linked card goes back on', () => {
+  const entries = [pay('2026-09-28', 1000, 'SGD', 'dbs-visa'), { ...pay('2026-09-29', 400, 'SGD', 'dbs-visa'), kind: 'income', incomeType: 'refund' }];
+  const got = carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs')], entries });
+  assert.deepEqual(got, { amountMinor: 230010 - 1000 + 400, payments: 2 });
+});
+
+test('carried: a payment in another currency comes off through its GBP value', () => {
+  // £10.00 (fee included) at S$1.725 = S$17.25.
+  const entries = [pay('2026-09-28', 1000, 'GBP', 'dbs-visa', { gbpPence: 1000 }), pay('2026-09-28', 500, 'EUR', 'dbs-visa', { gbpPence: null })];
+  const got = carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs')], entries, rates: RATES });
+  assert.deepEqual(got, { amountMinor: 230010 - 1725, payments: 1 });
+});
+
+test('carried: no linked card, or a removed one, leaves the balance as typed', () => {
+  const entries = [pay('2026-09-28', 1000, 'SGD', 'dbs-visa')];
+  assert.deepEqual(carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [], entries }), { amountMinor: 230010, payments: 0 });
+  assert.deepEqual(carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs', { deletedAt: 1 })], entries }), { amountMinor: 230010, payments: 0 });
+  assert.equal(carriedBalance({ balance: null, accountId: 'dbs' }), null);
+});
+
+test('net worth: carried balances count in the total and are marked estimated', () => {
+  const accounts = [account('hsbc', 'current', 'GBP')];
+  const balances = [{ ...balance('hsbc', '2026-09-27', 50000, 'GBP'), updatedAt: SAVED }];
+  const nw = netWorth({ accounts, balances, rates: [], todayDate: TODAY, methods: [card('monzo', 'hsbc')], entries: [pay('2026-09-30', 1250, 'GBP', 'monzo', { gbpPence: 1250 })] });
+  assert.equal(nw.totalPence, 48750);
+  assert.equal(nw.estimated, true);
+  assert.deepEqual(nw.carried.map((r) => [r.account.id, r.payments, r.amountMinor]), [['hsbc', 1, 48750]]);
+  // Without payments it's exact.
+  assert.equal(netWorth({ accounts, balances, rates: [], todayDate: TODAY }).estimated, false);
 });
