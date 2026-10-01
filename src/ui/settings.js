@@ -289,9 +289,9 @@ function termsSection(repo) {
       h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Previous year', disabled: termsYear <= TERM_YEARS[0], onclick: () => step(-1) }, icon('back')),
       h('p', { class: 'period-label period-label-small', 'aria-live': 'polite' }, label),
       h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Next year', disabled: termsYear >= TERM_YEARS.at(-1), onclick: () => step(1) }, icon('forward'))),
-    terms.map((t) => h('fieldset', { class: 'term' },
-      h('legend', { class: 'field-label' }, termLabel(t)),
-      h('div', { class: 'row-2' }, field('First day', input(t, 'start')), field('Last day', input(t, 'end'))))),
+    h('div', { class: 'terms' }, terms.map((t) => h('fieldset', { class: 'term' },
+      h('legend', {}, termLabel(t)),
+      h('div', { class: 'row-2' }, field('First day', input(t, 'start')), field('Last day', input(t, 'end')))))),
     problem,
     save);
 }
@@ -311,7 +311,7 @@ function allowanceSection(repo) {
     h('h2', { class: 'subhead' }, 'Allowance'),
     h('p', { class: 'reason' }, logged.length
       ? `${year.label}: ${gbp(loggedPence)} logged${spread ? `, about ${gbp(Math.floor(loggedPence / 12), { whole: true })} a month from October to September` : ''}.`
-      : `No allowance logged for ${year.label} yet. Log it on the Log screen as income, or plan it below so it’s added on the day.`),
+      : `No allowance logged for ${year.label} yet.`),
     items.length > 0 && h('ul', { class: 'list' }, items.map((r) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openRecurringSheet(repo, r) },
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, r.label),

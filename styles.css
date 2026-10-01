@@ -289,11 +289,19 @@ main {
 .reorder-row .list-row { flex: 1; min-width: 0; }
 .add-row { display: grid; grid-template-columns: 1fr auto; gap: var(--s2); }
 .add-row .button { width: auto; min-height: var(--touch); padding: 0 var(--s4); }
-.term { display: grid; gap: var(--s1); margin: 0; padding: 0; border: 0; min-width: 0; }
+/* Term dates sit on one card, a line between terms, so the three read as one group and each term as its own row. */
+.terms { background: var(--surface); border-radius: 16px; overflow: hidden; }
+.term { display: grid; gap: var(--s2); margin: 0; padding: var(--s4); border: 0; min-width: 0; }
+.term + .term { border-top: 1px solid var(--line); }
+.term legend { float: left; width: 100%; padding: 0; font-weight: 600; }
+.terms .input { background: var(--paper); }
 .button-stack { display: grid; gap: var(--s2); }
 .plan-summary { display: grid; gap: var(--s2); }
 /* Sections sit further apart than the lines inside them, so each reads as one group. */
 .settings, .sections { gap: var(--s6); }
+/* Settings is one long screen of like-looking groups: a rule above each heading marks where the next one starts. */
+.settings { gap: var(--s5); }
+.settings > .section + .section { padding-top: var(--s5); border-top: 1px solid var(--line); }
 .text-button.inline { margin-left: 0; }
 
 /* Chips */
