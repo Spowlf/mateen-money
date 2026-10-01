@@ -126,6 +126,8 @@ function openMethodSheet(repo, method) {
   const fee = h('input', { class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', value: f.fee,
     oninput: () => { fee.value = fee.value.replace(/[^\d.]/g, ''); f.fee = fee.value; renderSave(); } });
   const wallet = h('input', { class: 'input', type: 'text', autocomplete: 'off', value: f.walletCard, oninput: () => { f.walletCard = wallet.value; } });
+  // Only a card pays with Apple Pay, so only a card asks for its Wallet name.
+  const walletField = field('Apple Pay card name', wallet, 'As it appears in Wallet.');
   const memory = h('div', { class: 'field' });
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit() });
 
@@ -147,7 +149,7 @@ function openMethodSheet(repo, method) {
 
   async function submit() {
     save.disabled = true;
-    const fields = { name: f.name.trim(), kind: f.kind, feeBps: percentToBps(f.fee), walletCard: f.walletCard.trim() || null, symbolMemory: f.symbolMemory };
+    const fields = { name: f.name.trim(), kind: f.kind, feeBps: percentToBps(f.fee), walletCard: (f.kind === 'card' && f.walletCard.trim()) || null, symbolMemory: f.symbolMemory };
     const id = method?.id ?? crypto.randomUUID();
     const before = method && { name: method.name, kind: method.kind, feeBps: method.feeBps, walletCard: method.walletCard, symbolMemory: method.symbolMemory };
     if (!(await runAction(() => repo.saveRow('methods', id, fields)))) return renderSave();
@@ -160,9 +162,9 @@ function openMethodSheet(repo, method) {
   const s = sheet(method ? method.name : 'Add a Payment Method', h('div', { class: 'sheet-form' },
     field('Name', name),
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Kind'),
-      chips({ label: 'Kind', options: METHOD_KINDS, value: f.kind, onChange: (v) => { f.kind = v; } })),
+      chips({ label: 'Kind', options: METHOD_KINDS, value: f.kind, onChange: (v) => { f.kind = v; walletField.hidden = v !== 'card'; } })),
     field('Foreign currency fee, %', fee, '2.99 for most UK cards, 0 for Monzo, Starling or Wise.'),
-    field('Apple Pay card name', wallet, 'As it appears in Wallet.'),
+    walletField,
     memory,
     h('div', { class: 'sheet-actions' },
       save,
@@ -174,6 +176,7 @@ function openMethodSheet(repo, method) {
           toast(`Deleted ${method.name}`, { label: 'Undo', run: () => runAction(() => repo.restoreRow('methods', method.id)) });
         },
       }, 'Delete payment method'))));
+  walletField.hidden = f.kind !== 'card';
   renderMemory();
   renderSave();
 }
