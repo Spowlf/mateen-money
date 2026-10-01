@@ -4,7 +4,7 @@ import { addDays, monthKey } from './dates.js';
 import { reviewWeek, usualWeeks, weekSummary } from './summary.js';
 import { categoryRows, isLive } from './totals.js';
 import { gbp, gbpRounded } from './money.js';
-import { budgetRows, budgetWarnings } from './budgets.js';
+import { budgetStatus } from './budgets.js';
 
 export const UNUSUAL_RATIO = 1.5;        // more than 50% above the 8-week average
 export const NEW_CATEGORY_MIN = 2000;    // £20: a category with no history counts as unusual from here
@@ -71,8 +71,8 @@ export function unusualLine(u) {
 export const reviewSteps = ({ toSort }) => (toSort > 0 ? ['sort', 'week', 'unusual'] : ['week', 'unusual']);
 
 /**
- * Everything the review card on Log shows, or null when no review is due. budgetWarnings are this
- * month's categories over, or forecast to go over, their budget (shown with anything unusual).
+ * Everything the review card on Log shows, or null when no review is due. budget is this month's
+ * budget status (null with no budget); a warning shows with anything unusual when it isn't 'ok'.
  */
 export function reviewCard({ entries, categories, trips = [], reviews = [], todayDate, budgets = [], recurring = [], rates = [], excludeTrips = false }) {
   const { due, weekStart, weekEnd } = reviewDue({ todayDate, reviews, entries });
@@ -86,6 +86,6 @@ export function reviewCard({ entries, categories, trips = [], reviews = [], toda
     streak: reviewStreak(reviews, todayDate),
     toSort: summary.toSort,
     month: monthKey(todayDate),
-    budgetWarnings: budgetWarnings(budgetRows({ entries, categories, trips, budgets, recurring, rates, month: monthKey(todayDate), todayDate, excludeTrips })),
+    budget: budgetStatus({ entries, trips, budgets, recurring, rates, month: monthKey(todayDate), todayDate, excludeTrips }),
   };
 }

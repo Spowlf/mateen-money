@@ -10,7 +10,7 @@ import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
 import {
   today, monthKey, gbp, gbpRounded, formatDay, formatDayShort, formatMonth, overview, shiftPeriod, termNow, termLabel, inTermSpan, clampTerm, yearTerms, daysBetween,
-  forecastRow, forecastReason, budgetRows, budgetStatusText,
+  forecastRow, forecastReason, budgetStatus, budgetStatusText, budgetDetail,
 } from '../engine/index.js';
 
 // Kept between visits to the tab, so switching away and back doesn't lose the place.
@@ -97,32 +97,26 @@ export function renderOverview(root, { repo }) {
       h('p', { class: 'reason' }, forecastReason(f)));
   }
 
-  // Budgets: this month with forecasts (tap to change one), other months budget against actual.
-  function budgetsSection(data) {
+  // The monthly budget: this month with its forecast (tap to change it), other months budget against actual.
+  function budgetSection(data, budget) {
     if (period.kind !== 'month') return null;
-    const todayDate = today();
-    const rows = budgetRows({
-      entries: S.entries, categories: S.categories, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
-      month: period.month, todayDate, excludeTrips: excludeTrips() && new Set(liveTrips().map((t) => t.id)),
-    });
     const current = data.range.current;
-    if (!rows.length && !current) return null;
+    if (!budget && !current) return null;
     const monthEndShort = formatDayShort(data.range.to);
-    const content = (r) => [
+    const content = (b) => [
       h('span', { class: 'budget-top' },
-        h('span', { class: 'list-title' }, r.name),
-        h('span', { class: `budget-status ${r.status}` }, budgetStatusText(r))),
-      h('span', { class: 'list-sub' }, `${gbp(r.spentPence)} of ${gbp(r.budgetPence, { whole: true })}${r.forecastPence > r.spentPence ? `, about ${gbpRounded(r.forecastPence)} by ${monthEndShort}` : ''}`),
-      budgetBar(r),
+        h('span', { class: 'list-title' }, `${gbp(b.budgetPence, { whole: true })} a month`),
+        h('span', { class: `budget-status ${b.status}` }, budgetStatusText(b))),
+      h('span', { class: 'list-sub' }, `${budgetDetail(b)}${b.status === 'heading' ? `, ${gbp(b.leftPence, { whole: true })} left` : b.forecastPence > b.spentPence + b.costsDue ? `, about ${gbpRounded(b.forecastPence)} by ${monthEndShort}` : ''}`),
+      budgetBar(b),
     ];
     return h('section', { class: 'section' },
-      h('h2', { class: 'subhead' }, 'Budgets'),
-      rows.length
-        ? h('ul', { class: 'list' }, rows.map((r) => h('li', {}, current
-          ? h('button', { type: 'button', class: 'list-row budget-row', 'aria-label': `${r.name}: ${budgetStatusText(r)}. Change the budget`, onclick: () => openBudgetSheet(repo, r.categoryId) }, content(r))
-          : h('div', { class: 'list-row budget-row static' }, content(r)))))
-        : h('p', { class: 'reason' }, 'No budgets yet.'),
-      current && h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo, null) }, 'Set a budget')));
+      h('h2', { class: 'subhead' }, 'Budget'),
+      budget
+        ? h('ul', { class: 'list' }, h('li', {}, current
+          ? h('button', { type: 'button', class: 'list-row budget-row', 'aria-label': `Budget: ${budgetStatusText(budget)}. Change the budget`, onclick: () => openBudgetSheet(repo) }, content(budget))
+          : h('div', { class: 'list-row budget-row static' }, content(budget))))
+        : h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo) }, 'Set a monthly budget')));
   }
 
   const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
@@ -175,6 +169,10 @@ export function renderOverview(root, { repo }) {
         h('a', { class: 'button primary', href: '#settings' }, 'Add term dates')));
       return;
     }
+    const budget = period.kind === 'month' ? budgetStatus({
+      entries: S.entries, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
+      month: period.month, todayDate: today(), excludeTrips: excludeTrips() && new Set(liveTrips().map((t) => t.id)),
+    }) : null;
     const term = period.kind === 'term' && yearTerms(terms(), period.year).find((t) => t.name === period.name);
     // Drawn at the size it will show (inside the card's padding), so its text stays true size.
     const width = Math.max((el.body.clientWidth || 358) - 32, 260);
@@ -188,11 +186,12 @@ export function renderOverview(root, { repo }) {
           h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
           h('span', {}, 'Leave trips out of these totals'))),
       data.forecast && forecastSection(data.forecast),
-      budgetsSection(data),
+      budgetSection(data, budget),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by category'),
         data.rows.length
-          ? categoryTable(data.rows, { caption: `Spending by category, ${data.range.label}` })
+          ? [categoryTable(budget ? data.rows.map((r) => ({ ...r, share: r.pence / budget.budgetPence })) : data.rows, { caption: `Spending by category, ${data.range.label}` }),
+            budget && h('p', { class: 'reason' }, `Shares are of your ${gbp(budget.budgetPence, { whole: true })} budget.`)]
           : h('p', { class: 'empty-line' }, `Nothing spent in ${data.range.label.replace(/ so far$/, '')} yet.`)),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Income and spending'),

@@ -1,137 +1,121 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  budgetFor, monthBudgets, budgetChange, budgetRows, budgetStatusText, budgetLogLine, budgetWarningLine, budgetPence,
+  MONTH_BUDGET, budgetFor, budgetChange, budgetStatus, budgetStatusText, budgetDetail, budgetLogLine, budgetWarningLine, budgetPence,
 } from '../../src/engine/budgets.js';
 import { reviewCard } from '../../src/engine/review.js';
-import { spend, CATEGORIES } from './fixtures.js';
+import { spend, income, CATEGORIES } from './fixtures.js';
 
-const row = (categoryId, fromMonth, amountPence, extra = {}) => ({ id: `${categoryId}:${fromMonth}`, categoryId, fromMonth, amountPence, deletedAt: null, ...extra });
+const row = (fromMonth, amountPence, extra = {}) => ({ id: `month:${fromMonth}`, categoryId: MONTH_BUDGET, fromMonth, amountPence, deletedAt: null, ...extra });
 
-test('budgets: a budget applies from its month on, never before', () => {
-  const budgets = [row('eating-out', '2026-10', 15000)];
-  assert.equal(budgetFor(budgets, 'eating-out', '2026-09'), 0);
-  assert.equal(budgetFor(budgets, 'eating-out', '2026-10'), 15000);
-  assert.equal(budgetFor(budgets, 'eating-out', '2027-03'), 15000);
-  assert.equal(budgetFor(budgets, 'groceries', '2026-10'), 0);
+test('budget: applies from its month on, never before', () => {
+  const budgets = [row('2026-10', 50000)];
+  assert.equal(budgetFor(budgets, '2026-09'), 0);
+  assert.equal(budgetFor(budgets, '2026-10'), 50000);
+  assert.equal(budgetFor(budgets, '2027-03'), 50000);
 });
 
-test('budgets: a change keeps the earlier months as they were', () => {
-  const budgets = [row('eating-out', '2026-10', 15000), row('eating-out', '2026-12', 12000), row('eating-out', '2027-02', 0)];
-  assert.equal(budgetFor(budgets, 'eating-out', '2026-11'), 15000);
-  assert.equal(budgetFor(budgets, 'eating-out', '2026-12'), 12000);
-  assert.equal(budgetFor(budgets, 'eating-out', '2027-01'), 12000);
+test('budget: a change keeps the earlier months as they were', () => {
+  const budgets = [row('2026-10', 50000), row('2026-12', 45000), row('2027-02', 0)];
+  assert.equal(budgetFor(budgets, '2026-11'), 50000);
+  assert.equal(budgetFor(budgets, '2026-12'), 45000);
+  assert.equal(budgetFor(budgets, '2027-01'), 45000);
   // 0: removed from February.
-  assert.equal(budgetFor(budgets, 'eating-out', '2027-02'), 0);
-  assert.deepEqual([...monthBudgets(budgets, '2027-01')], [['eating-out', 12000]]);
-  assert.equal(monthBudgets(budgets, '2027-02').size, 0);
+  assert.equal(budgetFor(budgets, '2027-02'), 0);
 });
 
-test('budgets: deleted rows are ignored', () => {
-  const budgets = [row('eating-out', '2026-10', 15000), row('eating-out', '2026-11', 9000, { deletedAt: 1 })];
-  assert.equal(budgetFor(budgets, 'eating-out', '2026-11'), 15000);
+test('budget: deleted rows and old per-category rows are ignored', () => {
+  const budgets = [row('2026-10', 50000), row('2026-11', 9000, { deletedAt: 1 }), { id: 'groceries:2026-11', categoryId: 'groceries', fromMonth: '2026-11', amountPence: 15000, deletedAt: null }];
+  assert.equal(budgetFor(budgets, '2026-11'), 50000);
 });
 
-test('budgets: a change writes this month’s row, or nothing if it’s the same', () => {
-  const budgets = [row('eating-out', '2026-10', 15000)];
-  assert.equal(budgetChange(budgets, 'eating-out', '2026-11', 15000), null);
-  assert.deepEqual(budgetChange(budgets, 'eating-out', '2026-11', 12000),
-    { id: 'eating-out:2026-11', categoryId: 'eating-out', fromMonth: '2026-11', amountPence: 12000, deletedAt: null });
-  assert.equal(budgetChange([], 'groceries', '2026-10', 0), null);
+test('budget: a change writes this month’s row, or nothing if it’s the same', () => {
+  const budgets = [row('2026-10', 50000)];
+  assert.equal(budgetChange(budgets, '2026-11', 50000), null);
+  assert.deepEqual(budgetChange(budgets, '2026-11', 45000),
+    { id: 'month:2026-11', categoryId: 'month', fromMonth: '2026-11', amountPence: 45000, deletedAt: null });
+  assert.equal(budgetChange([], '2026-10', 0), null);
 });
 
-test('budget rows: this month has spent, left and a forecast', () => {
-  const budgets = [row('groceries', '2026-10', 20000), row('eating-out', '2026-10', 10000)];
-  const entries = [
-    spend('2026-10-02', 3000, 'groceries'),
-    spend('2026-10-05', 2000, 'groceries'),
-    spend('2026-10-06', 2500, 'eating-out'),
-  ];
-  const rows = budgetRows({ entries, categories: CATEGORIES, budgets, month: '2026-10', todayDate: '2026-10-10' });
-  assert.deepEqual(rows.map((r) => r.categoryId), ['groceries', 'eating-out']);
-  const [groceries, eatingOut] = rows;
-  // Groceries: £50 over 10 days → £5 a day, £50 + £105 = £155 of £200.
-  assert.equal(groceries.spentPence, 5000);
-  assert.equal(groceries.leftPence, 15000);
-  assert.equal(groceries.forecastPence, 5000 + 500 * 21);
-  assert.equal(groceries.status, 'ok');
-  assert.equal(budgetStatusText(groceries), '£150.00 left');
-  // Eating out: £25 at £2.50 a day → £77.50, under £100.
-  assert.equal(eatingOut.forecastPence, 2500 + 250 * 21);
-  assert.equal(eatingOut.status, 'ok');
+test('budget status: none without a budget', () => {
+  assert.equal(budgetStatus({ entries: [spend('2026-10-02', 3000)], month: '2026-10', todayDate: '2026-10-10' }), null);
 });
 
-test('budget rows: forecast to go over, and over', () => {
-  const budgets = [row('eating-out', '2026-10', 10000), row('groceries', '2026-10', 4000)];
-  const entries = [spend('2026-10-03', 6000, 'eating-out'), spend('2026-10-04', 4520, 'groceries')];
-  const rows = budgetRows({ entries, categories: CATEGORIES, budgets, month: '2026-10', todayDate: '2026-10-10' });
-  const groceries = rows.find((r) => r.categoryId === 'groceries');
-  const eatingOut = rows.find((r) => r.categoryId === 'eating-out');
-  assert.equal(eatingOut.status, 'heading');
-  assert.equal(eatingOut.forecastPence, 6000 + 600 * 21);
-  assert.equal(budgetStatusText(eatingOut), 'On track for £186 of £100');
-  assert.equal(groceries.status, 'over');
-  assert.equal(budgetStatusText(groceries), '£5.20 over');
-  assert.equal(groceries.share, 1);
+test('budget status: this month has spent, left and a forecast; income doesn’t count', () => {
+  const budgets = [row('2026-10', 50000)];
+  const entries = [income('2026-10-01', 120000), spend('2026-10-02', 3000, 'groceries'), spend('2026-10-05', 2000, 'eating-out')];
+  const b = budgetStatus({ entries, budgets, month: '2026-10', todayDate: '2026-10-10' });
+  // £50 over 10 days → £5 a day: £50 + £105 = £155 of £500.
+  assert.equal(b.spentPence, 5000);
+  assert.equal(b.leftPence, 45000);
+  assert.equal(b.forecastPence, 5000 + 500 * 21);
+  assert.equal(b.status, 'ok');
+  assert.equal(b.share, 0.1);
+  assert.equal(budgetStatusText(b), '£450.00 left');
+  assert.equal(budgetDetail(b), '£50 spent');
+  assert.equal(budgetLogLine(b), '£450 of your £500 budget left this month.');
+  assert.equal(budgetWarningLine(b), null);
 });
 
-test('budget rows: recurring costs still due count towards the forecast', () => {
-  const budgets = [row('other', '2026-10', 1500)];
+test('budget status: forecast to go over, and over', () => {
+  const budgets = [row('2026-10', 50000)];
+  const heading = budgetStatus({ entries: [spend('2026-10-03', 30000)], budgets, month: '2026-10', todayDate: '2026-10-10' });
+  assert.equal(heading.status, 'heading');
+  assert.equal(heading.forecastPence, 30000 + 3000 * 21);
+  assert.equal(budgetStatusText(heading), 'On track for £930');
+  assert.equal(budgetWarningLine(heading), 'On track for £930 of your £500 budget for October.');
+  const over = budgetStatus({ entries: [spend('2026-10-03', 52050)], budgets, month: '2026-10', todayDate: '2026-10-10' });
+  assert.equal(over.status, 'over');
+  assert.equal(over.share, 1);
+  assert.equal(budgetStatusText(over), '£20.50 over');
+  assert.equal(budgetLogLine(over), '£20.50 over your £500 budget this month.');
+  assert.equal(budgetWarningLine(over), '£20.50 over your £500 budget for October.');
+});
+
+test('budget status: recurring costs count, still due ones as used', () => {
+  const budgets = [row('2026-10', 5000)];
   const recurring = [{ id: 'r1', kind: 'spend', label: 'Spotify', amountMinor: 1199, currency: 'GBP', frequency: 'monthly', nextDate: '2026-10-20', categoryId: 'other', active: 1 }];
-  const [r] = budgetRows({ entries: [spend('2026-10-02', 500, 'other', { recurringId: 'r0' })], categories: CATEGORIES, budgets, recurring, month: '2026-10', todayDate: '2026-10-10' });
-  assert.equal(r.forecastPence, 500 + 1199);
-  assert.equal(r.status, 'heading');
+  const b = budgetStatus({ entries: [spend('2026-10-02', 1500, 'other', { recurringId: 'r0' })], budgets, recurring, month: '2026-10', todayDate: '2026-10-10' });
+  assert.equal(b.spentPence, 1500);
+  assert.equal(b.costsDue, 1199);
+  assert.equal(b.leftPence, 5000 - 1500 - 1199);
+  assert.equal(b.forecastPence, 1500 + 1199);
+  assert.equal(budgetDetail(b), '£15 spent and £11.99 still due');
 });
 
-test('budget rows: trips count against the budget; the toggle only takes them out of the pace', () => {
-  const budgets = [row('eating-out', '2026-10', 10000)];
-  const entries = [spend('2026-10-02', 1000, 'eating-out'), spend('2026-10-04', 4000, 'eating-out', { tripId: 't1' })];
-  const [all] = budgetRows({ entries, categories: CATEGORIES, budgets, month: '2026-10', todayDate: '2026-10-10' });
-  const [out] = budgetRows({ entries, categories: CATEGORIES, budgets, month: '2026-10', todayDate: '2026-10-10', excludeTrips: new Set(['t1']) });
+test('budget status: trips count; the toggle only takes them out of the pace', () => {
+  const budgets = [row('2026-10', 50000)];
+  const entries = [spend('2026-10-02', 1000), spend('2026-10-04', 4000, 'travel', { tripId: 't1' })];
+  const all = budgetStatus({ entries, budgets, month: '2026-10', todayDate: '2026-10-10' });
+  const out = budgetStatus({ entries, budgets, month: '2026-10', todayDate: '2026-10-10', excludeTrips: new Set(['t1']) });
   assert.equal(all.spentPence, 5000);
   assert.equal(out.spentPence, 5000);
   assert.equal(all.forecastPence, 5000 + 500 * 21);
   assert.equal(out.forecastPence, 5000 + 100 * 21);
 });
 
-test('budget rows: past months are budget against actual, with no forecast', () => {
-  const budgets = [row('eating-out', '2026-09', 8000), row('eating-out', '2026-10', 12000)];
-  const entries = [spend('2026-09-10', 9000, 'eating-out'), spend('2026-10-02', 1000, 'eating-out')];
-  const [sep] = budgetRows({ entries, categories: CATEGORIES, budgets, month: '2026-09', todayDate: '2026-10-10' });
-  assert.equal(sep.budgetPence, 8000);
-  assert.equal(sep.spentPence, 9000);
+test('budget status: past months are budget against actual, with no forecast', () => {
+  const budgets = [row('2026-09', 40000), row('2026-10', 50000)];
+  const entries = [spend('2026-09-10', 45000), spend('2026-10-02', 1000)];
+  const sep = budgetStatus({ entries, budgets, month: '2026-09', todayDate: '2026-10-10' });
+  assert.equal(sep.budgetPence, 40000);
+  assert.equal(sep.spentPence, 45000);
   assert.equal(sep.forecastPence, null);
   assert.equal(sep.status, 'over');
-  assert.deepEqual(budgetRows({ entries, categories: CATEGORIES, budgets, month: '2026-08', todayDate: '2026-10-10' }), []);
+  assert.equal(budgetStatus({ entries, budgets, month: '2026-08', todayDate: '2026-10-10' }), null);
 });
 
-test('budget rows: a removed category drops out of this month but stays in old ones', () => {
-  const categories = CATEGORIES.map((c) => (c.id === 'going-out' ? { ...c, archived: 1 } : c));
-  const budgets = [row('going-out', '2026-09', 5000)];
-  assert.equal(budgetRows({ entries: [], categories, budgets, month: '2026-10', todayDate: '2026-10-10' }).length, 0);
-  assert.equal(budgetRows({ entries: [], categories, budgets, month: '2026-09', todayDate: '2026-10-10' }).length, 1);
-});
-
-test('budget lines: Log, and the review’s warnings', () => {
-  const base = { name: 'Eating out', budgetPence: 15000 };
-  assert.equal(budgetLogLine({ ...base, leftPence: 3400 }), 'Eating out: £34 left this month.');
-  assert.equal(budgetLogLine({ ...base, leftPence: 3450 }), 'Eating out: £34.50 left this month.');
-  assert.equal(budgetLogLine({ ...base, leftPence: -500 }), 'Eating out: £5 over this month.');
-  assert.equal(budgetWarningLine({ ...base, status: 'over', leftPence: -2000 }, '2026-10'), 'Eating out: £20 over its £150 budget for October.');
-  assert.equal(budgetWarningLine({ ...base, status: 'heading', forecastPence: 18040 }, '2026-10'), 'Eating out: on track for £180 of its £150 budget for October.');
-});
-
-test('weekly review: categories forecast to go over their budget are flagged', () => {
-  const budgets = [row('eating-out', '2026-10', 10000), row('groceries', '2026-10', 50000)];
+test('weekly review: the budget comes with its status', () => {
+  const budgets = [row('2026-10', 10000)];
   // Sunday 11 Oct: the review for 5–11 Oct is due.
-  const entries = [spend('2026-10-03', 6000, 'eating-out'), spend('2026-10-06', 3000, 'groceries')];
+  const entries = [spend('2026-10-03', 6000, 'eating-out'), spend('2026-10-06', 3000)];
   const card = reviewCard({ entries, categories: CATEGORIES, todayDate: '2026-10-11', budgets });
-  assert.deepEqual(card.budgetWarnings.map((r) => [r.categoryId, r.status]), [['eating-out', 'heading']]);
-  assert.equal(reviewCard({ entries, categories: CATEGORIES, todayDate: '2026-10-11' }).budgetWarnings.length, 0);
+  assert.equal(card.budget.status, 'heading');
+  assert.equal(reviewCard({ entries, categories: CATEGORIES, todayDate: '2026-10-11' }).budget, null);
 });
 
 test('budget amounts: pounds as typed', () => {
-  assert.equal(budgetPence('150'), 15000);
+  assert.equal(budgetPence('500'), 50000);
   assert.equal(budgetPence('£1,200.5'), 120050);
   assert.equal(budgetPence(''), 0);
   assert.equal(budgetPence('12.345'), null);

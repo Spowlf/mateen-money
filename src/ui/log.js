@@ -9,7 +9,7 @@ import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
   emptyForm, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
   matchVendor, tripFor, toSortEntries, toSortNudge, sortChoices, topCategories,
-  COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, monthKey, budgetFor, budgetRows, budgetLogLine,
+  COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, monthKey, budgetStatus, budgetLogLine,
 } from '../engine/index.js';
 
 const TO_SORT_SHOWN = 3;
@@ -202,16 +202,13 @@ export function renderLog(root, { repo }) {
     fill(quick, h('span', { class: 'field-label' }, `Category for ${form.vendorName.trim()}`), group);
   }
 
-  // A budgeted category says what's left of it this month, as on Overview.
+  // With a monthly budget, a payment says what's left of it, as on Overview.
   function renderBudget() {
     const todayDate = today();
-    const month = monthKey(todayDate);
-    const budgeted = form.kind === 'spend' && form.categoryId && budgetFor(S.budgets, form.categoryId, month) > 0;
     const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
-    const row = budgeted && budgetRows({ entries: S.entries, categories: S.categories, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month, todayDate, excludeTrips })
-      .find((r) => r.categoryId === form.categoryId);
-    budgetNote.hidden = !row;
-    budgetNote.textContent = row ? budgetLogLine(row) : '';
+    const budget = form.kind === 'spend' && budgetStatus({ entries: S.entries, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month: monthKey(todayDate), todayDate, excludeTrips });
+    budgetNote.hidden = !budget;
+    budgetNote.textContent = budget ? budgetLogLine(budget) : '';
   }
 
   function renderSave() {

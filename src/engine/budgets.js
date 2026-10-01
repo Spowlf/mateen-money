@@ -1,104 +1,102 @@
-// Monthly budgets per category, in GBP.
-// A budget row says "from this month on": { id: 'categoryId:YYYY-MM', categoryId, fromMonth, amountPence }.
-// A month's budget is the latest live row starting on or before it, so changing a budget writes a
+// One overall monthly spending budget, in GBP: the part of the month's money you mean to spend.
+// A budget row says "from this month on": { id: 'month:YYYY-MM', categoryId: 'month', fromMonth, amountPence }.
+// categoryId is always MONTH_BUDGET; rows left from per-category budgets are ignored.
+// A month's budget is the latest live row starting on or before it, so changing the budget writes a
 // row for this month and earlier months keep theirs. amountPence 0 means no budget from that month.
-// Every month's amount can be read back, so a rollover can be added later without a migration.
-// Spending counts trips (it's real money); the Overview toggle only keeps trips out of the pace.
+// Everything counts against it, as in the headline: recurring costs, trips and trip bookings.
+// The Overview toggle only keeps trips out of the pace. Categories have no budgets; Overview shows
+// each one's share of the budget instead.
 
 import { monthKey, monthStart, monthEnd, formatMonth } from './dates.js';
-import { categoryRows, isLive } from './totals.js';
-import { categoryForecasts } from './forecast.js';
+import { periodTotals, isLive } from './totals.js';
+import { monthForecast } from './forecast.js';
 import { gbp, gbpRounded } from './money.js';
 
-export const budgetId = (categoryId, month) => `${categoryId}:${month}`;
+export const MONTH_BUDGET = 'month';
 
-/** The budget for a category in a month, in pence. 0 when there is none. */
-export function budgetFor(budgets, categoryId, month) {
+export const budgetId = (month) => `${MONTH_BUDGET}:${month}`;
+
+/** The budget for a month, in pence. 0 when there is none. */
+export function budgetFor(budgets, month) {
   let best = null;
   for (const b of budgets) {
-    if (!isLive(b) || b.categoryId !== categoryId || b.fromMonth > month) continue;
+    if (!isLive(b) || b.categoryId !== MONTH_BUDGET || b.fromMonth > month) continue;
     if (!best || b.fromMonth > best.fromMonth) best = b;
   }
   return best?.amountPence ?? 0;
 }
 
-/** Map(categoryId → pence) of every category with a budget in month. */
-export function monthBudgets(budgets, month) {
-  const out = new Map();
-  for (const id of new Set(budgets.filter(isLive).map((b) => b.categoryId))) {
-    const pence = budgetFor(budgets, id, month);
-    if (pence > 0) out.set(id, pence);
-  }
-  return out;
-}
-
-/** The row that sets a category's budget from month on, or null if nothing would change. */
-export function budgetChange(budgets, categoryId, month, amountPence) {
-  if (budgetFor(budgets, categoryId, month) === amountPence) return null;
-  return { id: budgetId(categoryId, month), categoryId, fromMonth: month, amountPence, deletedAt: null };
+/** The row that sets the budget from month on, or null if nothing would change. */
+export function budgetChange(budgets, month, amountPence) {
+  if (budgetFor(budgets, month) === amountPence) return null;
+  return { id: budgetId(month), categoryId: MONTH_BUDGET, fromMonth: month, amountPence, deletedAt: null };
 }
 
 /**
- * Budget against spending for each budgeted category in month, in category order.
- * The month in progress also has a forecast; status is 'over' (spent more than the budget),
- * 'heading' (forecast to go over) or 'ok'. Past months have no forecast.
+ * The budget against spending in month, or null when there's no budget.
+ * The month in progress counts recurring costs still due as used, and has a forecast;
+ * status is 'over' (spent and due come to more than the budget), 'heading' (forecast to go over)
+ * or 'ok'. Past months are budget against actual, with no forecast.
  */
-export function budgetRows({ entries, categories, trips = [], budgets = [], recurring = [], rates = [], month, todayDate, excludeTrips = false }) {
-  const amounts = monthBudgets(budgets, month);
-  if (!amounts.size) return [];
+export function budgetStatus({ entries, trips = [], budgets = [], recurring = [], rates = [], month, todayDate, excludeTrips = false }) {
+  const budgetPence = budgetFor(budgets, month);
+  if (!budgetPence) return null;
   const current = month === monthKey(todayDate);
-  const forecasts = current ? categoryForecasts({ entries, trips, recurring, rates, todayDate, excludeTrips }) : null;
-  const spentRows = current ? null : new Map(categoryRows(entries, categories, { from: monthStart(month), to: monthEnd(month) }).map((r) => [r.categoryId, r.pence]));
-  const byId = new Map(categories.map((c) => [c.id, c]));
-  const out = [];
-  for (const [categoryId, budgetPence] of amounts) {
-    const category = byId.get(categoryId);
-    // A removed category's budget stays in its old months, but not in this one.
-    if (!category || (category.archived && month >= monthKey(todayDate))) continue;
-    const spentPence = current ? forecasts.get(categoryId)?.spent ?? 0 : spentRows.get(categoryId) ?? 0;
-    const forecastPence = current ? Math.max(forecasts.get(categoryId)?.forecast ?? 0, spentPence) : null;
-    const status = spentPence > budgetPence ? 'over' : forecastPence !== null && forecastPence > budgetPence ? 'heading' : 'ok';
-    out.push({
-      categoryId,
-      name: category.name,
-      sort: category.sort ?? 999,
-      budgetPence,
-      spentPence,
-      leftPence: budgetPence - spentPence,
-      forecastPence,
-      status,
-      share: Math.min(spentPence / budgetPence, 1),
-    });
+  let spentPence;
+  let costsDue = 0;
+  let forecastPence = null;
+  if (current) {
+    const f = monthForecast({ entries, trips, recurring, rates, todayDate, excludeTrips });
+    spentPence = f.spent;
+    costsDue = f.costsDue;
+    forecastPence = f.forecast;
+  } else {
+    spentPence = periodTotals(entries, { from: monthStart(month), to: monthEnd(month) }).spent;
   }
-  return out.sort((a, b) => a.sort - b.sort);
+  const usedPence = spentPence + costsDue;
+  const leftPence = budgetPence - usedPence;
+  const status = leftPence < 0 ? 'over' : forecastPence !== null && forecastPence > budgetPence ? 'heading' : 'ok';
+  return {
+    month,
+    budgetPence,
+    spentPence,
+    costsDue,
+    leftPence,
+    forecastPence,
+    status,
+    share: Math.min(usedPence / budgetPence, 1),
+  };
 }
 
-/** "£12.50 left", "£5.20 over" or "On track for £180 of £150". */
-export function budgetStatusText(r) {
-  if (r.status === 'over') return `${gbp(-r.leftPence)} over`;
-  if (r.status === 'heading') return `On track for ${gbpRounded(r.forecastPence)} of ${gbp(r.budgetPence, { whole: true })}`;
-  return `${gbp(r.leftPence)} left`;
+/** Beside the budget: "£180.00 left", "£20.00 over" or "On track for £540". */
+export function budgetStatusText(b) {
+  if (b.status === 'over') return `${gbp(-b.leftPence)} over`;
+  if (b.status === 'heading') return `On track for ${gbpRounded(b.forecastPence)}`;
+  return `${gbp(b.leftPence)} left`;
 }
 
-/** The line on Log under the categories: "Eating out: £34 left this month." */
-export function budgetLogLine(r) {
-  if (r.leftPence < 0) return `${r.name}: ${gbp(-r.leftPence, { whole: true })} over this month.`;
-  return `${r.name}: ${gbp(r.leftPence, { whole: true })} left this month.`;
+/** How the budget is used so far: "£300 spent and £15 still due". */
+export function budgetDetail(b) {
+  const due = b.costsDue ? ` and ${gbp(b.costsDue, { whole: true })} still due` : '';
+  return `${gbp(b.spentPence, { whole: true })} spent${due}`;
 }
 
-/** Budget warnings for the weekly review: over, or forecast to go over, this month. */
-export function budgetWarnings(rows) {
-  return rows.filter((r) => r.status !== 'ok');
+/** The line on Log for a payment: "£180 of your £500 budget left this month." */
+export function budgetLogLine(b) {
+  const of = `your ${gbp(b.budgetPence, { whole: true })} budget`;
+  if (b.leftPence < 0) return `${gbp(-b.leftPence, { whole: true })} over ${of} this month.`;
+  return `${gbp(b.leftPence, { whole: true })} of ${of} left this month.`;
 }
 
-/** "Food: £20 over its £150 budget for October." or "Food: on track for £180 of its £150 budget for October." */
-export function budgetWarningLine(r, month) {
-  const of = `its ${gbp(r.budgetPence, { whole: true })} budget for ${formatMonth(month).split(' ')[0]}`;
-  if (r.status === 'over') return `${r.name}: ${gbp(-r.leftPence, { whole: true })} over ${of}.`;
-  return `${r.name}: on track for ${gbpRounded(r.forecastPence)} of ${of}.`;
+/** The weekly review's warning, or null when the budget is on track. */
+export function budgetWarningLine(b) {
+  if (!b || b.status === 'ok') return null;
+  const of = `your ${gbp(b.budgetPence, { whole: true })} budget for ${formatMonth(b.month).split(' ')[0]}`;
+  if (b.status === 'over') return `${gbp(-b.leftPence, { whole: true })} over ${of}.`;
+  return `On track for ${gbpRounded(b.forecastPence)} of ${of}.`;
 }
 
-/** Pounds as typed ("150", "150.50") to pence; '' is no budget (0). null if it can't be read. */
+/** Pounds as typed ("500", "500.50") to pence; '' is no budget (0). null if it can't be read. */
 export function budgetPence(text) {
   const s = String(text ?? '').trim().replace(/^£/, '').replace(/,/g, '');
   if (!s) return 0;

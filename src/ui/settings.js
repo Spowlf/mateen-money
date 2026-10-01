@@ -91,20 +91,15 @@ function categoriesSection(repo) {
         h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('categories', c.id, { archived: 0 })).then((r) => r && toast(`Brought back ${c.name}`)) }, 'Bring back'))))));
 }
 
-// Budgets
+// Budget
 
-function budgetsSection(repo) {
-  const S = repo.state;
-  const month = monthKey(today());
-  const categories = liveSorted(S.categories).filter((c) => !c.archived);
+function budgetSection(repo) {
+  const pence = budgetFor(repo.state.budgets, monthKey(today()));
   return h('section', { class: 'section' },
-    h('h2', { class: 'subhead' }, 'Budgets'),
-    h('ul', { class: 'list' }, categories.map((c) => {
-      const pence = budgetFor(S.budgets, c.id, month);
-      return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openBudgetSheet(repo, c.id) },
-        h('span', { class: 'list-title' }, c.name),
-        h('span', { class: pence ? 'list-amount' : 'list-sub' }, pence ? `${gbp(pence, { whole: true })} a month` : 'No budget')));
-    })));
+    h('h2', { class: 'subhead' }, 'Budget'),
+    h('ul', { class: 'list' }, h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openBudgetSheet(repo) },
+      h('span', { class: 'list-title' }, 'Monthly budget'),
+      h('span', { class: pence ? 'list-amount' : 'list-sub' }, pence ? `${gbp(pence, { whole: true })} a month` : 'No budget')))));
 }
 
 // Payment methods
@@ -442,7 +437,7 @@ export function renderSettings(root, { repo, onConnected }) {
     }
     fill(root, h('div', { class: 'screen settings' },
       categoriesSection(repo),
-      budgetsSection(repo),
+      budgetSection(repo),
       methodsSection(repo),
       tripsSection(repo),
       termsSection(repo),

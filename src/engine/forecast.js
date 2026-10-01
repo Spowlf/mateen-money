@@ -7,8 +7,6 @@
 
 import { addDays, daysBetween, monthKey, monthStart, monthEnd, parse, formatMonth } from './dates.js';
 import { monthHeadline } from './headline.js';
-import { upcomingBetween } from './recurring.js';
-import { estimateGbp } from './currency.js';
 import { isLive } from './totals.js';
 import { gbp, gbpRounded } from './money.js';
 
@@ -112,38 +110,6 @@ export function monthForecast({ entries, trips = [], recurring = [], rates = [],
     blended: pace.weight < 1,
     estimated: hl.estimated,
   };
-}
-
-/**
- * Each category's forecast for the month of todayDate (spending to sort is left out):
- * Map(categoryId → { spent, costsDue, dailyPence, forecast }). Spent counts trips, as the
- * month total does; the pace leaves out trip bookings, and trips when the toggle is on.
- */
-export function categoryForecasts({ entries, trips = [], recurring = [], rates = [], todayDate, excludeTrips = false }) {
-  const month = monthKey(todayDate);
-  const from = monthStart(month);
-  const to = monthEnd(month);
-  const out = new Map();
-  const row = (id) => {
-    if (!out.has(id)) out.set(id, { categoryId: id, spent: 0, costsDue: 0, dailyPence: 0, forecast: 0 });
-    return out.get(id);
-  };
-  for (const e of entries) {
-    if (e.kind !== 'spend' || !isLive(e) || e.categoryId == null || e.gbpPence == null || e.date < from || e.date > to) continue;
-    row(e.categoryId).spent += e.gbpPence;
-  }
-  for (const item of recurring) {
-    if (item.kind !== 'spend' || !item.categoryId) continue;
-    for (const _ of upcomingBetween(item, from, to)) row(item.categoryId).costsDue += estimateGbp(item.amountMinor, item.currency, rates);
-  }
-  const pace = dailyRates(entries.filter((e) => e.categoryId != null), todayDate, { trips, excludeTrips, keyOf: (e) => e.categoryId });
-  for (const [id, daily] of pace.rates) row(id).dailyPence = daily;
-  const daysAfter = daysBetween(todayDate, to);
-  for (const r of out.values()) {
-    r.forecast = r.spent + r.costsDue + Math.round(r.dailyPence * daysAfter);
-    r.dailyPence = Math.round(r.dailyPence);
-  }
-  return out;
 }
 
 /** "At this pace: £1,240 by 31 October, £40 more than you have." */

@@ -148,9 +148,9 @@ export const STORES = {
  */
 
 /**
- * @typedef {Object} Budget  A category's monthly budget from fromMonth on (see src/engine/budgets.js).
- * @property {string} id           `${categoryId}:${fromMonth}`
- * @property {string} categoryId
+ * @typedef {Object} Budget  The monthly budget from fromMonth on (see src/engine/budgets.js).
+ * @property {string} id           `month:${fromMonth}`
+ * @property {string} categoryId   always 'month' (rows from the old per-category budgets are ignored)
  * @property {string} fromMonth    'YYYY-MM'; a month's budget is the latest row on or before it
  * @property {number} amountPence  GBP; 0 = no budget from this month
  */

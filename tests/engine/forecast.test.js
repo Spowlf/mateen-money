@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { monthHeadline } from '../../src/engine/headline.js';
 import {
-  safeToSpend, safeToSpendLine, dailyRates, monthForecast, categoryForecasts, forecastLine, forecastRow, forecastReason,
+  safeToSpend, safeToSpendLine, dailyRates, monthForecast, forecastLine, forecastRow, forecastReason,
 } from '../../src/engine/forecast.js';
 import { spend, income } from './fixtures.js';
 
@@ -131,9 +131,6 @@ test('forecast: a trip booking counts in spent so far but not in the pace', () =
   assert.equal(f.spent, 41000);
   assert.equal(f.dailyPence, 100);
   assert.equal(f.forecast, 41000 + 100 * 20);
-  const travel = categoryForecasts({ entries, trips, todayDate: '2026-11-10' }).get('travel');
-  assert.equal(travel.spent, 40000);
-  assert.equal(travel.forecast, 40000);
 });
 
 test('forecast: spent + still due + pace × days after today', () => {
@@ -177,19 +174,4 @@ test('forecast: the first week blends the pace without explaining it', () => {
   const f = monthForecast({ entries: [...history, income('2026-10-01', 50000), spend('2026-10-01', 700)], todayDate: '2026-10-01' });
   assert.equal(f.blended, true);
   assert.doesNotMatch(forecastReason(f), /blends/);
-});
-
-test('category forecasts: each category at its own pace, with its recurring costs', () => {
-  const recurring = [{ id: 'r1', kind: 'spend', label: 'Spotify', amountMinor: 1199, currency: 'GBP', frequency: 'monthly', nextDate: '2026-10-28', categoryId: 'other', active: 1 }];
-  const entries = [
-    spend('2026-10-02', 4000, 'groceries'),
-    spend('2026-10-05', 6000, 'groceries'),
-    spend('2026-10-06', 2500, 'eating-out'),
-    spend('2026-10-07', 999, null),
-  ];
-  const f = categoryForecasts({ entries, recurring, todayDate: '2026-10-10' });
-  assert.deepEqual(f.get('groceries'), { categoryId: 'groceries', spent: 10000, costsDue: 0, dailyPence: 1000, forecast: 10000 + 1000 * 21 });
-  assert.equal(f.get('eating-out').forecast, 2500 + 250 * 21);
-  assert.equal(f.get('other').forecast, 1199);
-  assert.equal(f.has(null), false);
 });

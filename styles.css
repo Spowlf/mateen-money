@@ -156,7 +156,6 @@ main {
 @media (hover: hover) { .budget-row.static:hover { background: transparent; } }
 .budget-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
 .budget-row .cat-bar { margin-top: var(--s1); }
-.budget-note { margin-top: calc(-1 * var(--s2)); }
 .reason { font-size: var(--t-s); color: var(--ink-2); }
 /* Overview: the figure is the screen's answer, at full size, on its own line. */
 .headline-quiet { box-shadow: none; }

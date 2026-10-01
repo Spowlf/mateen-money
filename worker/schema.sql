@@ -163,8 +163,9 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 CREATE INDEX IF NOT EXISTS settings_rev ON settings (rev);
 
--- Monthly budgets per category: a row sets the budget from fromMonth on, so earlier months keep
--- theirs. id is categoryId:fromMonth. amountPence 0 = no budget from that month.
+-- The monthly budget: a row sets it from fromMonth on, so earlier months keep theirs.
+-- id is categoryId:fromMonth, categoryId always 'month' (older per-category rows are ignored).
+-- amountPence 0 = no budget from that month.
 CREATE TABLE IF NOT EXISTS budgets (
   id TEXT PRIMARY KEY,
   categoryId TEXT NOT NULL,
