@@ -83,6 +83,15 @@ export function foldCategories(rows, top = 5) {
   ];
 }
 
+/** Shows a tooltip centred over a point (a fraction of the chart's width), kept inside the chart. */
+function placeTip(tooltip, at) {
+  tooltip.hidden = false;
+  const room = tooltip.parentElement.clientWidth;
+  const w = tooltip.offsetWidth;
+  const left = Math.min(Math.max(at * room - w / 2, 0), Math.max(room - w, 0));
+  tooltip.style.transform = `translate(${left}px, 0)`;
+}
+
 /**
  * Income and spending per step of a period (weeks of a month or term, months of a year) as paired
  * columns on one axis, with a legend, a tooltip on each step (hover, tap or keyboard focus) and the
@@ -128,9 +137,7 @@ export function incomeSpendingChart(series, { width = 358, name, step }) {
           h('p', { class: 'tip-title' }, m.title),
           h('p', { class: 'tip-row' }, h('span', { class: 'line-key key-2' }), h('strong', {}, gbp(m.income)), ' income'),
           h('p', { class: 'tip-row' }, h('span', { class: 'line-key key-1' }), h('strong', {}, gbp(m.spent)), ' spent'));
-        tooltip.hidden = false;
-        const left = Math.min(Math.max(mid - 70, 0), width - 140);
-        tooltip.style.transform = `translate(${left}px, 0)`;
+        placeTip(tooltip, mid / width);
       };
       const hide = () => { g.classList.remove('on'); tooltip.hidden = true; };
       g.addEventListener('pointerenter', show);
@@ -207,8 +214,7 @@ export function worthChart(points, { width = 358, name }) {
     tooltip.replaceChildren(
       h('p', { class: 'tip-title' }, at === points.length - 1 ? 'Today' : formatDay(p.date)),
       h('p', { class: 'tip-row' }, h('strong', {}, gbp(p.pence))));
-    tooltip.hidden = false;
-    tooltip.style.transform = `translate(${Math.min(Math.max(px - 70, 0), width - 140)}px, 0)`;
+    placeTip(tooltip, px / width);
   };
   const hide = () => { at = null; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); tooltip.hidden = true; };
   const nearest = (e) => {
