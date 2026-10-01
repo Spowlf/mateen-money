@@ -6,7 +6,7 @@ import { h, fill, chips, field, sheet, toast } from './dom.js';
 import { runAction } from './format.js';
 import {
   today, nowTime, gbp, formatMoney, formatDay, toDecimalText, netWorth, latestBalance, balanceRows, balanceMinor, undoRows,
-  updatedPhrase, staleLine, ACCOUNT_KINDS, COMMON_CURRENCIES,
+  updatedPhrase, staleLine, isIbkrName, ACCOUNT_KINDS, COMMON_CURRENCIES,
 } from '../engine/index.js';
 
 const ACCOUNT_FIELDS = ['name', 'kind', 'currency', 'sort'];
@@ -71,8 +71,13 @@ export function openAccountSheet(repo, account = null) {
   const body = h('div', { class: 'sheet-form' });
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit() });
 
+  // IBKR set up on the Worker fills in a new account named like it (balance and currency) at its
+  // next sync, so there's nothing to type.
+  const fromIbkr = () => !account && S.ibkr?.configured && f.kind === 'investment' && isIbkrName(f.name);
+  // Only a current account has cards paying from it (and an overdraft).
+  const hasCards = () => f.kind === 'current';
   // A balance has to be typed again when the currency changes, so it's never read in the wrong one.
-  const balanceNeeded = () => !account || (latest && latest.currency !== f.currency);
+  const balanceNeeded = () => !fromIbkr() && (!account || (latest && latest.currency !== f.currency));
   const typedMinor = () => (f.balance.trim() ? balanceMinor(f.balance, f.currency) : null);
 
   function missing() {
@@ -83,7 +88,13 @@ export function openAccountSheet(repo, account = null) {
     return null;
   }
 
+  // Shown or hidden as the name and kind change, without redrawing the field being typed in.
+  const parts = { typed: [], ibkr: null, cards: null };
+
   function renderSave() {
+    for (const el of parts.typed) el.hidden = !!fromIbkr();
+    if (parts.ibkr) parts.ibkr.hidden = !fromIbkr();
+    if (parts.cards) parts.cards.hidden = !hasCards();
     const need = missing();
     save.disabled = !!need;
     save.textContent = need ?? (account ? 'Save changes' : `Add ${f.name.trim()}`);
@@ -99,7 +110,8 @@ export function openAccountSheet(repo, account = null) {
     const balance = h('input', { class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', value: f.balance,
       placeholder: '0.00', oninput: () => set({ balance: cleanBalance(balance) }) });
     const date = h('input', { class: 'input', type: 'date', value: f.date, max: today(), required: true, onchange: () => set({ date: date.value }) });
-    const hint = !latest ? 'Below zero for an overdraft: -25.00.'
+    const hint = account && latest && latest.currency !== f.currency ? `The last balance was in ${latest.currency}.`
+      : !latest ? (f.kind === 'current' ? 'Below zero for an overdraft: -25.00.' : null)
       : carried?.payments ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
         : `${updatedPhrase(latest.date, today())}. Leave it as it is to keep it.`;
     // Cards are toggles, not one choice: an account can have several.
@@ -114,14 +126,17 @@ export function openAccountSheet(repo, account = null) {
     body.replaceChildren(...[
       field('Name', name),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Kind'),
-        chips({ label: 'Kind', options: ACCOUNT_KINDS.map((k) => ({ value: k.id, label: k.one })), value: f.kind, onChange: (v) => set({ kind: v }) })),
-      field('Currency', currency),
-      h('div', { class: 'row-2' },
-        field(`Balance in ${f.currency}`, balance),
-        field('On', date)),
-      h('p', { class: 'field-hint' }, account && latest && latest.currency !== f.currency ? `The last balance was in ${latest.currency}.` : hint),
-      methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Cards that pay from it'), cards,
-        h('span', { class: 'field-hint' }, 'Payments with these come off the balance until you next update it.')),
+        chips({ label: 'Kind', options: ACCOUNT_KINDS.map((k) => ({ value: k.id, label: k.one })), value: f.kind, onChange: (v) => set({ kind: v }, true) })),
+      ...(parts.typed = [
+        field('Currency', currency),
+        h('div', { class: 'row-2' },
+          field(`Balance in ${f.currency}`, balance),
+          field('On', date)),
+        hint && h('p', { class: 'field-hint' }, hint),
+      ].filter(Boolean)),
+      parts.ibkr = h('p', { class: 'field-hint' }, 'IBKR fills in its balance and currency when it next syncs.'),
+      parts.cards = methods.length > 0 ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Cards that pay from it'), cards,
+        h('span', { class: 'field-hint' }, 'Payments with these come off the balance until you next update it.')) : null,
       h('div', { class: 'sheet-actions' },
         save,
         account && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete account')),
@@ -135,13 +150,15 @@ export function openAccountSheet(repo, account = null) {
     const id = account?.id ?? crypto.randomUUID();
     const sort = account?.sort ?? Math.max(-1, ...S.accounts.filter((a) => !a.deletedAt).map((a) => a.sort ?? 0)) + 1;
     const row = { id, name: f.name.trim(), kind: f.kind, currency: f.currency, sort, deletedAt: null };
-    const typed = typedMinor();
+    const typed = fromIbkr() ? null : typedMinor();
     // Leaving the balance as it was keeps it (and its date): nothing new was checked.
     const unchanged = account && latest && typed === latest.amountMinor && latest.currency === f.currency;
     const balances = typed === null || unchanged ? [] : balanceRows({ accounts: [row], balances: S.balances, typed: { [id]: typed }, date: f.date });
     const before = account && Object.fromEntries(ACCOUNT_FIELDS.map((k) => [k, account[k] ?? null]));
     const beforeBalances = S.balances.filter((b) => balances.some((r) => r.id === b.id)).map((b) => ({ ...b }));
     // A card moves here from any other account; one taken off is linked to none.
+    // Only a current account keeps its cards: changed to another kind, they come off it.
+    if (!hasCards()) linked.clear();
     const methodRows = methods.filter((m) => linked.has(m.id) !== linkedBefore.has(m.id))
       .map((m) => ({ id: m.id, accountId: linked.has(m.id) ? id : null }));
     const methodsBefore = methodRows.map((m) => ({ id: m.id, accountId: S.methods.find((x) => x.id === m.id)?.accountId ?? null }));

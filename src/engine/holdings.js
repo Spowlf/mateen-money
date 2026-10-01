@@ -397,3 +397,6 @@ export function activityTitle(a) {
  * Buys and sells are stored as positive amounts; cash rows carry their own sign.
  */
 export const activityCash = (a) => (a.type === 'buy' ? -Math.abs(a.amountMinor) : a.type === 'sell' ? Math.abs(a.amountMinor) : a.amountMinor);
+
+/** An investment account the Flex sync fills in by its name: "IBKR", "Interactive Brokers". */
+export const isIbkrName = (name) => /ibkr|interactive brokers/i.test(name ?? '');

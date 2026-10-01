@@ -56,10 +56,13 @@ export function renderNetWorth(root, { repo }) {
     const todayDate = today();
     const nw = worth(S);
     if (!nw.groups.length) {
-      return fill(root, h('section', { class: 'empty' },
-        h('h2', {}, 'No Accounts Yet'),
-        h('p', {}, 'Add each account and what’s in it to see your net worth. Your spending figures stay as they are.'),
-        h('button', { type: 'button', class: 'button primary', onclick: () => openAccountSheet(repo) }, 'Add an account')));
+      // IBKR set up but not synced yet: a sync adds its account, so it's offered first.
+      return fill(root, h('div', { class: 'screen' },
+        ibkrNotices(repo, render),
+        h('section', { class: 'empty' },
+          h('h2', {}, 'No Accounts Yet'),
+          h('p', {}, 'Add each account and what’s in it to see your net worth. Your spending figures stay as they are.'),
+          h('button', { type: 'button', class: 'button primary', onclick: () => openAccountSheet(repo) }, 'Add an account'))));
     }
     const day = dayChange({ snapshots: S.snapshots, totalPence: nw.totalPence, todayDate });
     const month = monthChange({

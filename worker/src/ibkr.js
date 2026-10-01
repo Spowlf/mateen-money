@@ -4,7 +4,7 @@
 //   IBKR_FLEX_TOKEN, IBKR_FLEX_QUERY_ID
 // A statement still being made is asked for again a few times, then left to the next run.
 
-import { readFlex, xmlText, balanceId } from '../../src/engine/index.js';
+import { readFlex, xmlText, balanceId, isIbkrName } from '../../src/engine/index.js';
 import { ensureRates } from './rates.js';
 
 export const FLEX = 'https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService';
@@ -68,7 +68,7 @@ async function ibkrAccount(store, baseCurrency) {
   const accounts = await store.live('accounts');
   const chosen = setting && !setting.deletedAt && accounts.find((a) => a.id === setting.value);
   if (chosen) return { account: chosen, created: false };
-  const named = accounts.find((a) => a.kind === 'investment' && /ibkr|interactive brokers/i.test(a.name));
+  const named = accounts.find((a) => a.kind === 'investment' && isIbkrName(a.name));
   if (named) return { account: named, created: true };
   const sort = Math.min(0, ...accounts.map((a) => a.sort ?? 0)) - 1;
   return { account: { id: 'ibkr', name: 'IBKR', kind: 'investment', currency: baseCurrency, sort, deletedAt: null }, created: true };
