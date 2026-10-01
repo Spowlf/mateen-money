@@ -1,6 +1,6 @@
 // Log: the headline, To sort, and the entry form. Home screen: type the amount, tap a vendor, Save.
 
-import { h, fill, chips, segmented, field, sheet, toast, scrollBehaviour } from './dom.js';
+import { h, fill, chips, segmented, field, sheet, toast, scrollBehaviour, categoryIcon, withCategoryIcons } from './dom.js';
 import { money, whenPhrase, liveSorted, runAction } from './format.js';
 import { renderHeadline } from './headline.js';
 import { renderReview } from './review.js';
@@ -52,7 +52,7 @@ export function renderLog(root, { repo }) {
       const { vendor, categories } = sortChoices(entry, sortContext(S));
       quick = h('div', { class: 'chips', role: 'group', 'aria-label': `Sort ${entry.merchant}` },
         vendor && h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { vendorId: vendor.id }) }, vendor.name),
-        categories.map((c) => h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { categoryId: c.id, vendorName: tidyName(entry.merchant) }) }, c.name)),
+        categories.map((c) => h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { categoryId: c.id, vendorName: tidyName(entry.merchant) }) }, categoryIcon(c.id), c.name)),
         h('button', { type: 'button', class: 'chip', onclick: () => openSortSheet(repo, entry) }, 'Other'));
     }
     return h('li', { class: 'sort-item' },
@@ -60,7 +60,7 @@ export function renderLog(root, { repo }) {
         h('span', { class: 'list-main' },
           h('span', { class: 'list-title' }, entry.merchant),
           h('span', { class: 'list-sub' }, entry.needsCurrency ? `Which currency? ${sub}` : sub)),
-        h('span', { class: 'list-amount' }, money(entry))),
+        h('span', { class: `list-amount ${entry.kind === 'income' ? 'income' : 'spend'}` }, `${entry.kind === 'income' ? '+' : ''}${money(entry)}`)),
       quick);
   }
 
@@ -98,6 +98,7 @@ export function renderLog(root, { repo }) {
     label: 'Spent or received',
     options: [{ value: 'spend', label: 'Spent' }, { value: 'income', label: 'Received' }],
     value: 'spend',
+    className: 'kind-switch',
     onChange: (v) => set(withTrip({ ...form, kind: v, categoryId: null, incomeType: null, vendorId: null, spreadMonths: 1, spreadStart: null, tripManual: false }), { details: true }),
   });
   const currencyButton = h('button', { type: 'button', class: 'currency', 'aria-label': 'Change currency', onclick: () => openCurrencySheet() });
@@ -194,7 +195,7 @@ export function renderLog(root, { repo }) {
     if (chosen && !options.includes(chosen)) options = [...options.slice(0, 3), chosen];
     const group = chips({
       label: `Category for ${form.vendorName.trim()}`,
-      options: options.map((c) => ({ value: c.id, label: c.name })),
+      options: withCategoryIcons(options.map((c) => ({ value: c.id, label: c.name }))),
       value: form.categoryId,
       onChange: (v) => set({ categoryId: v }, { details: true }),
     });
@@ -242,7 +243,7 @@ export function renderLog(root, { repo }) {
       !income && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
         chips({ label: 'Paid with', options: methods.map((m) => ({ value: m.id, label: m.name })), value: form.methodId, onChange: (v) => set({ methodId: v }) })),
       !income && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
-        chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: form.categoryId, onChange: (v) => set({ categoryId: v }, { details: true }) })),
+        chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: form.categoryId, onChange: (v) => set({ categoryId: v }, { details: true }) })),
       income && form.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: form.spreadMonths === 12, onchange: (e) => set({ spreadMonths: e.target.checked ? 12 : 1 }) }),
         h('span', {}, 'Spread over October to September')),
@@ -251,6 +252,8 @@ export function renderLog(root, { repo }) {
 
   function renderForm({ details: withDetails = false } = {}) {
     kind.set(form.kind);
+    // Colours the amount as money out or money in.
+    el.entry.dataset.kind = form.kind;
     renderAmount();
     renderVendor();
     renderQuick();

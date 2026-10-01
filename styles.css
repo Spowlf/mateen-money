@@ -21,6 +21,18 @@
   --series-1: #2B63D9;   /* spending */
   --series-2: #EB6834;   /* income */
   --series-muted: #A6B4CA;
+  /* Money out is the spending blue, money in the income orange, everywhere: the exact series colours for fills,
+     a -text shade of each that meets 4.5:1 for amounts, the ink that meets 4.5:1 on each fill, and a ~15% wash. */
+  --spend: var(--series-1);
+  --income: var(--series-2);
+  --spend-text: #2B63D9;
+  --income-text: #B9461A;
+  --on-spend: #FFFFFF;
+  --on-income: #1B2638;
+  --spend-soft: color-mix(in srgb, var(--spend) 15%, transparent);
+  --income-soft: color-mix(in srgb, var(--income) 15%, transparent);
+  /* Behind the iOS status bar, whose text is always white (black-translucent): dark in both modes. */
+  --status-bar: #1B2638;
   /* The headline is the one raised surface on Log: it holds the answer. Neutral, never tinted. */
   --shadow-raised: 0 1px 2px rgb(27 38 56 / 0.06), 0 6px 16px -6px rgb(27 38 56 / 0.16);
   --shadow-float: 0 2px 6px rgb(27 38 56 / 0.08), 0 20px 48px -12px rgb(27 38 56 / 0.32);
@@ -66,6 +78,11 @@
     --series-1: #3987E5;
     --series-2: #D95926;
     --series-muted: #526079;
+    --spend-text: #6AA6F2;
+    --income-text: #EE7D4A;
+    --on-spend: #0F141D;
+    --on-income: #0F141D;
+    --status-bar: var(--paper);
     --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 16px -6px rgb(0 0 0 / 0.5);
     --shadow-float: 0 2px 6px rgb(0 0 0 / 0.4), 0 20px 48px -12px rgb(0 0 0 / 0.6);
     color-scheme: dark;
@@ -90,6 +107,12 @@ button { -webkit-user-select: none; user-select: none; }
 [hidden] { display: none !important; }
 /* A quick second tap (the keypad, chips) is a tap, never a zoom. */
 button, a, input, select, label, summary { touch-action: manipulation; }
+/* The status bar floats over the page (black-translucent); this strip keeps its white text readable and
+   content from showing through it. Zero high outside a home screen app. */
+body::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  height: env(safe-area-inset-top); background: var(--status-bar); pointer-events: none;
+}
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Shell */
@@ -121,10 +144,12 @@ main {
   min-height: var(--tabbar); color: var(--ink-2); text-decoration: none;
   font-size: var(--t-s); font-weight: 600; line-height: 1.2; white-space: nowrap;
 }
-.tabs svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabs svg { width: 56px; height: 28px; padding: 2px 16px; border-radius: 999px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @media (hover: hover) { .tabs a:hover { color: var(--ink); } }
 .tabs a:active { color: var(--accent-press); background: var(--accent-soft); }
 .tabs a[aria-current="page"] { color: var(--accent); }
+/* The tab you're on: a pill behind its icon as well as the colour. */
+.tabs a[aria-current="page"] svg { background: var(--accent-soft); }
 .tabs a:focus-visible { outline-offset: -3px; }
 .badge {
   position: absolute; top: 6px; left: calc(50% + 6px);
@@ -157,8 +182,14 @@ main {
 .budget-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
 .budget-row .meter { margin-top: var(--s1); }
 .reason { font-size: var(--t-s); color: var(--ink-2); }
-/* Overview: the figure is the screen's answer, at full size, on its own line. */
-.headline-quiet { box-shadow: none; }
+/* Not connected yet: one slim line in place of the headline. */
+.connect-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  padding: var(--s1) var(--s1) var(--s1) var(--s3); border-radius: var(--r-control);
+  background: var(--accent-soft); font-size: var(--t-s); font-weight: 600;
+}
+.connect-banner > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.connect-banner .text-button { margin: 0; flex: none; }
 
 /* The figure changed (after a save or a sync): it eases into its new value. */
 .headline-figure .num.changed { animation: changed 0.3s var(--ease-out); }
@@ -187,6 +218,16 @@ main {
 .list-title { font-weight: 600; overflow-wrap: anywhere; }
 .list-sub { font-size: var(--t-s); color: var(--ink-2); }
 .list-amount { font-family: var(--font-num); font-weight: 700; flex: none; }
+/* Money out in blue, money in in orange. The label or the +/− beside it always says which too. */
+.list-amount.spend, .cat-table td.spend { color: var(--spend-text); }
+.list-amount.income { color: var(--income-text); }
+/* A category icon (or what the row is) at the start of a row: neutral, so the amount keeps the colour. */
+.row-icon {
+  display: inline-grid; place-items: center; flex: none; align-self: center;
+  width: 36px; height: 36px; border-radius: 50%; background: var(--paper); color: var(--ink-2);
+}
+.row-icon + .list-main { margin-right: auto; }
+.cat-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sort-item { padding-bottom: var(--s3); }
 /* Every choice in view: the row wraps instead of scrolling sideways. */
 .sort-item .chips { padding: 0 var(--s4); }
@@ -216,6 +257,11 @@ main {
 .list-amount.danger, .list-sub.danger { color: var(--danger); }
 /* Left over: the figure the period comes down to, so it's the one row with a fill. */
 .total-row.standout { min-height: 72px; background: var(--accent-soft); }
+/* Its state against the budget (or the balance without one), always written in its sub line too. Solid tints only. */
+.total-row.standout.state-heading { background: var(--warn-soft); }
+.total-row.standout.state-heading .list-sub { color: var(--warn); font-weight: 600; }
+.total-row.standout.state-over { background: var(--danger-soft); }
+.total-row.standout.state-over .list-sub { color: var(--danger); font-weight: 600; }
 .total-row.standout .list-title { font-weight: 700; }
 .total-row.standout .list-amount { font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
 
@@ -227,6 +273,7 @@ main {
 .cat-table td + td { padding-left: 0; }
 .cat-table .share { color: var(--ink-2); font-weight: 600; min-width: 3.5em; }
 .cat-name { display: block; }
+.all-categories { display: grid; gap: var(--s2); }
 .meter { display: block; height: 8px; margin-top: var(--s2); border-radius: 4px; background: var(--line); overflow: hidden; }
 .meter-fill { display: block; height: 100%; border-radius: 4px; }
 .fill-1 { background: var(--series-1); }
@@ -280,6 +327,10 @@ main {
 .filter-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
 /* Each filter keeps its whole label; it wraps to a new row when there's no room and fills the row it's on. */
 .select.select-small { flex: 1 1 auto; width: auto; max-width: 100%; min-height: 40px; border-radius: 999px; font-size: var(--t-s); font-weight: 600; }
+/* The category filter shows the picked category's icon inside its pill (a native select can't draw one per option). */
+.select-icon { position: relative; display: flex; flex: 1 1 auto; max-width: 100%; }
+.select-icon .select.select-small { padding-left: 40px; }
+.select-icon .cat-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-2); pointer-events: none; }
 .day { gap: var(--s2); }
 .day-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); font: 600 var(--t-m)/1.5 var(--font-text); }
 .day-total { font: 600 var(--t-s) var(--font-text); color: var(--ink-2); }
@@ -314,6 +365,9 @@ main {
   border: 1px solid var(--line); border-radius: 999px;
   background: var(--surface); font-size: var(--t-s); font-weight: 600; cursor: pointer;
 }
+.chip:has(.cat-icon) { display: inline-flex; align-items: center; gap: 6px; padding-left: var(--s3); }
+.chip .cat-icon { width: 18px; height: 18px; color: var(--ink-2); }
+.chip[aria-checked="true"] .cat-icon, .chip[aria-pressed="true"] .cat-icon { color: currentColor; }
 @media (hover: hover) { .chip:hover { border-color: var(--ink-2); } }
 .chip:active { border-color: var(--accent); background: var(--accent-soft); }
 .chip[aria-checked="true"], .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -327,13 +381,23 @@ main {
 }
 .segment {
   min-height: 40px; padding: 0 var(--s2); border: 0; border-radius: 9px;
-  background: transparent; color: var(--ink); font-size: var(--t-s); font-weight: 600; cursor: pointer;
+  background: transparent; color: var(--ink-2); font-size: var(--t-s); font-weight: 600; cursor: pointer;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
 }
-@media (hover: hover) { .segment:hover { background: color-mix(in srgb, var(--track) 50%, var(--surface)); } }
-.segment:active { background: var(--surface); }
-/* The chosen segment: the surface colour, outlined in --ink-2 so it stands out at 3:1 or more. */
-.segment[aria-checked="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-2); }
+@media (hover: hover) { .segment:hover { background: color-mix(in srgb, var(--track) 50%, var(--surface)); color: var(--ink); } }
+.segment:active { background: var(--surface); color: var(--ink); }
+/* The chosen segment: a solid accent fill; the others stay muted. */
+.segment[aria-checked="true"] { background: var(--accent); color: var(--on-accent); }
+/* Spent / Received and Cost / Income: the fill says money out (blue) or money in (orange). */
+.kind-switch .segment[data-value="spend"][aria-checked="true"] { background: var(--spend); color: var(--on-spend); }
+.kind-switch .segment[data-value="income"][aria-checked="true"] { background: var(--income); color: var(--on-income); }
+@media (hover: hover) {
+  .kind-switch .segment[data-value="spend"]:not([aria-checked="true"]):hover { background: var(--spend-soft); }
+  .kind-switch .segment[data-value="income"]:not([aria-checked="true"]):hover { background: var(--income-soft); }
+}
+.kind-switch .segment[data-value="spend"]:not([aria-checked="true"]):active { background: var(--spend-soft); }
+.kind-switch .segment[data-value="income"]:not([aria-checked="true"]):active { background: var(--income-soft); }
 .segment:focus-visible { outline-offset: -2px; }
 
 /* The entry form */
@@ -349,7 +413,9 @@ main {
 }
 .pad-display .currency:active { background: var(--accent-soft); color: var(--ink); }
 @media (hover: hover) { .pad-display .currency:hover { background: var(--accent-soft); color: var(--ink); } }
-.pad-display .num { font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.pad-display .num { font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; transition: color 0.15s; }
+.entry[data-kind="spend"] .pad-display .num:not(.placeholder) { color: var(--spend-text); }
+.entry[data-kind="income"] .pad-display .num:not(.placeholder) { color: var(--income-text); }
 .pad-display .num.placeholder { color: var(--ink-2); }
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
 .key {
@@ -423,7 +489,12 @@ a.button { text-decoration: none; }
 .icon-button:active { background: var(--accent-soft); color: var(--ink); }
 @media (hover: hover) { .icon-button:hover { background: var(--accent-soft); color: var(--ink); } }
 .icon-button:disabled { opacity: 0.35; cursor: default; background: transparent; }
-.icon-button[aria-current="page"] { color: var(--accent); }
+/* The Settings gear: a quiet filled circle, accent-tinted while Settings is open; never an outline ring. */
+#settings { background: var(--surface); }
+#settings[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+#settings:focus:not(:focus-visible) { outline: none; }
+#settings:active { background: var(--accent-soft); color: var(--ink); }
+@media (hover: hover) { #settings:hover { background: var(--accent-soft); color: var(--ink); } }
 .icon-button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Hints, warnings, tags */
@@ -446,7 +517,7 @@ a.button { text-decoration: none; }
 /* Sheets */
 
 .sheet {
-  width: 100%; max-width: 560px; max-height: 92dvh; margin: auto auto 0;
+  width: 100%; max-width: 560px; max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - var(--s2))); margin: auto auto 0;
   padding: 0 var(--s4) calc(env(safe-area-inset-bottom) + var(--s4));
   border: 0; border-radius: var(--r-panel) var(--r-panel) 0 0;
   background: var(--paper); color: var(--ink); box-shadow: var(--shadow-float); overflow-y: auto;

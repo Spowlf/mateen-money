@@ -91,10 +91,10 @@ Log opens on the headline, History on its switch and search, and Plan on its tot
 |---|---|
 | Headline stripe | Removed. |
 | Headline shadow | Kept, neutral: the one raised surface marks the answer. |
-| "Left over" row fill (`.total-row.standout`) | Kept: it's the figure the period comes down to. |
+| "Left over" row fill (`.total-row.standout`) | Kept: it's the figure the period comes down to. Since 2026-10-01 its tint also gives its state (accent, `--warn-soft` at 80% of the budget, `--danger-soft` over), always written in its sub line. |
 | Sheet, toast and tooltip shadows | Kept: they float above the page. |
 | Tab bar blur | Removed. |
 | Chip and button press springs | Removed. |
-| Segmented control | No shadow. The chosen segment is the surface colour on the track, outlined in `--ink-2` so it shows at 3:1 or more in both modes. |
+| Segmented control | No shadow. The chosen segment is a solid accent fill with `--on-accent` text (a spend / income switch uses `--spend` / `--income`); the others are muted `--ink-2`. Changed 2026-10-01 because the outlined surface was hard to tell apart. |
 
 All 289 tests pass after the changes.

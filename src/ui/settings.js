@@ -311,7 +311,7 @@ function allowanceSection(repo) {
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, r.label),
         h('span', { class: 'list-sub' }, r.active === 0 ? 'Paused' : `Next ${formatDay(r.nextDate)}${r.spreadMonths > 1 ? ', spread over the year' : ''}`)),
-      h('span', { class: 'list-amount' }, formatMoney(r.amountMinor, r.currency)))))),
+      h('span', { class: 'list-amount income' }, formatMoney(r.amountMinor, r.currency)))))),
     h('p', { class: 'field-hint' }, 'Enter it net of rent. Rent isn’t logged.'),
     !items.length && h('div', {}, h('button', {
       type: 'button', class: 'text-button',

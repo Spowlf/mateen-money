@@ -45,8 +45,32 @@ export function categoryTable(rows, { caption }) {
       h('th', { scope: 'row' },
         h('span', { class: 'cat-name' }, r.name),
         meter(r.share, r.categoryId === null ? 'fill-muted' : 'fill-1')),
-      h('td', { class: 'num' }, gbp(r.pence)),
+      h('td', { class: 'num spend' }, gbp(r.pence)),
       h('td', { class: 'num share' }, `${Math.round(r.share * 100)}%`)))));
+}
+
+/**
+ * The top five categories, then one row for the real Other and everything past the top five
+ * ("Other + 3 more categories"), its pence and share the sum of theirs. To Sort keeps its own row.
+ * Returns rows unchanged when folding would leave fewer than two rows to combine.
+ */
+export function foldCategories(rows, top = 5) {
+  const categories = rows.filter((r) => r.categoryId !== null && r.categoryId !== 'other');
+  const rest = categories.slice(top);
+  const other = rows.find((r) => r.categoryId === 'other');
+  const combined = other ? [other, ...rest] : rest;
+  if (combined.length < 2) return rows;
+  const kept = new Set(categories.slice(0, top).map((r) => r.categoryId));
+  const more = `${rest.length} more ${rest.length === 1 ? 'category' : 'categories'}`;
+  return [
+    ...rows.filter((r) => r.categoryId === null || kept.has(r.categoryId)),
+    {
+      categoryId: 'other',
+      name: other ? `Other + ${more}` : more.charAt(0).toUpperCase() + more.slice(1),
+      pence: combined.reduce((sum, r) => sum + r.pence, 0),
+      share: combined.reduce((sum, r) => sum + r.share, 0),
+    },
+  ];
 }
 
 /**

@@ -4,7 +4,7 @@
 
 import { h, fill, segmented, icon, sheet } from './dom.js';
 import { runAction } from './format.js';
-import { categoryTable, incomeSpendingChart, budgetBar } from './charts.js';
+import { categoryTable, foldCategories, incomeSpendingChart, budgetBar } from './charts.js';
 import { openBudgetSheet } from './budget-sheet.js';
 import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
@@ -71,21 +71,39 @@ export function renderOverview(root, { repo }) {
       nav, modeChips);
   }
 
-  function totalsCard(data) {
+  // Left over's state: against the month's budget when there is one (80% used or over), otherwise the balance.
+  // Always written in its sub line, never colour alone.
+  function leftOverState(t, budget) {
+    if (budget) {
+      if (budget.leftPence < 0) return { cls: 'state-over', text: 'Over budget' };
+      if (budget.share >= 0.8) return { cls: 'state-heading', text: `${Math.floor(budget.share * 100)}% of budget used` };
+      return { cls: '', text: 'Within budget' };
+    }
+    return { cls: t.net < 0 ? 'state-over' : '', text: null };
+  }
+
+  function totalsCard(data, budget) {
     const t = data.totals;
     const tilde = t.estimated ? '~' : '';
+    const state = leftOverState(t, budget);
     const row = (label, value, sub, cls = '', rowCls = '') => h('li', { class: `total-row ${rowCls}` },
       h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, label), sub && h('span', { class: 'list-sub' }, sub)),
       h('span', { class: `list-amount ${cls}` }, value));
     return h('ul', { class: 'list totals' },
       row('Spent', `${tilde}${gbp(t.spent)}`,
-        data.compare ?? (data.weekly !== null ? `About ${tilde}${gbp(data.weekly)} a week` : null)),
-      row('Income', `${tilde}${gbp(t.income)}`),
-      row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', 'standout'));
+        data.compare ?? (data.weekly !== null ? `About ${tilde}${gbp(data.weekly)} a week` : null), 'spend'),
+      row('Income', `${tilde}${gbp(t.income)}`, null, 'income'),
+      row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, state.text, t.net < 0 ? 'danger' : '', `standout ${state.cls}`));
   }
 
   // The month in progress: where spending ends up at this pace, as a row like the totals, then how it's counted.
   function forecastSection(f) {
+    // Nothing to go on yet: no spending this month or in the weeks before it.
+    if (!f.spent && !f.dailyPence) {
+      return h('section', { class: 'section' },
+        h('h2', { class: 'subhead' }, 'At This Pace'),
+        h('p', { class: 'empty-line' }, 'Log a few payments to see your pace.'));
+    }
     const r = forecastRow(f);
     return h('section', { class: 'section' },
       h('h2', { class: 'subhead' }, 'At This Pace'),
@@ -119,6 +137,17 @@ export function renderOverview(root, { repo }) {
         : h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo) }, 'Set a Monthly Budget')));
   }
 
+  // The top five categories, then Other with the rest folded into it; every category is one tap away.
+  function categoryTableFolded(rows, caption) {
+    const folded = foldCategories(rows);
+    if (folded === rows) return categoryTable(rows, { caption });
+    return h('div', { class: 'all-categories' },
+      categoryTable(folded, { caption }),
+      h('details', { class: 'table-view' },
+        h('summary', {}, 'Show all categories'),
+        categoryTable(rows, { caption: `${caption}, every category` })));
+  }
+
   const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
 
   function openTrip({ trip, pence, count, estimated, rows }) {
@@ -132,7 +161,7 @@ export function renderOverview(root, { repo }) {
           h('span', { class: 'list-main' },
             h('span', { class: 'list-title' }, 'Spent'),
             count > 0 && days > 0 && h('span', { class: 'list-sub' }, `About ${tilde}${gbp(pence / days)} a day`)),
-          h('span', { class: 'list-amount' }, `${tilde}${gbp(pence)}`))),
+          h('span', { class: 'list-amount spend' }, `${tilde}${gbp(pence)}`))),
         rows.length > 0
           ? categoryTable(rows, { caption: `Spending by category, ${trip.name}` })
           : h('p', { class: 'empty-line' }, 'No payments on it yet.'),
@@ -151,7 +180,7 @@ export function renderOverview(root, { repo }) {
             h('span', { class: 'list-title' }, t.trip.name),
             h('span', { class: 'list-sub' }, `${dateSpan(t.trip.start, t.trip.end)}, ${t.count ? countPhrase(t.count) : 'nothing yet'}`),
             t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence)}`).join(', '))),
-          h('span', { class: 'list-amount' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
+          h('span', { class: 'list-amount spend' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
         : h('p', { class: 'empty-line' }, 'No trips yet.'),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
   }
@@ -178,7 +207,7 @@ export function renderOverview(root, { repo }) {
     const width = Math.max((el.body.clientWidth || 358) - 32, 260);
     fill(el.body,
       h('section', { class: 'section', 'aria-label': 'Totals' },
-        totalsCard(data),
+        totalsCard(data, budget),
         term && h('p', { class: 'reason' }, `${term.name} Term runs ${dateSpan(term.start, term.end)}.`),
         excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out.'),
         // Under the totals it changes, so the figures come first.
@@ -190,7 +219,7 @@ export function renderOverview(root, { repo }) {
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by Category'),
         data.rows.length
-          ? [categoryTable(budget ? data.rows.map((r) => ({ ...r, share: r.pence / budget.budgetPence })) : data.rows, { caption: `Spending by category, ${data.range.label}` }),
+          ? [categoryTableFolded(budget ? data.rows.map((r) => ({ ...r, share: r.pence / budget.budgetPence })) : data.rows, `Spending by category, ${data.range.label}`),
             budget && h('p', { class: 'reason' }, `Shares are of your ${gbp(budget.budgetPence)} budget.`)]
           : h('p', { class: 'empty-line' }, `Nothing spent in ${data.range.label} yet.`)),
       h('section', { class: 'section' },

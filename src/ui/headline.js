@@ -1,4 +1,4 @@
-// "£X left this month": the raised panel at the top of Log.
+// "£X left this month": the raised panel at the top of Log (a slim connect line until there's a backend).
 // It always counts everything, trips included; the Overview toggle doesn't touch it.
 // Under it, safe to spend today: what's left ÷ the days left, today included.
 
@@ -11,10 +11,10 @@ let shownFigure = null;
 export function renderHeadline(el, repo) {
   const S = repo.state;
   if (!repo.connected()) {
-    fill(el, h('div', { class: 'headline headline-quiet' },
-      h('p', { class: 'headline-figure' }, h('span', { class: 'unit' }, 'Connect to your backend')),
-      h('p', { class: 'reason' }, 'Add your backend in Settings to start saving.'),
-      h('button', { type: 'button', class: 'button secondary', onclick: () => document.getElementById('settings').click() }, 'Open Settings')));
+    // One slim line, so the form stays near the top.
+    fill(el, h('div', { class: 'connect-banner' },
+      h('span', {}, 'Connect to Your Backend'),
+      h('button', { type: 'button', class: 'text-button', onclick: () => document.getElementById('settings').click() }, 'Open Settings')));
     return;
   }
   const todayDate = today();

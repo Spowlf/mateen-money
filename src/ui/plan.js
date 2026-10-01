@@ -1,7 +1,7 @@
 // Plan: recurring costs and income. Each is added automatically on its date by the backend,
 // and counts in "left this month" until then.
 
-import { h, fill, chips, segmented, field, sheet, toast } from './dom.js';
+import { h, fill, chips, segmented, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { liveSorted, runAction, withRemoved } from './format.js';
 import {
   today, gbp, formatMoney, formatDay, toMinor, toDecimalText, planSummary, catchUpDates,
@@ -79,6 +79,7 @@ export function openRecurringSheet(repo, item = {}) {
         label: 'Cost or income',
         options: [{ value: 'spend', label: 'Cost' }, { value: 'income', label: 'Income' }],
         value: f.kind,
+        className: 'kind-switch',
         onChange: (v) => set({ kind: v, spread: false }, true),
       }),
       field('Name', label),
@@ -92,7 +93,7 @@ export function openRecurringSheet(repo, item = {}) {
           chips({ label: 'Type of income', options: INCOME_TYPES.filter((t) => !t.oneOff || t.id === f.incomeType).map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
             onChange: (v) => set({ incomeType: v, spread: v === 'allowance' && f.frequency === 'yearly' }, true) }))
         : h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
-          chips({ label: 'Category', options: withRemoved(categories, f.categoryId, S.categories), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
+          chips({ label: 'Category', options: withCategoryIcons(withRemoved(categories, f.categoryId, S.categories)), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
       income && f.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
         h('span', {}, 'Spread over October to September')),
@@ -159,7 +160,7 @@ export function renderPlan(root, { repo }) {
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, item.label, paused && h('span', { class: 'tag tag-quiet' }, 'Paused')),
         h('span', { class: 'list-sub' }, [frequencyName(item.frequency), paused ? null : `next ${formatDay(item.nextDate)}`, ...extra].filter(Boolean).join(', '))),
-      h('span', { class: 'list-amount' }, formatMoney(item.amountMinor, item.currency))));
+      h('span', { class: `list-amount ${item.kind === 'income' ? 'income' : 'spend'}` }, formatMoney(item.amountMinor, item.currency))));
   }
 
   function section(title, items, empty, addLabel, kind) {
@@ -188,8 +189,8 @@ export function renderPlan(root, { repo }) {
     fill(root, h('div', { class: 'screen' },
       h('section', { class: 'plan-summary', 'aria-label': 'Each month' },
         h('ul', { class: 'list totals' },
-          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyIncome)}`)),
-          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount' }, `${tilde}${gbp(p.monthlyCosts)}`))),
+          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount income' }, `${tilde}${gbp(p.monthlyIncome)}`)),
+          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount spend' }, `${tilde}${gbp(p.monthlyCosts)}`))),
         h('p', { class: 'reason' }, 'In an average month.')),
       section('Costs', p.costs, 'No recurring costs.', 'Add a recurring cost', 'spend'),
       section('Income', p.income, 'No recurring income.', 'Add recurring income', 'income')));

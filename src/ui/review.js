@@ -62,7 +62,7 @@ export function renderReview(el, { repo, showToSort }) {
         h('span', { class: 'list-main' },
           h('span', { class: 'list-title' }, S.vendors.find((v) => v.id === e.vendorId)?.name ?? e.merchant ?? 'Payment'),
           h('span', { class: 'list-sub' }, whenPhrase(e))),
-        h('span', { class: 'list-amount' }, money(e))))),
+        h('span', { class: 'list-amount spend' }, money(e))))),
       h('div', { class: 'review-actions' }, h('button', { type: 'button', class: 'button secondary', onclick: next }, 'Next')),
     ];
   } else {

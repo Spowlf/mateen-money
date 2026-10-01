@@ -1,6 +1,6 @@
 // Filing a To sort payment: one tap on Log, or the full sheet (from Log or History).
 
-import { h, chips, field, sheet, toast } from './dom.js';
+import { h, chips, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { money, whenPhrase, liveSorted, runAction } from './format.js';
 import { today, formatMoney, toMinor, toDecimalText, tidyName, sortChoices, SYMBOL_CURRENCIES } from '../engine/index.js';
 
@@ -55,7 +55,7 @@ export function openSortSheet(repo, entry) {
       onChange: (v) => { currency = v; renderSave(); },
     })),
     !income && field('Merchant name', name),
-    !income && field('Category', chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
+    !income && field('Category', chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
     h('div', { class: 'sheet-actions' },
       save,
       h('button', {

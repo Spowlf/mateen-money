@@ -1,7 +1,7 @@
 // History: payments and income on their own tabs, grouped by day, with search and filters; and every vendor.
 // Tapping a row opens its sheet. Nothing is edited in place.
 
-import { h, fill, segmented } from './dom.js';
+import { h, fill, segmented, categoryIcon } from './dom.js';
 import { money, liveSorted } from './format.js';
 import { openEntrySheet } from './entry-sheet.js';
 import { openSortSheet } from './sort-sheet.js';
@@ -78,12 +78,14 @@ export function renderHistory(root, { repo }) {
       .sort((a, b) => (a.id === 'other') - (b.id === 'other') || a.name.localeCompare(b.name, 'en'));
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));
     const methods = liveSorted(S.methods, 'name');
+    const categorySelect = select('Category', view.categoryId, [
+      { value: null, label: 'All categories' },
+      { value: TO_SORT, label: 'To Sort' },
+      ...categories.map((c) => ({ value: c.id, label: c.name })),
+    ], change('categoryId'));
     fill(el.controls, search, h('div', { class: 'filter-row' },
-      select('Category', view.categoryId, [
-        { value: null, label: 'All categories' },
-        { value: TO_SORT, label: 'To Sort' },
-        ...categories.map((c) => ({ value: c.id, label: c.name })),
-      ], change('categoryId')),
+      // The picked category's icon sits in the pill beside its name.
+      view.categoryId ? h('span', { class: 'select-icon' }, categoryIcon(view.categoryId === TO_SORT ? 'to-sort' : view.categoryId), categorySelect) : categorySelect,
       methods.length > 1 && select('Paid with', view.methodId, [{ value: null, label: 'Any payment method' }, ...methods.map((m) => ({ value: m.id, label: m.name }))], change('methodId')),
       (trips.length > 0 || view.tripId) && select('Trip', view.tripId, [{ value: null, label: 'Any trip' }, ...trips.map((t) => ({ value: t.id, label: t.name }))], change('tripId'))));
   }
@@ -102,7 +104,10 @@ export function renderHistory(root, { repo }) {
       e.time,
       name(S.trips, e.tripId) && `${name(S.trips, e.tripId)} trip`,
     ].filter(Boolean).join(', ');
+    // What the row is at a glance: its category's icon, To Sort's, or money coming in.
+    const rowIcon = income ? 'income' : waiting || !e.categoryId ? 'to-sort' : e.categoryId;
     return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => (waiting ? openSortSheet(repo, e) : openEntrySheet(repo, e)) },
+      h('span', { class: 'row-icon' }, categoryIcon(rowIcon)),
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, title,
           waiting && h('span', { class: 'tag tag-warn' }, 'To Sort'),
@@ -110,7 +115,7 @@ export function renderHistory(root, { repo }) {
           e.gbpStatus === 'statement' && h('span', { class: 'tag' }, 'From statement')),
         sub && h('span', { class: 'list-sub' }, sub),
         e.note && h('span', { class: 'list-sub list-note' }, e.note)),
-      h('span', { class: `list-amount${income ? ' income' : ''}` }, `${income ? '+' : ''}${money(e)}`)));
+      h('span', { class: `list-amount ${income ? 'income' : 'spend'}` }, `${income ? '+' : ''}${money(e)}`)));
   }
 
   function renderPayments() {

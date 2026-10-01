@@ -81,7 +81,8 @@ async function boot() {
     toast('This phone’s storage couldn’t be opened. Close the app and open it again.');
   }
   repo.subscribe(() => { current?.view?.refresh?.(); renderStatus(); });
-  document.getElementById('settings').addEventListener('click', () => { location.hash = '#settings'; });
+  // A tap leaves no focus ring on the gear; a keyboard press (detail 0) keeps its focus.
+  document.getElementById('settings').addEventListener('click', (e) => { location.hash = '#settings'; if (e.detail) e.currentTarget.blur(); });
   window.addEventListener('hashchange', show);
   window.addEventListener('online', () => sync());
   window.addEventListener('offline', () => { syncOk = false; renderStatus(); });

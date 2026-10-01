@@ -1,7 +1,7 @@
 // Editing a payment or income from History: every field, the statement amount, and delete.
 // Saving and deleting both offer Undo; Undo puts back exactly what was there.
 
-import { h, chips, segmented, field, sheet, toast } from './dom.js';
+import { h, chips, segmented, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { money, liveSorted, runAction, withRemoved } from './format.js';
 import {
   gbp, formatMoney, toMinor, toDecimalText, matchVendor, INCOME_TYPES, COMMON_CURRENCIES,
@@ -106,6 +106,7 @@ export function openEntrySheet(repo, entry) {
         label: 'Spent or received',
         options: [{ value: 'spend', label: 'Spent' }, { value: 'income', label: 'Received' }],
         value: f.kind,
+        className: 'kind-switch',
         onChange: (v) => set({ kind: v, spread: false }, true),
       }),
       h('div', { class: 'row-2' }, field('Amount', amount), field('Currency', currency)),
@@ -123,7 +124,7 @@ export function openEntrySheet(repo, entry) {
           chips({ label: 'Type of income', options: INCOME_TYPES.map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
             onChange: (v) => set({ incomeType: v, spread: v === 'allowance' ? f.spread : false }, true) }))
         : h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
-          chips({ label: 'Category', options: withRemoved(categories, f.categoryId, S.categories), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
+          chips({ label: 'Category', options: withCategoryIcons(withRemoved(categories, f.categoryId, S.categories)), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
       income && f.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
         h('span', {}, 'Spread over October to September')),
