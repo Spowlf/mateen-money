@@ -64,8 +64,17 @@ function radioGroup({ label, options, value, onChange, groupClass, itemClass }) 
   return group;
 }
 
-export const field = (label, control, hint) => h('label', { class: 'field' },
-  h('span', { class: 'field-label' }, label), control, hint && h('span', { class: 'field-hint' }, hint));
+/**
+ * A labelled control. Only a text box, select or textarea goes inside a <label>: a label passes a
+ * tap on itself to its first control, so around a chip group every tap picked the first chip (the
+ * chips redraw on a tap, and the tapped one is gone by the time the label acts). Chips and
+ * segmented controls get a plain box, named by their own aria-label.
+ */
+export function field(label, control, hint) {
+  const labelable = control instanceof HTMLInputElement || control instanceof HTMLSelectElement || control instanceof HTMLTextAreaElement;
+  return h(labelable ? 'label' : 'div', { class: 'field' },
+    h('span', { class: 'field-label' }, label), control, hint && h('span', { class: 'field-hint' }, hint));
+}
 
 /** A bottom sheet on a native <dialog>. Returns { close, dialog }. */
 export function sheet(title, ...content) {

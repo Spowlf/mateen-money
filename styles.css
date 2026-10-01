@@ -31,7 +31,7 @@
   --on-income: #1B2638;
   --spend-soft: color-mix(in srgb, var(--spend) 15%, transparent);
   --income-soft: color-mix(in srgb, var(--income) 15%, transparent);
-  /* Behind the iOS status bar, whose text is always white (black-translucent): dark in both modes. */
+  /* Behind the iOS status bar if it ever overlaps the page (with "black" it sits above it, and the strip is 0 high). */
   --status-bar: #1B2638;
   /* The headline is the one raised surface on Log: it holds the answer. Neutral, never tinted. */
   --shadow-raised: 0 1px 2px rgb(27 38 56 / 0.06), 0 6px 16px -6px rgb(27 38 56 / 0.16);
@@ -107,7 +107,7 @@ button { -webkit-user-select: none; user-select: none; }
 [hidden] { display: none !important; }
 /* A quick second tap (the keypad, chips) is a tap, never a zoom. */
 button, a, input, select, label, summary { touch-action: manipulation; }
-/* The status bar floats over the page (black-translucent); this strip keeps its white text readable and
+/* With a see-through status bar over the page this strip kept its white text readable and
    content from showing through it. Zero high outside a home screen app. */
 body::before {
   content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 40;
