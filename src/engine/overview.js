@@ -1,6 +1,6 @@
 // The Overview's figures for a month, a year or a term.
 
-import { addMonthsKey, addDays, monthKey, monthEnd, formatMonth, formatDayShort, addMonths, daysBetween } from './dates.js';
+import { addMonthsKey, addDays, monthKey, monthEnd, formatMonth, formatDayShort, addMonths, daysBetween, weekday } from './dates.js';
 import { periodTotals, categoryRows, yearRange, monthRange, tripTotals, change, isLive } from './totals.js';
 import { yearTerms, termLabel, shiftTerm } from './terms.js';
 import { monthForecast } from './forecast.js';
@@ -68,9 +68,12 @@ function daySpan(from, to) {
   return a.split(' ')[1] === b.split(' ')[1] ? `${a.split(' ')[0]} to ${b}` : `${a} to ${b}`;
 }
 
+const TERM_WEEKS = 8;
+const TERM_WEEK_DAY = 3;   // Thursday (0 = Monday)
+
 /**
  * The period's income and spending in steps: a month and a term week by week (numbered; a month's
- * weeks start on the 1st, 8th, 15th, 22nd and 29th, a term's on its first day), a year month by month.
+ * weeks start on the 1st, 8th, 15th, 22nd and 29th, a term has 8 Thursday-to-Wednesday weeks), a year month by month.
  * Steps that start after today (or after range.to) haven't happened, so they're null. Spread income is counted up to the end
  * of each step and differenced, so the steps add up to the period's income exactly.
  * Returns [{ from, to, label, title, income, spent }], oldest first.
@@ -80,6 +83,16 @@ export function periodSeries(entries, range, { todayDate, excludeTrips = false }
   if (range.kind === 'year') {
     for (let k = monthKey(range.from); monthRange(k).from <= range.end; k = addMonthsKey(k, 1)) {
       steps.push({ ...monthRange(k), label: MONTH_SHORT[Number(k.slice(5)) - 1], title: formatMonth(k) });
+    }
+  } else if (range.kind === 'term') {
+    // Cambridge weeks: 8 of them, Thursday to Wednesday, week 1 from the term's first Thursday.
+    // Term days before week 1 or after week 8 join the week next to them, so the steps add up to the term.
+    const first = addDays(range.from, (TERM_WEEK_DAY - weekday(range.from) + 7) % 7);
+    for (let i = 0; i < TERM_WEEKS; i++) {
+      const from = i === 0 ? range.from : addDays(first, 7 * i);
+      const end = addDays(first, 7 * i + 6);
+      const to = i === TERM_WEEKS - 1 && range.end > end ? range.end : end;
+      steps.push({ from, to, label: String(i + 1), title: `Week ${i + 1}, ${daySpan(from, to)}` });
     }
   } else {
     for (let from = range.from, i = 1; from <= range.end; from = addDays(from, 7), i++) {

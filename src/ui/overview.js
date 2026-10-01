@@ -78,7 +78,7 @@ export function renderOverview(root, { repo }) {
       h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, label), sub && h('span', { class: 'list-sub' }, sub)),
       h('span', { class: `list-amount ${cls}` }, value));
     return h('ul', { class: 'list totals' },
-      row(data.range.current ? 'Spent so far' : 'Spent', `${tilde}${gbp(t.spent)}`,
+      row('Spent', `${tilde}${gbp(t.spent)}`,
         data.compare ?? (data.weekly !== null ? `About ${tilde}${gbp(data.weekly)} a week` : null)),
       row('Income', `${tilde}${gbp(t.income)}`),
       row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', 'standout'));
@@ -130,7 +130,7 @@ export function renderOverview(root, { repo }) {
         h('p', { class: 'reason' }, `${dateSpan(trip.start, trip.end)}${count ? `. ${countPhrase(count)}.` : '.'}`),
         h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
           h('span', { class: 'list-main' },
-            h('span', { class: 'list-title' }, trip.end < todayDate ? 'Spent' : 'Spent so far'),
+            h('span', { class: 'list-title' }, 'Spent'),
             count > 0 && days > 0 && h('span', { class: 'list-sub' }, `About ${tilde}${gbp(pence / days)} a day`)),
           h('span', { class: 'list-amount' }, `${tilde}${gbp(pence)}`))),
         rows.length > 0
@@ -196,8 +196,7 @@ export function renderOverview(root, { repo }) {
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Income and Spending'),
         data.series.some((m) => m.income || m.spent)
-          ? [h('p', { class: 'reason' }, period.kind === 'year' ? 'Month by month.' : 'Week by week.'),
-            incomeSpendingChart(data.series, { width, name: data.range.label, step: period.kind === 'year' ? 'Month' : 'Week' })]
+          ? incomeSpendingChart(data.series, { width, name: data.range.label, step: period.kind === 'year' ? 'Month' : 'Week' })
           : h('p', { class: 'empty-line' }, `Nothing logged in ${data.range.label} yet.`)),
       tripsSection(data));
   }

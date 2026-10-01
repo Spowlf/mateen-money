@@ -130,15 +130,23 @@ test('axis: round steps of 1, 2 or 5, at most four of them', () => {
   assert.deepEqual(niceScale(0), { step: 5000, max: 10000, ticks: [0, 5000, 10000] });
 });
 
-test('series: a term goes week by week from its first day, the last week cut at its end', () => {
-  const range = periodRange(MICHAELMAS, { todayDate: TODAY, terms });
+test('series: a term has 8 Cambridge weeks, Thursday to Wednesday, the days around them in the end weeks', () => {
+  const range = periodRange(MICHAELMAS, { todayDate: TODAY, terms });   // Tue 6 Oct to Fri 4 Dec
   const s = periodSeries(entries, range, { todayDate: TODAY });
-  assert.equal(s.length, 9);                                         // 6 Oct to 4 Dec
-  assert.deepEqual([s[0].label, s[0].title], ['1', 'Week 1, 6 to 12 Oct']);
-  assert.deepEqual([s[8].from, s[8].to, s[8].title], ['2026-12-01', '2026-12-04', 'Week 9, 1 to 4 Dec']);
-  assert.deepEqual(s.map((w) => w.spent), [8000, 0, null, null, null, null, null, null, null]);   // today is the 15th
+  assert.equal(s.length, 8);
+  assert.deepEqual([s[0].label, s[0].from, s[0].to, s[0].title], ['1', '2026-10-06', '2026-10-14', 'Week 1, 6 to 14 Oct']);
+  assert.deepEqual([s[1].from, s[1].to], ['2026-10-15', '2026-10-21']);   // Thursday to Wednesday
+  assert.deepEqual([s[7].from, s[7].to, s[7].title], ['2026-11-26', '2026-12-04', 'Week 8, 26 Nov to 4 Dec']);
+  assert.deepEqual(s.map((w) => w.spent), [8000, 0, null, null, null, null, null, null]);   // today is the 15th
   const before = periodSeries(entries, range, { todayDate: '2026-10-01' });
   assert.ok(before.every((w) => w.income === null));                // nothing has happened yet
+});
+
+test('series: a term starting on a Thursday has whole weeks, and a short one leaves the late weeks empty', () => {
+  const thursday = { kind: 'term', from: '2026-10-08', to: '2026-10-31', end: '2026-11-04' };
+  const s = periodSeries([], thursday, { todayDate: '2026-12-31' });
+  assert.deepEqual([s[0].from, s[0].to, s[7].from, s[7].to], ['2026-10-08', '2026-10-14', '2026-11-26', '2026-12-02']);
+  assert.deepEqual(s.map((w) => w.spent), [0, 0, 0, 0, null, null, null, null]);
 });
 
 test('series: spread income splits across the steps and adds up to the period\'s income', () => {
