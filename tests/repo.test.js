@@ -202,3 +202,34 @@ test('repo: restoring a backup replaces the backend and the local copy', async (
   await repo.markBackedUp(NOW);
   assert.equal(repo.state.lastBackupAt, NOW);
 });
+
+test('repo: a sync that answers after a save never puts back the older copy', async () => {
+  const w = makeWorker();
+  // While gate is set, a sync's answer is held back after the backend has written it.
+  let gate = null;
+  let answered;
+  const fetch = async (url, init) => {
+    const res = await w.fetch(url, init);
+    if (gate && String(url).includes('/sync')) { answered(); await gate; }
+    return res;
+  };
+  const repo = createRepo({ db: memoryDb(), fetch, now: () => w.now });
+  await repo.load();
+  await repo.connect({ apiBase: BASE, token: TOKEN });
+  const { entry } = await repo.saveForm(form());
+  await repo.saveEntry({ ...entry, note: 'First' });
+
+  // A sync sets off, the backend answers with the "First" note, then a save lands before it's read.
+  let release;
+  gate = new Promise((go) => { release = go; });
+  const reached = new Promise((go) => { answered = go; });
+  const syncing = repo.sync();
+  await reached;
+  gate = null;
+  await repo.saveEntry({ ...entry, note: 'Second' });
+  release();
+  await syncing;
+  assert.equal(repo.state.entries[0].note, 'Second');
+  await repo.sync();
+  assert.equal(repo.state.entries[0].note, 'Second');
+});

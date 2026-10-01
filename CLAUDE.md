@@ -45,6 +45,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Every write bumps one `rev` counter in the same D1 batch as the rows, so `GET /sync?since=rev` can never skip a change. Writes reply `{ rev, changes }`.
 - 2026-10-01: The Worker prices every entry (it holds the rates) and fetches a missing rate on save. Worker tests use a D1 stand-in on `node:sqlite`, so no Cloudflare account is needed until deployment.
 - 2026-10-01: A Wallet card seen for the first time becomes a payment method, so ambiguous symbols can be remembered per card. A negative Apple Pay amount is logged as a refund (income).
+- 2026-10-01: An ambiguous symbol's first guess is a currency that can hold the amount's decimals ("¥12.50" guesses CNY, "¥1,200" JPY), so re-reading it as another currency never loses pence. An ambiguous refund waits in To sort for its currency only.
 - 2026-10-01: Sorting one To sort item also sorts the other waiting items from the same merchant.
 - 2026-10-01: A manual entry counts for duplicate detection too, so logging by hand before the Apple Pay payment arrives doesn't double count.
 - 2026-10-01: Settings holds only the backend address and token until the Settings stage, because nothing saves without them. Connecting checks them with a full sync first; a different address replaces the local copy.

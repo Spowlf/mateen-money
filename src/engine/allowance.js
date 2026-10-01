@@ -21,6 +21,13 @@ const spreadOf = (entry) => ({
   start: entry.spreadStart || monthKey(entry.date),
 });
 
+/** True when month key ('YYYY-MM') is one of the months an entry counts in. */
+export function coversMonth(entry, key) {
+  const { n, start } = spreadOf(entry);
+  const i = monthsBetween(start, key);
+  return i >= 0 && i < n;
+}
+
 /** The part of an entry's GBP value that belongs to month key ('YYYY-MM'). */
 export function monthShare(entry, key) {
   const total = entry.gbpPence ?? 0;

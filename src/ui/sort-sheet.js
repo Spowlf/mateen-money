@@ -25,13 +25,15 @@ export async function sortPayment(repo, entry, choice, done) {
 
 export function openSortSheet(repo, entry) {
   const S = repo.state;
-  const { vendor: suggestion } = sortChoices(entry, sortContext(S));
+  // A refund waits only for its currency: income has no merchant or category to file.
+  const income = entry.kind === 'income';
+  const { vendor: suggestion } = income ? {} : sortChoices(entry, sortContext(S));
   let categoryId = null;
   let currency = entry.needsCurrency ? null : entry.currency;
   const name = h('input', { class: 'input', type: 'text', value: tidyName(entry.merchant), autocomplete: 'off', autocapitalize: 'words' });
   const save = h('button', { type: 'button', class: 'button primary' });
   const renderSave = () => {
-    const need = !categoryId ? 'Pick a category' : !currency ? 'Pick a currency' : !name.value.trim() ? 'Enter a merchant name' : null;
+    const need = !income && !categoryId ? 'Pick a category' : !currency ? 'Pick a currency' : !income && !name.value.trim() ? 'Enter a merchant name' : null;
     save.disabled = !!need;
     save.textContent = need ?? 'Save';
   };
@@ -42,18 +44,18 @@ export function openSortSheet(repo, entry) {
     h('dt', {}, 'When'), h('dd', {}, whenPhrase(entry)),
     entry.card && [h('dt', {}, 'Card'), h('dd', {}, entry.card)],
     h('dt', {}, 'Arrived as'), h('dd', {}, entry.merchant));
-  const s = sheet('Sort payment', h('div', { class: 'sheet-form' },
+  const s = sheet(income ? 'Sort refund' : 'Sort payment', h('div', { class: 'sheet-form' },
     facts,
     suggestion && h('p', { class: 'hint' }, `Looks like ${suggestion.name}. `,
-      h('button', { type: 'button', class: 'text-button', onclick: () => sortPayment(repo, entry, { vendorId: suggestion.id, currency: currency ?? undefined }, s.close) }, `File under ${suggestion.name}`)),
+      h('button', { type: 'button', class: 'text-button', onclick: () => sortPayment(repo, entry, { vendorId: suggestion.id, ...(entry.needsCurrency && currency ? { currency } : {}) }, s.close) }, `File under ${suggestion.name}`)),
     entry.needsCurrency === 1 && field('Currency', chips({
       label: 'Currency',
       options: (SYMBOL_CURRENCIES[entry.symbol] ?? [entry.currency]).map((c) => ({ value: c, label: formatMoney(reread(entry, c), c) })),
       value: null,
       onChange: (v) => { currency = v; renderSave(); },
     })),
-    field('Merchant name', name, 'Later payments from this merchant are filed the same way.'),
-    field('Category', chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
+    !income && field('Merchant name', name, 'Later payments from this merchant are filed the same way.'),
+    !income && field('Category', chips({ label: 'Category', options: categories.map((c) => ({ value: c.id, label: c.name })), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
     h('div', { class: 'sheet-actions' },
       save,
       h('button', {
@@ -61,10 +63,10 @@ export function openSortSheet(repo, entry) {
         onclick: () => runAction(async () => {
           await repo.deleteEntry(entry.id);
           s.close();
-          toast(`Deleted ${money(entry)} at ${entry.merchant}`, { label: 'Undo', run: () => runAction(() => repo.restoreEntry(entry.id)) });
+          toast(`Deleted ${money(entry)} ${income ? 'from' : 'at'} ${entry.merchant}`, { label: 'Undo', run: () => runAction(() => repo.restoreEntry(entry.id)) });
         }),
-      }, 'Delete payment'))));
-  save.addEventListener('click', () => sortPayment(repo, entry, {
+      }, income ? 'Delete refund' : 'Delete payment'))));
+  save.addEventListener('click', () => sortPayment(repo, entry, income ? { currency } : {
     categoryId, vendorName: name.value.trim(), ...(entry.needsCurrency ? { currency } : {}),
   }, s.close));
   renderSave();

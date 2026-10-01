@@ -6,7 +6,7 @@
 // Trips always count here: this is real money.
 
 import { monthStart, monthEnd, daysBetween } from './dates.js';
-import { monthShare, defaultSpreadStart } from './allowance.js';
+import { monthShare, coversMonth, defaultSpreadStart } from './allowance.js';
 import { upcomingBetween } from './recurring.js';
 import { estimateGbp } from './currency.js';
 import { isLive } from './totals.js';
@@ -19,10 +19,12 @@ export function monthHeadline({ entries, recurring = [], rates = [], month, toda
   let spent = 0;
   let estimated = false;
   let unpriced = 0;
+  let unpricedIncome = 0;
 
   for (const e of entries) {
     if (!isLive(e)) continue;
     if (e.kind === 'income') {
+      if (e.gbpPence == null) { if (coversMonth(e, month)) unpricedIncome++; continue; }
       const share = monthShare(e, month);
       incomeReceived += share;
       if (share && e.gbpStatus === 'estimated') estimated = true;
@@ -66,6 +68,7 @@ export function monthHeadline({ entries, recurring = [], rates = [], month, toda
     negative: left < 0,
     estimated,
     unpriced,
+    unpricedIncome,
     dueItems,
     daysLeft,
     // For budgets later: what can go out each day and still end the month at zero.

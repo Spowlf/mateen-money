@@ -87,6 +87,15 @@ test('headline: entries still waiting for a rate are counted, not guessed', () =
   assert.equal(h.spent, 0);
 });
 
+test('headline: income still waiting for a rate is flagged, only in the months it counts in', () => {
+  const euros = income('2026-10-02', 0, { currency: 'EUR', gbpPence: null, gbpStatus: 'estimated' });
+  const h = monthHeadline({ entries: [euros], month: '2026-10', todayDate: '2026-10-05' });
+  assert.deepEqual([h.unpricedIncome, h.unpriced, h.incomeReceived], [1, 0, 0]);
+  assert.equal(monthHeadline({ entries: [euros], month: '2026-11', todayDate: '2026-11-05' }).unpricedIncome, 0);
+  const spread = income('2026-09-28', 0, { incomeType: 'allowance', spreadMonths: 12, spreadStart: '2026-10', gbpPence: null });
+  assert.equal(monthHeadline({ entries: [spread], month: '2027-03', todayDate: '2027-03-05' }).unpricedIncome, 1);
+});
+
 test('headline: a past month has nothing still due and no days left', () => {
   const recurring = [{ id: 'r1', kind: 'spend', label: 'Phone', amountMinor: 1000, currency: 'GBP', frequency: 'monthly', nextDate: '2026-11-20', active: 1 }];
   const h = monthHeadline({ entries: [], recurring, month: '2026-10', todayDate: '2026-11-25' });

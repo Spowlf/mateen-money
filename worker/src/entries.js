@@ -207,7 +207,8 @@ export async function ingestApplePay(ctx, body) {
     writes.methods.push(method);
   }
 
-  const { currency, ambiguous } = resolveCurrency({ symbol: parsed.symbol, code: parsed.code, symbolMemory: method?.symbolMemory ?? {} });
+  const decimals = (parsed.value.split('.')[1] ?? '').replace(/0+$/, '').length;
+  const { currency, ambiguous } = resolveCurrency({ symbol: parsed.symbol, code: parsed.code, symbolMemory: method?.symbolMemory ?? {}, decimals });
   const amountMinor = toMinor(parsed.value, currency);
   if (!amountMinor) throw refuse('send the amount as text, like £4.20.');
   const when = partsFromIso(body.timestamp) ?? partsInZone(ctx.now, ctx.timeZone);

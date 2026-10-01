@@ -66,6 +66,17 @@ test('vendors: renaming keeps the old name as an alias, so payments under it are
   assert.equal((await w.call('PUT', `/vendors/${v.id}`, { body: { categoryId: 'snacks' } })).body.changes.aliases, undefined);
 });
 
+test('vendors: renaming to one of its own aliases drops that alias, so renaming back leaves the names as they were', async () => {
+  const w = makeWorker();
+  const v = (await w.call('PUT', '/entries/e1', { body: manualEntry({ merchant: 'Pret A Manger' }) })).body.changes.vendors[0];
+  await w.call('PUT', '/aliases/a1', { body: { vendorId: v.id, alias: 'PRET' } });
+  await w.call('PUT', `/vendors/${v.id}`, { body: { name: 'Pret' } });
+  const live = () => w.rows('aliases', 'deletedAt IS NULL').map((a) => a.aliasNorm).sort();
+  assert.deepEqual(live(), ['pret a manger']);
+  await w.call('PUT', `/vendors/${v.id}`, { body: { name: 'Pret A Manger' } });
+  assert.deepEqual(live(), ['pret']);
+});
+
 test('vendors: deleting one lets go of its aliases, and undo brings them back', async () => {
   const w = makeWorker();
   const v = (await w.call('PUT', '/entries/e1', { body: manualEntry() })).body.changes.vendors[0];

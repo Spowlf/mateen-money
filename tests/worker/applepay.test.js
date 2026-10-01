@@ -127,3 +127,29 @@ test('Apple Pay: with no usable timestamp, the time it arrived is used, in Londo
   const e = w.rows('entries')[0];
   assert.deepEqual([e.date, e.time], ['2026-10-01', '13:00']);
 });
+
+test('ambiguous symbols: "¥12.50" keeps its pence until the currency is picked', async () => {
+  const w = makeWorker({ rates });
+  await w.call('POST', '/applepay', { body: applePay({ amount: '¥12.50', merchant: 'NOODLES' }) });
+  const e = w.rows('entries')[0];
+  assert.deepEqual([e.currency, e.amountMinor, e.needsCurrency], ['CNY', 1250, 1]);
+  const res = await w.call('POST', `/entries/${e.id}/sort`, { body: { currency: 'JPY' } });
+  assert.deepEqual([res.body.changes.entries[0].currency, res.body.changes.entries[0].amountMinor], ['JPY', 13]);
+
+  await w.call('POST', '/applepay', { body: applePay({ amount: '¥1,200', merchant: 'RAMEN', card: 'Amex' }) });
+  const whole = w.rows('entries', "merchant = 'RAMEN'")[0];
+  assert.deepEqual([whole.currency, whole.amountMinor], ['JPY', 1200]);
+});
+
+test('ambiguous symbols: a refund in "$" waits in To sort for its currency, and the answer reprices it', async () => {
+  const { toSortEntries } = await import('../../src/engine/summary.js');
+  const w = makeWorker({ rates });
+  await w.call('POST', '/applepay', { body: applePay({ amount: '-$10.00', merchant: 'CHEERS' }) });
+  const e = w.rows('entries')[0];
+  assert.deepEqual([e.kind, e.needsCurrency], ['income', 1]);
+  assert.deepEqual(toSortEntries(w.rows('entries')).map((x) => x.id), [e.id]);
+  const res = await w.call('POST', `/entries/${e.id}/sort`, { body: { currency: 'SGD' } });
+  const fixed = res.body.changes.entries[0];
+  assert.deepEqual([fixed.kind, fixed.currency, fixed.needsCurrency, fixed.categoryId, fixed.vendorId], ['income', 'SGD', 0, null, null]);
+  assert.deepEqual(toSortEntries(res.body.changes.entries), []);
+});

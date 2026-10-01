@@ -54,10 +54,16 @@ export function openVendorSheet(repo, vendor) {
   async function submit() {
     save.disabled = true;
     const before = { name: vendor.name, categoryId: vendor.categoryId, currency: vendor.currency, methodId: vendor.methodId };
+    const aliasesBefore = new Set(S.aliases.filter((a) => !a.deletedAt && a.vendorId === vendor.id).map((a) => a.aliasNorm));
     const result = await runAction(() => repo.saveRow('vendors', vendor.id, { ...f, name: f.name.trim() }));
     if (!result) return renderSave();
     s.close();
-    toast('Saved changes', { label: 'Undo', run: () => runAction(() => repo.saveRow('vendors', vendor.id, before)) });
+    // Undoing a rename also drops the alias each rename left behind, so the names are as they were.
+    toast('Saved changes', { label: 'Undo', run: () => runAction(async () => {
+      await repo.saveRow('vendors', vendor.id, before);
+      const left = S.aliases.filter((a) => !a.deletedAt && a.vendorId === vendor.id && !aliasesBefore.has(a.aliasNorm));
+      for (const a of left) await repo.deleteRow('aliases', a.id);
+    }) });
   }
 
   async function remove() {

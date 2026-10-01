@@ -108,10 +108,13 @@ async function vendorAliases(store, before, after, now) {
   if (after.deletedAt && !before.deletedAt) return own.filter((a) => !a.deletedAt).map((a) => ({ ...a, deletedAt: now }));
   if (!after.deletedAt && before.deletedAt) return own.filter((a) => a.deletedAt === before.deletedAt).map((a) => ({ ...a, deletedAt: null }));
   const oldNorm = normaliseMerchant(before.name);
-  if (after.deletedAt || !oldNorm || oldNorm === normaliseMerchant(after.name)) return [];
+  const newNorm = normaliseMerchant(after.name);
+  if (after.deletedAt || !oldNorm || oldNorm === newNorm) return [];
+  // An alias that is now the vendor's own name has nothing left to do.
+  const out = own.filter((a) => !a.deletedAt && a.aliasNorm === newNorm).map((a) => ({ ...a, deletedAt: now }));
   const taken = await store.all('aliases', 'deletedAt IS NULL AND aliasNorm = ?', oldNorm);
-  if (taken.length) return [];
-  return [{ id: crypto.randomUUID(), vendorId: after.id, alias: before.name, aliasNorm: oldNorm, deletedAt: null }];
+  if (!taken.length) out.push({ id: crypto.randomUUID(), vendorId: after.id, alias: before.name, aliasNorm: oldNorm, deletedAt: null });
+  return out;
 }
 
 /** DELETE /:table/:id: a soft delete, so Undo is a PUT with deletedAt: null. */

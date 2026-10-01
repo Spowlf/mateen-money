@@ -134,3 +134,11 @@ test('estimateGbp uses the latest rate and no fee', () => {
   assert.equal(estimateGbp(500, 'GBP', RATES), 500);
   assert.equal(estimateGbp(500, 'EUR', RATES), 0);
 });
+
+test('resolveCurrency: an ambiguous guess can hold the amount\'s decimals, so nothing is rounded away', () => {
+  assert.equal(resolveCurrency({ symbol: '¥', decimals: 0 }).currency, 'JPY');
+  const yuan = resolveCurrency({ symbol: '¥', decimals: 2 });
+  assert.deepEqual([yuan.currency, yuan.ambiguous], ['CNY', true]);
+  assert.equal(resolveCurrency({ symbol: '$', decimals: 2 }).currency, 'USD');
+  assert.equal(resolveCurrency({ symbol: '¥', decimals: 2, symbolMemory: { '¥': 'JPY' } }).currency, 'JPY');
+});

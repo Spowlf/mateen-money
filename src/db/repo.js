@@ -21,12 +21,18 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
   const listeners = new Set();
   const changed = () => { for (const fn of listeners) fn(); };
 
-  /** Stores rows the backend sent, in IndexedDB and in state. */
-  async function apply(changes = {}) {
-    for (const [name, rows] of Object.entries(changes)) {
-      if (!rows?.length || !state[name]) continue;
-      await db.putMany(name, rows);
+  /**
+   * Stores rows the backend sent, in IndexedDB and in state. A row older than the copy already
+   * here is skipped: a sync that set off before a save can answer after it. { all } keeps every
+   * row (a full sync on connecting, which may be a backend that started again).
+   */
+  async function apply(changes = {}, { all = false } = {}) {
+    for (const [name, sent] of Object.entries(changes)) {
+      if (!sent?.length || !state[name]) continue;
       const byId = new Map(state[name].map((r) => [r.id, r]));
+      const rows = all ? sent : sent.filter((r) => !(r.rev < byId.get(r.id)?.rev));
+      if (!rows.length) continue;
+      await db.putMany(name, rows);
       for (const r of rows) byId.set(r.id, r);
       state[name] = [...byId.values()];
     }
@@ -84,7 +90,7 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
       }
       state.connection = connection;
       await db.setMeta('connection', connection);
-      await apply(data.changes);
+      await apply(data.changes, { all: true });
       state.rev = data.rev;
       state.lastSyncedAt = now();
       await db.setMeta('rev', state.rev);

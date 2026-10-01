@@ -65,7 +65,7 @@ const SYMBOLS = ['US$', 'S$', 'HK$', 'AU$', 'A$', 'CA$', 'C$', 'NZ$', 'NT$', 'R$
  * "4,20 €", "SGD 12.50", "-$3", "1.234,56 kr" are understood too. Returns null if there is no number.
  */
 export function parseAmountText(text) {
-  let s = String(text ?? '').replace(/[  ]/g, ' ').trim();
+  let s = String(text ?? '').replace(/[\u00a0\u202f]/g, ' ').trim();
   if (!s) return null;
   let negative = false;
   if (/^[-−–]|^\(.*\)$/.test(s) || /[-−–]$/.test(s)) negative = true;

@@ -302,6 +302,8 @@ export function renderLog(root, { repo }) {
   function onKey(e) {
     if (!root.isConnected || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest?.('input, select, textarea, dialog')) return;
+    // Enter on a focused button presses that button; it shouldn't also save.
+    if (e.key === 'Enter' && e.target.closest?.('button, a')) return;
     const k = e.key === 'Backspace' ? 'back' : e.key;
     if (KEYS.includes(k)) { e.preventDefault(); press(k); }
     else if (e.key === 'Enter') save();

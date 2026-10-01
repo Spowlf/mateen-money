@@ -47,8 +47,9 @@ export function usualWeekSpend(entries, start) {
   return { averagePence: Math.round(total / weeks.length), weeks: weeks.length };
 }
 
-export const toSortEntries = (entries) => spends(entries)
-  .filter((e) => e.categoryId == null || e.needsCurrency)
+/** Spending with no category, and anything (a refund too) whose currency symbol needs an answer. */
+export const toSortEntries = (entries) => entries
+  .filter((e) => isLive(e) && ((e.kind === 'spend' && e.categoryId == null) || e.needsCurrency))
   .sort((a, b) => (b.at ?? 0) - (a.at ?? 0) || (a.date < b.date ? 1 : -1));
 
 /** The 3 largest purchases in [from, to], largest first. */

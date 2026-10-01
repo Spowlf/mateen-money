@@ -52,7 +52,15 @@ export function renderHistory(root, { repo }) {
     }));
   }
 
+  // A trip deleted since it was picked can't be shown in the filter, so it stops filtering.
+  function dropGoneTrip() {
+    if (!view.tripId || S.trips.some((t) => !t.deletedAt && t.id === view.tripId)) return false;
+    view.tripId = null;
+    return true;
+  }
+
   function renderControls() {
+    dropGoneTrip();
     if (view.kind === 'vendors') {
       const search = h('input', { class: 'input', type: 'search', placeholder: 'Search merchants', 'aria-label': 'Search merchants', autocomplete: 'off',
         value: view.vendorQuery, oninput: () => { view.vendorQuery = search.value; renderBody(); } });
@@ -179,6 +187,7 @@ export function renderHistory(root, { repo }) {
   renderSwitch();
   renderControls();
   renderBody();
-  // New data (a sync or a save) redraws the list, never the search box being typed in.
-  return { refresh: renderBody };
+  // New data (a sync or a save) redraws the list, never the search box being typed in
+  // (the filters only when a trip picked in them was deleted).
+  return { refresh: () => { if (dropGoneTrip()) renderControls(); renderBody(); } };
 }

@@ -25,15 +25,19 @@ export const SYMBOL_CURRENCIES = {
  * - An ambiguous symbol uses the card's remembered answer ({ '$': 'SGD' }), else asks.
  * - No symbol: the card's default currency, else GBP.
  * Returns { currency, ambiguous, candidates }. When ambiguous, currency is a best guess
- * (the first candidate) so a GBP estimate can still be shown.
+ * (the first candidate that can hold the amount's decimals, so "¥12.50" guesses CNY, not JPY,
+ * and nothing is rounded away before you pick) so a GBP estimate can still be shown.
  */
-export function resolveCurrency({ symbol = null, code = null, symbolMemory = {}, cardDefault = null } = {}) {
+export function resolveCurrency({ symbol = null, code = null, symbolMemory = {}, cardDefault = null, decimals = 0 } = {}) {
   if (code) return { currency: code, ambiguous: false, candidates: [code] };
   if (symbol) {
     const candidates = SYMBOL_CURRENCIES[symbol] ?? [];
     if (candidates.length === 1) return { currency: candidates[0], ambiguous: false, candidates };
     if (symbolMemory[symbol]) return { currency: symbolMemory[symbol], ambiguous: false, candidates };
-    if (candidates.length) return { currency: candidates[0], ambiguous: true, candidates };
+    if (candidates.length) {
+      const guess = candidates.find((c) => exponent(c) >= decimals) ?? candidates[0];
+      return { currency: guess, ambiguous: true, candidates };
+    }
   }
   return { currency: cardDefault || 'GBP', ambiguous: false, candidates: [] };
 }

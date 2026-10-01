@@ -23,5 +23,6 @@ export function renderHeadline(el, repo) {
       h('span', { class: 'num' }, figure), h('span', { class: 'unit' }, 'left this month')),
     h('p', { class: 'reason' }, reasons.join(' ')),
     hl.unpriced > 0 && h('p', { class: 'warning' },
-      hl.unpriced === 1 ? '1 payment is waiting for its exchange rate, so it isn’t counted yet.' : `${hl.unpriced} payments are waiting for their exchange rate, so they aren’t counted yet.`)));
+      hl.unpriced === 1 ? '1 payment is waiting for its exchange rate, so it isn’t counted yet.' : `${hl.unpriced} payments are waiting for their exchange rate, so they aren’t counted yet.`),
+    hl.unpricedIncome > 0 && h('p', { class: 'warning' }, 'Some income is waiting for its exchange rate, so it isn’t counted yet.')));
 }
