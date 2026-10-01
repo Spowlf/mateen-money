@@ -109,7 +109,7 @@ function methodSub(m) {
   const kind = METHOD_KINDS.find((k) => k.value === m.kind)?.label;
   return [
     kind !== m.name && kind,
-    m.feeBps ? `${bpsToPercent(m.feeBps)}% on foreign currency` : 'No foreign fee',
+    m.kind === 'card' && (m.feeBps ? `${bpsToPercent(m.feeBps)}% on foreign currency` : 'No foreign fee'),
     m.walletCard && m.walletCard !== m.name && `Apple Pay card ${m.walletCard}`,
   ].filter(Boolean).join(', ');
 }
@@ -126,13 +126,15 @@ function openMethodSheet(repo, method) {
   const fee = h('input', { class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', value: f.fee,
     oninput: () => { fee.value = fee.value.replace(/[^\d.]/g, ''); f.fee = fee.value; renderSave(); } });
   const wallet = h('input', { class: 'input', type: 'text', autocomplete: 'off', value: f.walletCard, oninput: () => { f.walletCard = wallet.value; } });
-  // Only a card pays with Apple Pay, so only a card asks for its Wallet name.
+  // Only a card has a foreign currency fee or pays with Apple Pay, so only a card asks for them.
+  const feeField = field('Foreign currency fee, %', fee, '2.99 for most UK cards, 0 for Monzo, Starling or Wise.');
   const walletField = field('Apple Pay card name', wallet, 'As it appears in Wallet.');
+  const showCardFields = () => { feeField.hidden = walletField.hidden = f.kind !== 'card'; };
   const memory = h('div', { class: 'field' });
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit() });
 
   function renderSave() {
-    const need = !f.name.trim() ? 'Enter a name' : percentToBps(f.fee) === null ? 'Enter a fee from 0 to 100%' : null;
+    const need = !f.name.trim() ? 'Enter a name' : f.kind === 'card' && percentToBps(f.fee) === null ? 'Enter a fee from 0 to 100%' : null;
     save.disabled = !!need;
     save.textContent = need ?? (method ? 'Save changes' : `Add ${f.name.trim()}`);
   }
@@ -149,7 +151,7 @@ function openMethodSheet(repo, method) {
 
   async function submit() {
     save.disabled = true;
-    const fields = { name: f.name.trim(), kind: f.kind, feeBps: percentToBps(f.fee), walletCard: (f.kind === 'card' && f.walletCard.trim()) || null, symbolMemory: f.symbolMemory };
+    const fields = { name: f.name.trim(), kind: f.kind, feeBps: f.kind === 'card' ? percentToBps(f.fee) : 0, walletCard: (f.kind === 'card' && f.walletCard.trim()) || null, symbolMemory: f.symbolMemory };
     const id = method?.id ?? crypto.randomUUID();
     const before = method && { name: method.name, kind: method.kind, feeBps: method.feeBps, walletCard: method.walletCard, symbolMemory: method.symbolMemory };
     if (!(await runAction(() => repo.saveRow('methods', id, fields)))) return renderSave();
@@ -162,8 +164,8 @@ function openMethodSheet(repo, method) {
   const s = sheet(method ? method.name : 'Add a Payment Method', h('div', { class: 'sheet-form' },
     field('Name', name),
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Kind'),
-      chips({ label: 'Kind', options: METHOD_KINDS, value: f.kind, onChange: (v) => { f.kind = v; walletField.hidden = v !== 'card'; } })),
-    field('Foreign currency fee, %', fee, '2.99 for most UK cards, 0 for Monzo, Starling or Wise.'),
+      chips({ label: 'Kind', options: METHOD_KINDS, value: f.kind, onChange: (v) => { f.kind = v; showCardFields(); renderSave(); } })),
+    feeField,
     walletField,
     memory,
     h('div', { class: 'sheet-actions' },
@@ -176,7 +178,7 @@ function openMethodSheet(repo, method) {
           toast(`Deleted ${method.name}`, { label: 'Undo', run: () => runAction(() => repo.restoreRow('methods', method.id)) });
         },
       }, 'Delete payment method'))));
-  walletField.hidden = f.kind !== 'card';
+  showCardFields();
   renderMemory();
   renderSave();
 }
