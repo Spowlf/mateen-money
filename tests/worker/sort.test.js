@@ -85,3 +85,11 @@ test('To sort: sorting a missing or deleted entry changes nothing', async () => 
   assert.equal(empty.status, 400);
   assert.equal(empty.body.error, 'Nothing changed: pick a merchant or a category.');
 });
+
+test('To sort: a description typed while sorting goes on that payment only', async () => {
+  const w = makeWorker();
+  const a = await arrive(w);
+  await arrive(w, { timestamp: '2026-10-01T09:00:00+01:00' });
+  const res = await w.call('POST', `/entries/${a.id}/sort`, { body: { categoryId: 'snacks', note: '  Lunch with Sam ' } });
+  assert.deepEqual(res.body.changes.entries.map((e) => [e.id === a.id, e.note]), [[true, 'Lunch with Sam'], [false, null]]);
+});

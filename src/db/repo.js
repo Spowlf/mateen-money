@@ -199,7 +199,7 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
       return applyWrite(await api.put(`/reviews/${encodeURIComponent(weekStart)}`, { weekStart, completedAt: now(), deletedAt: null }));
     },
 
-    /** Files a To sort payment: { vendorId?, categoryId?, vendorName?, currency? }. */
+    /** Files a To sort payment: { vendorId?, categoryId?, vendorName?, currency?, note? }. */
     async sortEntry(id, choice) {
       return applyWrite(await api.post(`/entries/${encodeURIComponent(id)}/sort`, choice));
     },

@@ -135,6 +135,8 @@ export async function sortEntry(ctx, id, body) {
     ['vendors', 'aliases', 'methods', 'rates', 'entries'].map((t) => store.live(t)),
   );
   const writes = { entries: [], vendors: [], aliases: [], methods: [] };
+  // A description typed while sorting belongs to this payment only, not the others from the merchant.
+  if (body.note !== undefined) e = { ...e, note: String(body.note ?? '').trim() || null };
 
   // The currency answer: re-read the amount as that currency, and remember it for this card.
   if (body.currency) {

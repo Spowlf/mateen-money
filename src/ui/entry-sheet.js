@@ -121,6 +121,7 @@ export function openEntrySheet(repo, entry) {
       field(income ? 'From' : 'Merchant', vendorInput,
         !income && vendor && f.vendorText === initialVendorText && entry.merchant && entry.merchant !== vendor.name ? `Arrived as ${entry.merchant}.` : null),
       h('datalist', { id: listId }, liveSorted(S.vendors, 'name').map((v) => h('option', { value: v.name }))),
+      field('Description', note),
       income
         ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Type of income'),
           chips({ label: 'Type of income', options: INCOME_TYPES.map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
@@ -135,7 +136,6 @@ export function openEntrySheet(repo, entry) {
         chips({ label: 'Paid with', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
       income && intoField(S, f.accountId, (v) => set({ accountId: v })),
       ((!income && trips.length > 0) || f.tripId) && field('Trip', trip, f.tripManual ? null : 'Suggested from the date.'),
-      field('Description', note),
       h('div', { class: 'sheet-actions' },
         save,
         h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, entry.kind === 'income' ? 'Delete income' : 'Delete payment')),

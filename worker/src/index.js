@@ -2,7 +2,7 @@
 //
 //   GET    /sync?since=rev        everything changed after rev (0 = everything)
 //   PUT    /entries/:id           add or edit an entry; the Worker prices it
-//   POST   /entries/:id/sort      file a To sort entry: { vendorId?, categoryId?, vendorName?, currency? }
+//   POST   /entries/:id/sort      file a To sort entry: { vendorId?, categoryId?, vendorName?, currency?, note? }
 //   PUT    /:table/:id            add or edit a vendor, alias, category, method, recurring item, trip, review, setting,
 //                                  account or balance
 //   POST   /batch                 accounts, balances and linked cards in one write: { accounts?, balances?, methods? }
