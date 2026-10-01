@@ -12,6 +12,7 @@ export * from './budgets.js';
 export * from './totals.js';
 export * from './summary.js';
 export * from './review.js';
+export * from './habits.js';
 export * from './sort.js';
 export * from './draft.js';
 export * from './form.js';

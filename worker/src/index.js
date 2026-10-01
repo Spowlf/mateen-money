@@ -12,7 +12,7 @@
 //
 // Every route needs "Authorization: Bearer <API_TOKEN>". Writes reply { rev, changes }.
 
-import { partsInZone, partsFromIso, validTimeZone, DEFAULT_TIME_ZONE, weekSummary, weeklyText, readBackup, BACKUP_TABLES } from '../../src/engine/index.js';
+import { partsInZone, partsFromIso, validTimeZone, DEFAULT_TIME_ZONE, weekSummary, weeklyText, findHabits, readBackup, BACKUP_TABLES } from '../../src/engine/index.js';
 import { TABLES } from './tables.js';
 import { createStore } from './store.js';
 import { HttpError, json, text, withCors, authorised, readJson, refuse } from './http.js';
@@ -51,8 +51,9 @@ async function route(request, ctx) {
   if ((method === 'GET' || method === 'POST') && first === 'summary' && !id) {
     // The Shortcut sends the phone's time with its offset, so the week is the one just ended where you are.
     const sent = method === 'POST' ? partsFromIso((await readJson(request)).timestamp) : null;
-    const [entries, categories] = await Promise.all([ctx.store.live('entries'), ctx.store.live('categories')]);
-    return text(weeklyText(weekSummary({ entries, categories, todayDate: sent?.date ?? ctx.today })));
+    const [entries, categories, vendors, trips] = await Promise.all(['entries', 'categories', 'vendors', 'trips'].map((t) => ctx.store.live(t)));
+    const summary = weekSummary({ entries, categories, todayDate: sent?.date ?? ctx.today });
+    return text(weeklyText(summary, findHabits({ entries, vendors, categories, trips, end: summary.end })));
   }
   if (method === 'POST' && first === 'applepay' && !id) {
     return text(await ingestApplePay(ctx, await readJson(request)));

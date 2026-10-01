@@ -31,6 +31,7 @@ const FILES = [
   'src/engine/draft.js',
   'src/engine/export.js',
   'src/engine/form.js',
+  'src/engine/habits.js',
   'src/engine/headline.js',
   'src/engine/forecast.js',
   'src/engine/budgets.js',

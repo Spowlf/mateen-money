@@ -51,3 +51,13 @@ test('summary: without a usable time it falls back to the time zone setting', as
   const w = makeWorker({ now: SUNDAY });
   assert.match((await w.call('POST', '/summary', { body: {} })).body, /^Week of 28 Sep:/);
 });
+
+test('summary: the biggest habit of the 4 weeks follows the top categories', async () => {
+  const w = makeWorker({ now: SUNDAY });
+  for (let i = 0; i < 9; i++) {
+    const date = new Date(Date.UTC(2026, 9, 4 - i)).toISOString().slice(0, 10);
+    await w.call('PUT', `/entries/t${i}`, { body: manualEntry({ date, amountMinor: 350, merchant: 'Tesco', categoryId: 'groceries' }) });
+  }
+  const res = await w.call('GET', '/summary');
+  assert.match(res.body, /Top: Groceries £24\.50\. Tesco: 9 times in 4 weeks, £31\.50 in all\. Nothing to sort\.$/);
+});

@@ -3,6 +3,7 @@
 import { addDays, weekStart, weekday, formatDayShort } from './dates.js';
 import { gbp } from './money.js';
 import { categoryRows, isLive } from './totals.js';
+import { habitLine } from './habits.js';
 
 export const USUAL_WEEKS = 8;
 
@@ -93,13 +94,15 @@ export function comparePhrase(s) {
 /**
  * The notification text.
  * "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Food £48, Groceries £35, Snacks £20. 3 to sort."
+ * With habits (see habits.js), the biggest one follows the top categories: "Tesco: 14 times in 4 weeks, £63.20 in all."
  */
-export function weeklyText(s) {
+export function weeklyText(s, habits = []) {
   const parts = [];
   const head = `Week of ${formatDayShort(s.start)}: ${gbp(s.totalPence)}`;
   const compare = comparePhrase(s);
   parts.push(compare ? `${head}, ${compare}.` : `${head}.`);
   if (s.top.length) parts.push(`Top: ${s.top.map((r) => `${r.name} ${gbp(r.pence)}`).join(', ')}.`);
+  if (habits.length) parts.push(habitLine(habits[0]));
   parts.push(s.toSort === 0 ? 'Nothing to sort.' : `${s.toSort} to sort.`);
   return parts.join(' ');
 }

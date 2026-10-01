@@ -4,7 +4,7 @@
 import { h, fill, toast } from './dom.js';
 import { money, whenPhrase, runAction } from './format.js';
 import { categoryTable } from './charts.js';
-import { partsInZone, DEFAULT_TIME_ZONE, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, comparePhrase, budgetWarningLine } from '../engine/index.js';
+import { partsInZone, DEFAULT_TIME_ZONE, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, habitLine, comparePhrase, budgetWarningLine } from '../engine/index.js';
 
 // Where the review is up to, kept between renders and tab visits.
 let place = { weekStart: null, open: false, step: null };
@@ -17,7 +17,7 @@ export function renderReview(el, { repo, showToSort }) {
   const todayDate = partsInZone(Date.now(), repo.setting('timeZone', DEFAULT_TIME_ZONE)).date;
   const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
   const card = repo.connected() && reviewCard({
-    entries: S.entries, categories: S.categories, trips: S.trips, reviews: S.reviews, todayDate,
+    entries: S.entries, categories: S.categories, vendors: S.vendors, trips: S.trips, reviews: S.reviews, todayDate,
     budgets: S.budgets, recurring: S.recurring, rates: S.rates, excludeTrips,
   });
   el.hidden = !card;
@@ -79,6 +79,10 @@ export function renderReview(el, { repo, showToSort }) {
           card.unusual.map((u) => h('p', { class: 'warning' }, unusualLine(u))))
         : h('p', {}, 'Nothing ran more than 50% above usual that week.'),
       budgetWarningLine(card.budget) && h('p', { class: 'warning' }, budgetWarningLine(card.budget)),
+      card.habits.length > 0 && h('div', { class: 'review-list' },
+        h('h3', { class: 'review-sub' }, 'Frequent Buys'),
+        h('p', { class: 'reason' }, 'Small, frequent buys are often the easiest to cut.'),
+        card.habits.map((x) => h('p', {}, habitLine(x)))),
       h('div', { class: 'review-actions' }, h('button', { type: 'button', class: 'button secondary', onclick: done }, 'Done')),
     ];
   }

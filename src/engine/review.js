@@ -5,6 +5,7 @@ import { reviewWeek, usualWeeks, weekSummary } from './summary.js';
 import { categoryRows, isLive } from './totals.js';
 import { gbp } from './money.js';
 import { budgetStatus } from './budgets.js';
+import { findHabits } from './habits.js';
 
 export const UNUSUAL_RATIO = 1.5;        // more than 50% above the 8-week average
 export const NEW_CATEGORY_MIN = 2000;    // £20: a category with no history counts as unusual from here
@@ -73,8 +74,9 @@ export const reviewSteps = ({ toSort }) => (toSort > 0 ? ['sort', 'week', 'unusu
 /**
  * Everything the review card on Log shows, or null when no review is due. budget is this month's
  * budget status (null with no budget); a warning shows with anything unusual when it isn't 'ok'.
+ * habits are the 4 weeks' frequent buys (see habits.js), shown in the same step.
  */
-export function reviewCard({ entries, categories, trips = [], reviews = [], todayDate, budgets = [], recurring = [], rates = [], excludeTrips = false }) {
+export function reviewCard({ entries, categories, vendors = [], trips = [], reviews = [], todayDate, budgets = [], recurring = [], rates = [], excludeTrips = false }) {
   const { due, weekStart, weekEnd } = reviewDue({ todayDate, reviews, entries });
   if (!due) return null;
   const summary = weekSummary({ entries, categories, todayDate, start: weekStart });
@@ -83,6 +85,7 @@ export function reviewCard({ entries, categories, trips = [], reviews = [], toda
     weekEnd,
     summary,
     unusual: unusualCategories({ entries, categories, weekStart }),
+    habits: findHabits({ entries, vendors, categories, trips, end: weekEnd }),
     streak: reviewStreak(reviews, todayDate),
     toSort: summary.toSort,
     month: monthKey(todayDate),

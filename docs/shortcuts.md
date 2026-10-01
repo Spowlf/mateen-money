@@ -57,4 +57,18 @@ This sends you a summary notification every Sunday evening.
 
 The time you send includes your phone's offset from UTC, so the summary covers the week that has just ended where you are, even abroad. Without it, the week follows the time zone in the app's Settings.
 
-It reads like this: "Week of 28 Sep: £142.30, 12% above your usual £127. Top: Food £48, Groceries £35, Snacks £20. 3 to sort."
+It reads like this: "Week of 28 Sep: £142.30, 12% above your usual £127.00. Top: Food £48.00, Groceries £35.00, Snacks £20.00. Tesco: 14 times in 4 weeks, £63.20 in all. 3 to sort."
+
+The line after "Top" is your biggest frequent buy over the last 4 weeks, if you have one: a merchant you went to 8 times or more, or 8 or more buys under £5.00 in one category, adding up to £20.00 or more. All of them are in the weekly review in the app.
+
+### Optional: a tip from Apple Intelligence
+
+This needs iOS 26 or later and Apple Intelligence turned on. The tip is written on the phone, and your figures stay on it.
+
+1. Between **Get Contents of URL** and **Show Notification**, add **Use Model**.
+   - Model: **On-Device**
+   - Prompt: `Here is my weekly spending summary in GBP: ` then **Contents of URL**, then:
+     `Repeat it word for word. Then add one short sentence suggesting how I could spend less on the frequent buy it mentions, if it mentions one. Don't guess prices or name a saving. Use British English.`
+2. In **Show Notification**, replace **Contents of URL** with **Response**.
+
+The figures come from the app. The model only adds the tip, so treat it as an idea, not a fact.
