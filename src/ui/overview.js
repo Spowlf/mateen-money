@@ -116,7 +116,7 @@ export function renderOverview(root, { repo }) {
         ? h('ul', { class: 'list' }, h('li', {}, current
           ? h('button', { type: 'button', class: 'list-row budget-row', 'aria-label': `Budget: ${budgetStatusText(budget)}. Change the budget`, onclick: () => openBudgetSheet(repo) }, content(budget))
           : h('div', { class: 'list-row budget-row static' }, content(budget))))
-        : h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo) }, 'Set a monthly budget')));
+        : h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo) }, 'Set a Monthly Budget')));
   }
 
   const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);

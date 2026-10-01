@@ -98,7 +98,7 @@ function budgetSection(repo) {
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Budget'),
     h('ul', { class: 'list' }, h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openBudgetSheet(repo) },
-      h('span', { class: 'list-title' }, 'Monthly budget'),
+      h('span', { class: 'list-title' }, 'Monthly Budget'),
       h('span', { class: pence ? 'list-amount' : 'list-sub' }, pence ? `${gbp(pence, { whole: true })} a month` : 'No budget')))));
 }
 

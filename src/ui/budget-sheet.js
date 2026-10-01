@@ -34,13 +34,13 @@ export function openBudgetSheet(repo) {
     save.disabled = true;
     if (!(await runAction(() => repo.saveRow('budgets', change.id, change)))) return renderSave();
     s.close();
-    toast(pence ? 'Saved monthly budget' : 'Removed monthly budget', {
+    toast(pence ? 'Saved Monthly Budget' : 'Removed Monthly Budget', {
       label: 'Undo',
       run: () => runAction(() => (before ? repo.saveRow('budgets', before.id, { amountPence: before.amountPence }) : repo.deleteRow('budgets', change.id))),
     });
   }
 
-  const s = sheet('Monthly budget', h('div', { class: 'sheet-form' },
+  const s = sheet('Monthly Budget', h('div', { class: 'sheet-form' },
     field('Spending budget, £ a month', amount, `Everything you spend counts, recurring costs and trips too. Applies from ${monthName}.`),
     h('div', { class: 'sheet-actions' }, save, remove)));
   renderSave();
