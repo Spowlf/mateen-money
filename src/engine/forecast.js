@@ -100,16 +100,17 @@ export function monthForecast({ entries, trips = [], recurring = [], rates = [],
   const month = monthKey(todayDate);
   const hl = monthHeadline({ entries, recurring, rates, month, todayDate });
   const pace = dailyRates(entries, todayDate, { trips, excludeTrips });
-  const dailyPence = pace.rates.get('all') ?? 0;
+  // Rounded to the penny first, so the reason's sum ("£X spent and about £Y a day for N days") adds up exactly.
+  const dailyPence = Math.round(pace.rates.get('all') ?? 0);
   const daysAfter = daysBetween(todayDate, monthEnd(month));
-  const projected = Math.round(dailyPence * daysAfter);
+  const projected = dailyPence * daysAfter;
   const forecast = hl.spent + hl.costsDue + projected;
   return {
     month,
     end: monthEnd(month),
     spent: hl.spent,
     costsDue: hl.costsDue,
-    dailyPence: Math.round(dailyPence),
+    dailyPence,
     daysAfter,
     projected,
     forecast,

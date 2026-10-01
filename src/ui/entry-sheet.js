@@ -25,8 +25,8 @@ function gbpLine(e) {
   if (e.gbpPence == null) return 'Waiting for an exchange rate.';
   const fee = e.feePence ? `, including a ${gbp(e.feePence)} fee` : '';
   return e.gbpStatus === 'final'
-    ? `${gbp(e.gbpPence)} at ${e.rate} per £1${fee}.`
-    : `~${gbp(e.gbpPence)} at ${e.rate} per £1${fee}.`;
+    ? `${gbp(e.gbpPence)} at ${e.rate} per £1.00${fee}.`
+    : `~${gbp(e.gbpPence)} at ${e.rate} per £1.00${fee}.`;
 }
 
 const SOURCE_NOTE = {

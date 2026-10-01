@@ -166,8 +166,8 @@ test('budgets: a row per category and month, synced, checked before it is kept',
   const sync = await w.call('GET', '/sync?since=0');
   assert.deepEqual(sync.body.changes.budgets.map((b) => [b.id, b.amountPence]), [['food:2026-10', 15000]]);
   const bad = [
-    ['/budgets/food:2026-11', { categoryId: 'food', fromMonth: '2026-11', amountPence: -1 }, 'Nothing changed: enter a budget of £0 or more.'],
-    ['/budgets/food:2026-11', { categoryId: 'food', fromMonth: '2026-11', amountPence: 12.5 }, 'Nothing changed: enter a budget of £0 or more.'],
+    ['/budgets/food:2026-11', { categoryId: 'food', fromMonth: '2026-11', amountPence: -1 }, 'Nothing changed: enter a budget of £0.00 or more.'],
+    ['/budgets/food:2026-11', { categoryId: 'food', fromMonth: '2026-11', amountPence: 12.5 }, 'Nothing changed: enter a budget of £0.00 or more.'],
     ['/budgets/food:2026-13', { categoryId: 'food', fromMonth: '2026-13', amountPence: 100 }, 'Nothing changed: pick the month it starts.'],
     ['/budgets/x', { categoryId: 'food', fromMonth: '2026-11', amountPence: 100 }, 'Nothing changed: pick the month it starts.'],
   ];

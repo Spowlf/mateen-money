@@ -190,3 +190,10 @@ test('forecast: the first week blends the pace without explaining it', () => {
   assert.equal(f.blended, true);
   assert.doesNotMatch(forecastReason(f), /blends/);
 });
+
+test('forecast: the reason adds up to the figure, to the penny', () => {
+  // £475.87 on the 1st: a daily rate with a fraction of a penny.
+  const f = monthForecast({ entries: [income('2026-10-01', 160000), spend('2026-10-01', 47587)], todayDate: '2026-10-01' });
+  assert.ok(Number.isInteger(f.dailyPence));
+  assert.equal(f.forecast, f.spent + f.costsDue + f.dailyPence * f.daysAfter);
+});

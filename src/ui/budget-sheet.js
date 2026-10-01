@@ -9,10 +9,10 @@ export function openBudgetSheet(repo) {
   const S = repo.state;
   const month = monthKey(today());
   const current = budgetFor(S.budgets, month);
-  const f = { amount: current ? toDecimalText(current).replace(/\.00$/, '') : '' };
+  const f = { amount: current ? toDecimalText(current) : '' };
 
   const amount = h('input', {
-    class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '500', value: f.amount,
+    class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '500.00', value: f.amount,
     oninput: () => { amount.value = amount.value.replace(/[^\d.,£]/g, ''); f.amount = amount.value; renderSave(); },
   });
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit(budgetPence(f.amount)) });
