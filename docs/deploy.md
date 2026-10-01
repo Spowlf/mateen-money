@@ -43,6 +43,8 @@ npx wrangler secret put API_TOKEN
 
 Paste the token when Wrangler asks for it. Keep a copy in your password manager. You'll type it into the app's Settings and into the two Shortcuts. Don't put it in any file in the project.
 
+Optional: to have Net Worth fill in IBKR by itself, follow `docs/ibkr.md` for two more secrets, `IBKR_FLEX_TOKEN` and `IBKR_FLEX_QUERY_ID`.
+
 ## 5. Deploy
 
 ```sh

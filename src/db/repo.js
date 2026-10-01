@@ -16,6 +16,9 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
   state.rev = 0;
   state.lastSyncedAt = null;
   state.lastBackupAt = null;
+  // Prices are outside sync (they'd bump rev every tick): the last ones fetched, kept for offline.
+  state.prices = [];
+  state.ibkr = null;   // { configured, status: { at, ok, reportDate, message } | null }
 
   const api = createApi({ fetch, connection: () => state.connection });
   const listeners = new Set();
@@ -61,6 +64,9 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
       state.rev = (await db.getMeta('rev')) ?? 0;
       state.lastSyncedAt = (await db.getMeta('lastSyncedAt')) ?? null;
       state.lastBackupAt = (await db.getMeta('lastBackupAt')) ?? null;
+      const prices = await db.getMeta('prices');
+      state.prices = prices?.prices ?? [];
+      state.ibkr = prices?.ibkr ?? null;
     },
 
     connected: () => !!(state.connection?.apiBase && state.connection?.token),
@@ -150,6 +156,24 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
     async restoreBackup(data) {
       await api.post('/restore', data);
       return repo.sync();
+    },
+
+    /** Fetches the latest prices (the Worker asks Yahoo at most once a minute) and IBKR's status. */
+    async refreshPrices() {
+      const data = await api.post('/prices/refresh');
+      state.prices = data.prices ?? [];
+      state.ibkr = data.ibkr ?? null;
+      await db.setMeta('prices', { prices: state.prices, ibkr: state.ibkr });
+      changed();
+      return data;
+    },
+
+    /** Asks the Worker to sync IBKR now, then pulls what it wrote. Returns its status. */
+    async syncIbkr() {
+      const { status } = await api.post('/ibkr/sync');
+      await repo.sync();
+      await repo.refreshPrices().catch(() => {});
+      return status;
     },
 
     /** Remembers when a backup was last saved (this phone only). */

@@ -233,3 +233,15 @@ test('net worth: carried balances count in the total and are marked estimated', 
   // Without payments it's exact.
   assert.equal(netWorth({ accounts, balances, rates: [], todayDate: TODAY }).estimated, false);
 });
+
+test('net worth: an account with holdings moves with prices, not card payments', () => {
+  const accounts = [account('ibkr', 'investment', 'SGD')];
+  const balances = [balance('ibkr', '2026-10-01', 3445631, 'SGD')];
+  const holdings = [{ id: 'h', accountId: 'ibkr', quote: 'SPUS', currency: 'USD', unitsMicro: 100000000, closeMicro: 60000000, valueBaseMinor: 0, costBaseMinor: 0, deletedAt: null }];
+  const prices = [{ id: 'SPUS', currency: 'USD', priceMicro: 61000000, prevCloseMicro: 60000000, quoteAt: Date.UTC(2026, 9, 2, 16) }];
+  const nw = netWorth({ accounts, balances, rates: RATES, todayDate: '2026-10-02', holdings, prices, methods: [card('x', 'ibkr')], entries: [pay('2026-10-02', 999, 'SGD', 'x')] });
+  // US$100.00 = S$127.78
+  assert.equal(nw.groups[0].accounts[0].amountMinor, 3445631 + 12778);
+  assert.equal(nw.groups[0].accounts[0].payments, 0);
+  assert.equal(nw.groups[0].accounts[0].live.todayMinor, 12778);
+});

@@ -233,3 +233,19 @@ test('repo: a sync that answers after a save never puts back the older copy', as
   await repo.sync();
   assert.equal(repo.state.entries[0].note, 'Second');
 });
+
+test('repo: prices are fetched outside sync and kept for opening offline', async () => {
+  const w = makeWorker();
+  const db = memoryDb();
+  const repo = await connected(w, db);
+  let told = 0;
+  repo.subscribe(() => { told += 1; });
+  const data = await repo.refreshPrices();
+  assert.deepEqual(data.prices, []);
+  assert.deepEqual(repo.state.ibkr, { configured: false, status: null });
+  assert.equal(told, 1);
+  // Opened again (offline): the last prices are there.
+  const again = createRepo({ db, fetch: async () => { throw new TypeError('offline'); }, now: () => w.now });
+  await again.load();
+  assert.deepEqual(again.state.ibkr, { configured: false, status: null });
+});

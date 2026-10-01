@@ -4,7 +4,7 @@
 import { h, fill, chips, field, sheet, toast } from './dom.js';
 import { runAction } from './format.js';
 import {
-  today, gbp, formatMoney, formatDay, toDecimalText, netWorth, latestBalance, balanceRows, balanceMinor, undoRows,
+  today, nowTime, gbp, formatMoney, formatDay, toDecimalText, netWorth, latestBalance, balanceRows, balanceMinor, undoRows,
   updatedPhrase, staleLine, ACCOUNT_KINDS, COMMON_CURRENCIES,
 } from '../engine/index.js';
 
@@ -27,12 +27,26 @@ function kindIcon(kind) {
 }
 
 // Each balance carried on with the card payments logged since it was typed.
-const worth = (S) => netWorth({ accounts: S.accounts, balances: S.balances, rates: S.rates, methods: S.methods, entries: S.entries, todayDate: today() });
+// IBKR moves with the latest prices instead.
+const worth = (S) => netWorth({
+  accounts: S.accounts, balances: S.balances, rates: S.rates, methods: S.methods, entries: S.entries,
+  holdings: S.holdings, prices: S.prices, todayDate: today(),
+});
 const rowsOf = (S) => worth(S).groups.flatMap((g) => g.accounts);
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-/** "Updated 27 Aug 2026, 14 payments since" */
-const updatedLine = (r, todayDate) => [updatedPhrase(r.balance.date, todayDate), r.payments && `${plural(r.payments, 'payment')} since`].filter(Boolean).join(', ');
+/** "Prices at 14:32" / "Prices at 14:32 on 2 Oct 2026" */
+function pricesAt(ms, todayDate) {
+  const d = new Date(ms);
+  const day = today(d);
+  return `Prices at ${nowTime(d)}${day === todayDate ? '' : ` on ${formatDay(day)}`}`;
+}
+
+/** "Updated 27 Aug 2026, 14 payments since"; IBKR: "Prices at 14:32" or "Close on 1 Oct 2026". */
+function updatedLine(r, todayDate) {
+  if (r.live) return r.live.pricedAt ? pricesAt(r.live.pricedAt, todayDate) : `Close on ${formatDay(r.balance.date)}`;
+  return [updatedPhrase(r.balance.date, todayDate), r.payments && `${plural(r.payments, 'payment')} since`].filter(Boolean).join(', ');
+}
 
 // The balance as an input shows it: "2016.76", "-25.00".
 const inputText = (minor, currency) => (minor === null || minor === undefined ? '' : toDecimalText(minor, currency));
@@ -223,8 +237,9 @@ export function renderNetWorth(root, { repo }) {
   function accountRow(r, todayDate) {
     const { account, balance } = r;
     const foreign = balance && balance.currency !== 'GBP';
-    const own = balance && `${r.payments ? '~' : ''}${formatMoney(r.amountMinor, balance.currency)}`;
-    const tilde = foreign || r.payments ? '~' : '';
+    const moved = r.payments || r.live?.pricedAt;
+    const own = balance && `${moved ? '~' : ''}${formatMoney(r.amountMinor, balance.currency)}`;
+    const tilde = foreign || moved ? '~' : '';
     const sub = balance ? updatedLine(r, todayDate) : 'No balance yet';
     return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openAccountSheet(repo, account) },
       h('span', { class: 'row-icon' }, kindIcon(account.kind)),
@@ -255,10 +270,14 @@ export function renderNetWorth(root, { repo }) {
     const notes = [
       nw.rateDate && `Converted to pounds at the rates for ${formatDay(nw.rateDate)}.`,
       nw.carried.length && 'Card payments logged since a balance was typed are taken off it.',
+      nw.groups.some((g) => g.accounts.some((r) => r.live?.pricedAt)) && 'Shares at prices up to 15 minutes old.',
       nw.noRate.length && `Leaves out ${nw.noRate.map((r) => r.account.name).join(', ')} until ${nw.noRate.length === 1 ? 'its exchange rate arrives' : 'their exchange rates arrive'}.`,
       nw.noBalance.length && `Leaves out ${nw.noBalance.map((r) => r.account.name).join(', ')}: add ${nw.noBalance.length === 1 ? 'its balance' : 'their balances'}.`,
     ].filter(Boolean);
     const stale = staleLine(nw.stale);
+    const ibkr = S.ibkr?.configured && S.ibkr.status && !S.ibkr.status.ok ? S.ibkr.status : null;
+    // Set up on the Worker but not synced yet: the first sync is a tap away rather than a night.
+    const firstSync = S.ibkr?.configured && !S.ibkr.status;
 
     fill(root, h('div', { class: 'screen' },
       h('section', { class: 'headline', 'aria-label': 'Net worth' },
@@ -266,6 +285,12 @@ export function renderNetWorth(root, { repo }) {
           h('span', { class: 'num' }, `${nw.estimated ? '~' : ''}${gbp(nw.totalPence)}`),
           h('span', { class: 'unit' }, 'in total')),
         notes.map((n) => h('p', { class: 'reason' }, n))),
+      firstSync && h('div', { class: 'hint stale-warning' },
+        h('p', {}, 'IBKR is set up and syncs each night.'),
+        h('button', { type: 'button', class: 'text-button', onclick: (e) => syncNow(e.currentTarget) }, 'Sync IBKR now')),
+      ibkr && h('div', { class: 'warning stale-warning' },
+        h('p', {}, `IBKR didn’t sync${ibkr.reportDate ? `, so it shows the close on ${formatDay(ibkr.reportDate)}` : ''}. ${ibkr.message}`),
+        h('button', { type: 'button', class: 'text-button', onclick: (e) => syncNow(e.currentTarget) }, 'Sync IBKR now')),
       stale && h('div', { class: 'warning stale-warning' },
         h('p', {}, stale),
         h('button', { type: 'button', class: 'text-button', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
@@ -276,6 +301,15 @@ export function renderNetWorth(root, { repo }) {
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo) }, 'Add an account'))));
   }
 
+  async function syncNow(button) {
+    button.disabled = true;
+    const status = await runAction(() => repo.syncIbkr());
+    button.disabled = false;
+    if (status) toast(status.ok ? 'Synced IBKR' : `IBKR didn’t sync. ${status.message}`);
+  }
+
   render();
+  // Opening Net Worth asks for the latest prices; offline, the last ones stay.
+  if (repo.connected()) repo.refreshPrices().catch(() => {});
   return { refresh: render };
 }

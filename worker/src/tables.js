@@ -40,6 +40,11 @@ export const TABLES = {
   budgets: table(['categoryId', 'fromMonth', 'amountPence'], { required: ['categoryId', 'fromMonth', 'amountPence'] }),
   accounts: table(['name', 'kind', 'currency', 'sort'], { required: ['name', 'kind', 'currency'], defaults: { sort: 0 } }),
   balances: table(['accountId', 'date', 'amountMinor', 'currency'], { required: ['accountId', 'date', 'amountMinor', 'currency'] }),
+  holdings: table(['accountId', 'symbol', 'exchange', 'quote', 'name', 'currency', 'unitsMicro', 'closeMicro', 'valueBaseMinor', 'costBaseMinor', 'reportDate'], {
+    clientWrites: false, defaults: { valueBaseMinor: 0, costBaseMinor: 0 },
+  }),
+  activity: table(['accountId', 'date', 'type', 'symbol', 'unitsMicro', 'priceMicro', 'amountMinor', 'currency'], { clientWrites: false }),
+  snapshots: table(['date', 'gbpPence'], { clientWrites: false }),
 };
 
 /** A row as the API sends it: JSON columns parsed. */

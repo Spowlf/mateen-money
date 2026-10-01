@@ -27,15 +27,28 @@ export function fakeFrankfurter(days = {}) {
   return { fetch, calls };
 }
 
-/** A Worker with its own empty database. */
-export function makeWorker({ now = NOW, rates = {}, env: extra = {} } = {}) {
+/**
+ * A Worker with its own empty database. routes answers other hosts: { 'host.name': (url) => Response },
+ * every request to them recorded in w.calls. Waits (IBKR's) are skipped and recorded in w.waits.
+ */
+export function makeWorker({ now = NOW, rates = {}, env: extra = {}, routes = {} } = {}) {
   const frankfurter = fakeFrankfurter(rates);
   const env = { DB: fakeD1(), API_TOKEN: TOKEN, ALLOWED_ORIGIN: ORIGIN, ...extra };
+  const fetch = async (url, init) => {
+    const u = new URL(url);
+    if (routes[u.hostname]) {
+      w.calls.push(String(url));
+      return routes[u.hostname](u, init);
+    }
+    return frankfurter.fetch(url, init);
+  };
   const w = {
     env,
     frankfurter,
     now,
-    deps: () => ({ now: w.now, fetch: frankfurter.fetch }),
+    calls: [],
+    waits: [],
+    deps: () => ({ now: w.now, fetch, sleep: async (ms) => { w.waits.push(ms); } }),
     async request(method, path, { body, token = TOKEN, origin = ORIGIN, headers = {} } = {}) {
       const h = new Headers(headers);
       if (token) h.set('Authorization', `Bearer ${token}`);
@@ -51,7 +64,7 @@ export function makeWorker({ now = NOW, rates = {}, env: extra = {} } = {}) {
       const body = type.includes('json') ? await res.json() : await res.text();
       return { status: res.status, body, headers: res.headers };
     },
-    scheduled: () => runScheduled(env, w.deps()),
+    scheduled: (cron = null) => runScheduled(env, w.deps(), cron),
     /** A fetch that reaches this Worker, for testing the app's API client against it. */
     fetch: async (url, init) => handle(new Request(url, init), env, w.deps()),
     /** Rows straight from the database, skipping the API. */

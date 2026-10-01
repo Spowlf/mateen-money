@@ -1,7 +1,7 @@
-// The scheduled jobs: add recurring items that are due, and refresh rates.
-// Both are safe to run any number of times.
+// The scheduled jobs: add recurring items that are due, refresh rates, and save the day's net worth.
+// All are safe to run any number of times.
 
-import { dueOccurrences, recurringEntry, priceEntry, tripFor } from '../../src/engine/index.js';
+import { dueOccurrences, recurringEntry, priceEntry, tripFor, netWorth } from '../../src/engine/index.js';
 import { TABLES } from './tables.js';
 import { ensureRates } from './rates.js';
 
@@ -55,4 +55,22 @@ export async function refreshRates(ctx) {
     if (p.gbpPence !== e.gbpPence || p.gbpStatus !== e.gbpStatus || p.rate !== e.rate || p.feePence !== e.feePence) changed.push(p);
   }
   await store.write({ entries: changed, rates: got.fresh }, ctx.now);
+}
+
+/**
+ * Saves today's net worth in GBP for the chart (one row a day, id the date). Each run replaces
+ * today's figure, so the last run of the day, after the markets close, is the one kept.
+ * Nothing is written when there are no accounts or the figure hasn't moved.
+ */
+export async function saveSnapshot(ctx, prices) {
+  const { store, today } = ctx;
+  const [accounts, balances, rates, methods, entries, holdings] = await Promise.all(
+    ['accounts', 'balances', 'rates', 'methods', 'entries', 'holdings'].map((t) => store.live(t)),
+  );
+  if (!accounts.length) return;
+  const nw = netWorth({ accounts, balances, rates, methods, entries, holdings, prices, todayDate: today });
+  if (!nw.groups.some((g) => g.accounts.some((r) => r.pence !== null))) return;
+  const old = await store.get('snapshots', today);
+  if (old && !old.deletedAt && old.gbpPence === nw.totalPence) return;
+  await store.write({ snapshots: [{ id: today, date: today, gbpPence: nw.totalPence, deletedAt: null }] }, ctx.now);
 }

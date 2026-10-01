@@ -15,5 +15,7 @@ database_id = "fdb8f61b-71cb-469c-9c5d-82b9de42395c"
 
 # Every 6 hours: add recurring items due today, then refresh rates.
 # 00:15 UTC adds the day's items; 18:15 UTC picks up the ECB rates published that afternoon.
+# Every 15 minutes: IBKR's nightly sync when due, prices for open markets, today's net worth.
+# IBKR_FLEX_TOKEN and IBKR_FLEX_QUERY_ID are secrets too (docs/ibkr.md).
 [triggers]
-crons = ["15 */6 * * *"]
+crons = ["15 */6 * * *", "*/15 * * * *"]

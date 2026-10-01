@@ -11,6 +11,9 @@
 //   POST   /applepay              the Shortcut's payment; replies with one line of text
 //   GET    /summary               the weekly summary, as text
 //   POST   /summary               the same, for the week just ended where the phone is: { timestamp }
+//   GET    /prices                the latest prices and IBKR's sync status: { prices, ibkr }
+//   POST   /prices/refresh        the same, fetching every ticker first (at most once a minute)
+//   POST   /ibkr/sync             sync IBKR now; replies with the status (then GET /sync for the rows)
 //
 // Every route needs "Authorization: Bearer <API_TOKEN>". Writes reply { rev, changes }.
 
@@ -20,7 +23,9 @@ import { createStore } from './store.js';
 import { HttpError, json, text, withCors, authorised, readJson, refuse } from './http.js';
 import { saveEntry, sortEntry, ingestApplePay } from './entries.js';
 import { saveRow, saveBatch, deleteRow, ensureSeeded } from './rows.js';
-import { addRecurring, refreshRates } from './jobs.js';
+import { addRecurring, refreshRates, saveSnapshot } from './jobs.js';
+import { syncIbkr, ibkrStatus, ibkrConfigured } from './ibkr.js';
+import { refreshPrices, storedPrices } from './prices.js';
 
 const TEXT_ROUTES = new Set(['applepay', 'summary']);
 
@@ -37,10 +42,16 @@ async function context(env, deps) {
     timeZone,
     today: partsInZone(now, timeZone).date,
     fetch: deps.fetch ?? ((...args) => fetch(...args)),
+    sleep: deps.sleep ?? ((ms) => new Promise((resolve) => { setTimeout(resolve, ms); })),
   };
 }
 
-async function route(request, ctx) {
+/** Prices and IBKR's sync status, for Net Worth. */
+async function pricesBody(ctx, env, prices) {
+  return { prices, ibkr: { configured: ibkrConfigured(env), status: await ibkrStatus(ctx.store) } };
+}
+
+async function route(request, ctx, env) {
   const url = new URL(request.url);
   const [first, id, action, ...rest] = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
   const method = request.method;
@@ -67,6 +78,16 @@ async function route(request, ctx) {
     const tables = Object.fromEntries(BACKUP_TABLES.map((name) => [name, (backup.tables[name] ?? []).filter((r) => !r.deletedAt)]));
     if (!tables.categories.length) throw refuse('this backup has no categories.');
     return json(await ctx.store.replaceAll(tables, ctx.now));
+  }
+  if (method === 'GET' && first === 'prices' && !id) {
+    return json(await pricesBody(ctx, env, await storedPrices(env.DB)));
+  }
+  if (method === 'POST' && first === 'prices' && id === 'refresh' && !action) {
+    return json(await pricesBody(ctx, env, await refreshPrices(ctx, env.DB, { all: true })));
+  }
+  if (method === 'POST' && first === 'ibkr' && id === 'sync' && !action) {
+    if (!ibkrConfigured(env)) throw refuse('add the IBKR token and query id to the Worker first (docs/ibkr.md).');
+    return json({ status: await syncIbkr(ctx, env, { force: true }) });
   }
   if (method === 'POST' && first === 'batch' && !id) {
     return json(await saveBatch(ctx, await readJson(request)));
@@ -110,7 +131,7 @@ export async function handle(request, env, deps = {}) {
   } else {
     try {
       const ctx = await context(env, deps);
-      response = (await route(request, ctx)) ?? failure(new HttpError(404, 'Nothing changed: there is nothing at this address.'), asText);
+      response = (await route(request, ctx, env)) ?? failure(new HttpError(404, 'Nothing changed: there is nothing at this address.'), asText);
     } catch (err) {
       response = failure(err, asText);
     }
@@ -118,14 +139,27 @@ export async function handle(request, env, deps = {}) {
   return withCors(response, request, env);
 }
 
-/** The cron: add recurring items that are due, then refresh rates. */
-export async function runScheduled(env, deps = {}) {
+/** The every-15-minutes cron (wrangler.toml): markets only. */
+export const MARKETS_CRON = '*/15 * * * *';
+
+/**
+ * The crons. Every 6 hours: add recurring items that are due and refresh rates. Every run: sync
+ * IBKR when it's due, fetch prices for open markets, and save today's net worth. One step failing
+ * never stops the others.
+ */
+export async function runScheduled(env, deps = {}, cron = null) {
   const ctx = await context(env, deps);
-  await addRecurring(ctx);
-  await refreshRates(ctx);
+  const step = async (fn) => { try { return await fn(); } catch (err) { console.error(err); return null; } };
+  if (cron !== MARKETS_CRON) {
+    await step(() => addRecurring(ctx));
+    await step(() => refreshRates(ctx));
+  }
+  await step(() => syncIbkr(ctx, env));
+  const prices = (await step(() => refreshPrices(ctx, env.DB))) ?? [];
+  await step(() => saveSnapshot(ctx, prices));
 }
 
 export default {
   fetch: (request, env) => handle(request, env),
-  scheduled: (event, env, ctx) => ctx.waitUntil(runScheduled(env, { now: event.scheduledTime })),
+  scheduled: (event, env, ctx) => ctx.waitUntil(runScheduled(env, { now: event.scheduledTime }, event.cron)),
 };

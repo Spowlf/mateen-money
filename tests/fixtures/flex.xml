@@ -1,0 +1,29 @@
+<FlexQueryResponse queryName="Mateen Money" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U1234567" fromDate="20260902" toDate="20261001" period="Last30CalendarDays" whenGenerated="20261002;051500">
+<AccountInformation accountId="U1234567" currency="SGD" name="Example" />
+<EquitySummaryInBase>
+<EquitySummaryByReportDateInBase accountId="U1234567" currency="SGD" reportDate="20260930" cash="17.92" stock="34400.00" total="34417.92" />
+<EquitySummaryByReportDateInBase accountId="U1234567" currency="SGD" reportDate="20261001" cash="17.92" stock="34522.08" total="34456.31" />
+</EquitySummaryInBase>
+<OpenPositions>
+<OpenPosition accountId="U1234567" currency="USD" fxRateToBase="1.280817" symbol="SPUS" description="SP FUNDS S&amp;P 500 SHARIA INDUSTRY EXCLUSIONS ETF" conid="1001" listingExchange="ARCA" position="191.7271" markPrice="60" positionValue="11503.626" costBasisMoney="9500" levelOfDetail="SUMMARY" />
+<OpenPosition accountId="U1234567" currency="USD" fxRateToBase="1.280817" symbol="ISDW" description="ISHARES MSCI WORLD ISLAMIC" conid="1002" listingExchange="LSEETF" position="184.8563" markPrice="69.6" positionValue="12865.99848" costBasisMoney="10400" levelOfDetail="SUMMARY" />
+<OpenPosition accountId="U1234567" currency="USD" fxRateToBase="1.280817" symbol="GLD" description="SPDR GOLD SHARES" conid="1003" listingExchange="ARCA" position="6.779" markPrice="381.11" positionValue="2583.54469" costBasisMoney="2380" levelOfDetail="SUMMARY" />
+<OpenPosition accountId="U1234567" currency="USD" fxRateToBase="1.280817" symbol="GLD" description="SPDR GOLD SHARES" conid="1003" listingExchange="ARCA" position="6.779" markPrice="381.11" positionValue="2583.54469" costBasisMoney="2380" levelOfDetail="LOT" />
+</OpenPositions>
+<Trades>
+<Trade accountId="U1234567" currency="USD" symbol="ISDW" listingExchange="LSEETF" tradeID="5550001" tradeDate="20260902" quantity="10" tradePrice="68.9" proceeds="-689" netCash="-690.25" ibCommission="-1.25" buySell="BUY" levelOfDetail="EXECUTION" />
+<Trade accountId="U1234567" currency="USD" symbol="GLD" listingExchange="ARCA" tradeID="5550002" tradeDate="20260915" quantity="-0.5" tradePrice="380" proceeds="190" netCash="189" ibCommission="-1" buySell="SELL" levelOfDetail="EXECUTION" />
+<Trade accountId="U1234567" currency="USD" symbol="GLD" tradeID="5550002" quantity="-0.5" levelOfDetail="ORDER" />
+</Trades>
+<CashTransactions>
+<CashTransaction accountId="U1234567" currency="USD" symbol="SPUS" type="Dividends" amount="2.49" dateTime="20260911;202000" transactionID="7770001" levelOfDetail="DETAIL" />
+<CashTransaction accountId="U1234567" currency="USD" symbol="SPUS" type="Withholding Tax" amount="-0.75" dateTime="20260911;202000" transactionID="7770002" levelOfDetail="DETAIL" />
+<CashTransaction accountId="U1234567" currency="SGD" type="Deposits/Withdrawals" amount="500" dateTime="20260901" transactionID="7770003" levelOfDetail="DETAIL" />
+<CashTransaction accountId="U1234567" currency="SGD" type="Deposits/Withdrawals" amount="-100" dateTime="20260920" transactionID="7770004" levelOfDetail="DETAIL" />
+<CashTransaction accountId="U1234567" currency="SGD" type="Something Else" amount="1" dateTime="20260920" transactionID="7770005" levelOfDetail="DETAIL" />
+</CashTransactions>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

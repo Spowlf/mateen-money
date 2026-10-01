@@ -9,10 +9,10 @@
 // Money is integer minor units (see exponent() in src/engine/money.js). Dates are 'YYYY-MM-DD'.
 
 export const DB_NAME = 'mateen-money';
-export const DB_VERSION = 3;   // 2: budgets; 3: accounts and balances
+export const DB_VERSION = 4;   // 2: budgets; 3: accounts and balances; 4: holdings, activity, snapshots
 
 /** Tables that sync from the backend. */
-export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances'];
+export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots'];
 
 // store name -> { keyPath, indexes: { name: keyPath } }
 export const STORES = {
@@ -29,6 +29,9 @@ export const STORES = {
   budgets: { keyPath: 'id', indexes: {} },
   accounts: { keyPath: 'id', indexes: {} },
   balances: { keyPath: 'id', indexes: {} },
+  holdings: { keyPath: 'id', indexes: {} },
+  activity: { keyPath: 'id', indexes: {} },
+  snapshots: { keyPath: 'id', indexes: {} },
   meta: { keyPath: 'key', indexes: {} },      // device only: { key, value } (token, rev, lastSyncedAt, draft)
 };
 
@@ -174,4 +177,40 @@ export const STORES = {
  * @property {string} date         'YYYY-MM-DD'
  * @property {number} amountMinor  may be below zero (an overdraft)
  * @property {string} currency     as typed; the account's currency at the time
+ */
+
+/**
+ * @typedef {Object} Holding  One IBKR holding at the last Flex sync (see src/engine/holdings.js).
+ * @property {string} id              `${accountId}:${conid}`
+ * @property {string} accountId
+ * @property {string} symbol          'ISDW'
+ * @property {string} exchange        IBKR's listing exchange, 'LSEETF'
+ * @property {string} quote           the ticker prices are fetched for, 'ISDW.L'
+ * @property {string} name
+ * @property {string} currency        the currency it trades in
+ * @property {number} unitsMicro      units held, in millionths
+ * @property {number|null} closeMicro price at the report's close, in millionths
+ * @property {number} valueBaseMinor  value at that close, in the account's currency
+ * @property {number} costBaseMinor   IBKR's cost basis, in the account's currency
+ * @property {string} reportDate
+ */
+
+/**
+ * @typedef {Object} Activity  An IBKR trade, dividend, tax, fee, deposit or withdrawal.
+ * @property {string} id   `${accountId}:trade:${id}` / `${accountId}:cash:${id}`
+ * @property {string} accountId
+ * @property {string} date
+ * @property {'buy'|'sell'|'dividend'|'tax'|'interest'|'fee'|'deposit'|'withdrawal'} type
+ * @property {string|null} symbol
+ * @property {number|null} unitsMicro
+ * @property {number|null} priceMicro
+ * @property {number} amountMinor  in currency; a withdrawal, tax or fee below zero
+ * @property {string} currency
+ */
+
+/**
+ * @typedef {Object} Snapshot  Net worth on a day, in GBP, for the chart.
+ * @property {string} id      the date
+ * @property {string} date
+ * @property {number} gbpPence
  */

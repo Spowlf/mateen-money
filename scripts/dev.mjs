@@ -28,6 +28,9 @@ function devVars() {
 const env = {
   DB: sqliteD1(process.env.DEV_DB ?? join(ROOT, '.dev.db')),
   API_TOKEN: devVars().API_TOKEN ?? 'dev-token',
+  // Optional, to try the IBKR sync locally (docs/ibkr.md): put them in .dev.vars.
+  IBKR_FLEX_TOKEN: devVars().IBKR_FLEX_TOKEN,
+  IBKR_FLEX_QUERY_ID: devVars().IBKR_FLEX_QUERY_ID,
   ALLOWED_ORIGIN: `http://localhost:${APP_PORT}`,
   TIME_ZONE: 'Europe/London',
 };

@@ -9,6 +9,7 @@ import { daysBetween, formatDay } from './dates.js';
 import { convertToGbp, rateFor } from './currency.js';
 import { toMinor, exponent } from './money.js';
 import { isLive } from './totals.js';
+import { liveInvestment } from './holdings.js';
 
 /** Kinds of account, in the order Net Worth shows them. */
 export const ACCOUNT_KINDS = [
@@ -96,14 +97,18 @@ export function carriedBalance({ balance, accountId, methods = [], entries = [],
  *   noBalance: [row]     accounts with no balance yet
  *   noRate: [row]        balances waiting for an exchange rate (left out of the total)
  * }
- * Each row is { account, balance, amountMinor (carried on), payments, currency, pence, daysOld, stale }.
+ * Each row is { account, balance, amountMinor (carried on, or moved with prices), payments, live, currency, pence, daysOld, stale }.
+ * live is liveInvestment()'s answer for an account with holdings (from holdings and prices), else null.
  * methods and entries carry each balance on (see carriedBalance); without them it's as typed.
  * share is the group's part of the total (0 when the total isn't above zero).
  */
-export function netWorth({ accounts, balances, rates, todayDate, methods = [], entries = [] }) {
+export function netWorth({ accounts, balances, rates, todayDate, methods = [], entries = [], holdings = [], prices = [] }) {
   const rows = accounts.filter(isLive).sort(byOrder).map((account) => {
     const balance = latestBalance(balances, account.id);
-    const carried = carriedBalance({ balance, accountId: account.id, methods, entries, rates });
+    // An account with holdings (IBKR) moves with prices; any other is carried on with card payments.
+    const live = holdings.some((h) => isLive(h) && h.accountId === account.id)
+      ? liveInvestment({ account, balance, holdings, prices, rates }) : null;
+    const carried = live ? { amountMinor: live.amountMinor, payments: 0 } : carriedBalance({ balance, accountId: account.id, methods, entries, rates });
     const got = balance ? latestGbp(carried.amountMinor, balance.currency, rates) : null;
     const daysOld = balance ? Math.max(0, daysBetween(balance.date, todayDate)) : null;
     return {
@@ -111,6 +116,7 @@ export function netWorth({ accounts, balances, rates, todayDate, methods = [], e
       balance,
       amountMinor: carried?.amountMinor ?? null,
       payments: carried?.payments ?? 0,
+      live,
       currency: balance?.currency ?? account.currency,
       pence: got?.pence ?? null,
       forDate: got?.forDate ?? null,
@@ -130,7 +136,7 @@ export function netWorth({ accounts, balances, rates, todayDate, methods = [], e
 
   return {
     totalPence,
-    estimated: rateDates.length > 0 || rows.some((r) => r.payments > 0),
+    estimated: rateDates.length > 0 || rows.some((r) => r.payments > 0 || r.live?.pricedAt),
     carried: rows.filter((r) => r.payments > 0),
     rateDate: rateDates[0] ?? null,
     groups,

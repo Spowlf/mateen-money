@@ -204,3 +204,64 @@ CREATE TABLE IF NOT EXISTS balances (
   rev INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS balances_rev ON balances (rev);
+
+-- IBKR's holdings, replaced by each nightly Flex sync. Written by the Worker only. Units and prices
+-- are integer millionths; value and cost are at the report's close, in the account's currency.
+-- quote is the ticker prices are fetched for ('ISDW.L').
+CREATE TABLE IF NOT EXISTS holdings (
+  id TEXT PRIMARY KEY, -- accountId:conid
+  accountId TEXT NOT NULL,
+  symbol TEXT NOT NULL,
+  exchange TEXT,
+  quote TEXT NOT NULL,
+  name TEXT,
+  currency TEXT NOT NULL,
+  unitsMicro INTEGER NOT NULL,
+  closeMicro INTEGER,
+  valueBaseMinor INTEGER NOT NULL DEFAULT 0,
+  costBaseMinor INTEGER NOT NULL DEFAULT 0,
+  reportDate TEXT,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS holdings_rev ON holdings (rev);
+
+-- IBKR's trades, dividends and deposits, each added once (id from IBKR). Written by the Worker only.
+CREATE TABLE IF NOT EXISTS activity (
+  id TEXT PRIMARY KEY, -- accountId:trade:<id> / accountId:cash:<id>
+  accountId TEXT NOT NULL,
+  date TEXT NOT NULL,
+  type TEXT NOT NULL,
+  symbol TEXT,
+  unitsMicro INTEGER,
+  priceMicro INTEGER,
+  amountMinor INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS activity_rev ON activity (rev);
+
+-- Net worth in GBP, one row a day (id is the date), for the chart. Written by the Worker only.
+CREATE TABLE IF NOT EXISTS snapshots (
+  id TEXT PRIMARY KEY,
+  date TEXT NOT NULL,
+  gbpPence INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS snapshots_rev ON snapshots (rev);
+
+-- The latest price per ticker. Not synced (outside rev): a price tick isn't a data change.
+-- The phone reads it with GET /prices.
+CREATE TABLE IF NOT EXISTS prices (
+  id TEXT PRIMARY KEY, -- the ticker, as holdings.quote
+  currency TEXT NOT NULL,
+  priceMicro INTEGER NOT NULL,
+  prevCloseMicro INTEGER,
+  quoteAt INTEGER,
+  fetchedAt INTEGER NOT NULL
+);

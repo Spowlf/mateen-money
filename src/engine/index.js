@@ -24,3 +24,4 @@ export * from './settings.js';
 export * from './terms.js';
 export * from './export.js';
 export * from './networth.js';
+export * from './holdings.js';
