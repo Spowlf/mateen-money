@@ -257,11 +257,8 @@ main {
 .list-amount.danger, .list-sub.danger { color: var(--danger); }
 /* Left over: the figure the period comes down to, so it's the one row with a fill. */
 .total-row.standout { min-height: 72px; background: var(--accent-soft); }
-/* Its state against the budget (or the balance without one), always written in its sub line too. Solid tints only. */
-.total-row.standout.state-heading { background: var(--warn-soft); }
-.total-row.standout.state-heading .list-sub { color: var(--warn); font-weight: 600; }
+/* Red when more was spent than came in ("Overspent" says so too). The budget's state lives in its own section. Solid tints only. */
 .total-row.standout.state-over { background: var(--danger-soft); }
-.total-row.standout.state-over .list-sub { color: var(--danger); font-weight: 600; }
 .total-row.standout .list-title { font-weight: 700; }
 .total-row.standout .list-amount { font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
 
@@ -501,7 +498,8 @@ a.button { text-decoration: none; }
 
 .hint, .warning { font-size: var(--t-s); padding: var(--s2) var(--s3); border-radius: 10px; }
 .hint { background: var(--accent-soft); }
-.warning { background: var(--warn-soft); color: var(--ink); }
+/* A warning sits on the surface it's in, marked by an amber rule at its start: a filled amber box looked muddy on the dark card. */
+.warning { background: none; border-left: 3px solid var(--warn); border-radius: 0; color: var(--ink); }
 .tag {
   display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft);
   color: var(--ink); font: 600 var(--t-s)/1.4 var(--font-text); letter-spacing: 0;

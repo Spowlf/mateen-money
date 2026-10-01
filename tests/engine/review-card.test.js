@@ -41,6 +41,6 @@ test('review steps: sorting comes first only while something is waiting', () => 
 });
 
 test('unusual lines say how far above usual, or that the category is new', () => {
-  assert.equal(unusualLine({ name: 'Groceries', pence: 9500, averagePence: 6000, pct: 58 }), 'Groceries: £95.00, 58% above your usual £60.00.');
+  assert.equal(unusualLine({ name: 'Groceries', pence: 9500, averagePence: 6000, pct: 58 }), 'Groceries: £95.00, £35.00 more than your usual £60.00.');
   assert.equal(unusualLine({ name: 'Going out', pence: 2500, averagePence: 0, pct: null }), 'Going out: £25.00, with nothing here in the weeks before.');
 });

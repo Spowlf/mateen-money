@@ -89,6 +89,14 @@ test('review streak counts weeks in a row', () => {
   assert.equal(reviewStreak([{ weekStart: '2026-09-07' }, { weekStart: '2026-09-21' }, { weekStart: '2026-09-28' }], '2026-10-04'), 2);
 });
 
+test('unusual: a small usual needs £15 more as well as 50%', () => {
+  const history = [];
+  for (let i = 1; i <= 8; i++) history.push(spend(new Date(Date.UTC(2026, 8, 28 - 7 * i)).toISOString().slice(0, 10), 400, 'going-out'));
+  const at = (pence) => unusualCategories({ entries: [...history, spend('2026-09-29', pence, 'going-out')], categories: CATEGORIES, weekStart: WEEK });
+  assert.deepEqual(at(1800), []);                                   // 350% above £4, but only £14 more
+  assert.deepEqual(at(1900).map((r) => [r.categoryId, r.extraPence]), [['going-out', 1500]]);
+});
+
 test('unusual: categories more than 50% above their 8-week average', () => {
   const entries = [
     ...history(),                                   // groceries £60/wk, coffee £40/wk

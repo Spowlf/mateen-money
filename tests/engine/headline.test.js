@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { monthHeadline, headlineReason } from '../../src/engine/headline.js';
+import { monthHeadline, headlineReason, headlineFigure, incomeCheckLine } from '../../src/engine/headline.js';
 import { monthShare, amountInRange, defaultSpreadStart } from '../../src/engine/allowance.js';
 import { spend, income } from './fixtures.js';
 
@@ -117,4 +117,17 @@ test('headline reason: says why it is below zero while nothing has come in this 
     '£28.90 spent and nothing coming in this month yet. Log your existing cash or allowance as income.');
   const both = monthHeadline({ entries: [income('2026-10-01', 15000, { incomeType: 'cash' }), spend('2026-10-03', 2890)], month: '2026-10', todayDate: '2026-10-05' });
   assert.equal(headlineReason(both), '£150.00 coming in, £28.90 spent and £0.00 still due this month.');
+});
+
+test('headline with a budget: the budget is the figure; income speaks up only when it runs out first', () => {
+  const hl = { incomeReceived: 60000, incomeDue: 0, spent: 43018, costsDue: 2799, left: 60000 - 43018 - 2799, daysLeft: 13, estimated: false };
+  const budget = { budgetPence: 65000, spentPence: 43018, costsDue: 2799, leftPence: 65000 - 43018 - 2799 };
+  assert.deepEqual(headlineFigure(hl, budget), { basis: 'budget', left: 19183, negative: false, daysLeft: 13, estimated: false });
+  assert.deepEqual(headlineFigure(hl, null), { basis: 'income', left: 14183, negative: false, daysLeft: 13, estimated: false });
+  assert.equal(headlineReason(hl, budget), '£650.00 budget: £430.18 spent and £27.99 still due.');
+  assert.equal(incomeCheckLine(hl, budget), 'Only £141.83 of this month’s income is left after spending and what’s still due.');
+  assert.equal(incomeCheckLine({ ...hl, incomeReceived: 80000, left: 80000 - 45817 }, budget), null);
+  assert.equal(incomeCheckLine({ ...hl, incomeReceived: 40000, left: 40000 - 45817 }, budget), 'Spending and what’s still due come to £58.17 more than this month’s income.');
+  assert.equal(incomeCheckLine({ ...hl, incomeReceived: 0, left: -45817 }, budget), 'Nothing has come in this month yet. Log your existing cash or allowance as income.');
+  assert.equal(incomeCheckLine(hl, null), null);
 });

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { periodTotals, categoryRows, yearRange, yearToDate, termOf, suggestTrip, tripTotals, retrip, change } from '../../src/engine/totals.js';
-import { topCategories, sortChoices, toSortNudge } from '../../src/engine/sort.js';
+import { topCategories, sortChoices, suggestCategories, hintedCategory, toSortNudge } from '../../src/engine/sort.js';
 import { CATEGORIES, spend, income } from './fixtures.js';
 
 const OCT = { from: '2026-10-01', to: '2026-10-31' };
@@ -121,7 +121,32 @@ test('To sort: choices offer the likely vendor', () => {
   const vendors = [{ id: 'v1', name: 'Pret', categoryId: 'coffee-snacks' }];
   const c = sortChoices({ merchant: 'PRET A MANGER' }, { vendors, categories: CATEGORIES, todayDate: '2026-10-01' });
   assert.equal(c.vendor?.id, 'v1');
-  assert.equal(c.categories.length, 4);
+  // Beside a vendor, one category: its own.
+  assert.deepEqual(c.categories.map((x) => x.id), ['coffee-snacks']);
+});
+
+test('To sort: categories follow the merchant, not the same list for every payment', () => {
+  const used = [spend('2026-09-20', 1, 'groceries'), spend('2026-09-21', 1, 'groceries'), spend('2026-09-22', 1, 'eating-out')];
+  const ctx = { entries: used, categories: CATEGORIES, todayDate: '2026-10-01' };
+  // A bus company with no history: its name points to Transport.
+  assert.deepEqual(sortChoices({ merchant: 'STAGECOACH EAST' }, ctx).categories.map((x) => x.id), ['transport', 'groceries']);
+  // A merchant like a known one gets that one's category first.
+  const vendors = [{ id: 'v1', name: 'Gail’s Bakery', categoryId: 'coffee-snacks', useCount: 4 }];
+  assert.equal(suggestCategories('GAILS BAKERY KINGS PARADE', { ...ctx, vendors })[0].id, 'coffee-snacks');
+  // Nothing to go on: the most used.
+  assert.deepEqual(suggestCategories('ZXQ LTD', ctx).map((x) => x.id), ['groceries', 'eating-out', 'coffee-snacks']);
+  // A removed category is never offered.
+  const archived = CATEGORIES.map((c) => (c.id === 'transport' ? { ...c, archived: 1 } : c));
+  assert.ok(!suggestCategories('Stagecoach', { ...ctx, categories: archived }).some((x) => x.id === 'transport'));
+});
+
+test('merchant hints read whole words', () => {
+  assert.equal(hintedCategory('STAGECOACH EAST'), 'transport');
+  assert.equal(hintedCategory('UBER *TRIP'), 'transport');
+  assert.equal(hintedCategory('UBER EATS'), 'delivery');
+  assert.equal(hintedCategory('Co-op Food'), 'groceries');
+  assert.equal(hintedCategory('Waterstones'), 'leisure');
+  assert.equal(hintedCategory('Busy Bee Cleaning'), null);
 });
 
 test('To sort nudge above 10', () => {

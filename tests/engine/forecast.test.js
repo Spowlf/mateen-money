@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { monthHeadline } from '../../src/engine/headline.js';
+import { monthHeadline, headlineFigure } from '../../src/engine/headline.js';
 import {
   safeToSpend, safeToSpendLine, dailyRates, monthForecast, forecastLine, forecastRow, forecastReason,
 } from '../../src/engine/forecast.js';
@@ -13,7 +13,7 @@ test('safe to spend: left ÷ days left, today included', () => {
   const hl = hlFor([income('2026-10-01', 50000), spend('2026-10-02', 3500)], '2026-10-10');
   const safe = safeToSpend(hl);
   assert.deepEqual(safe, { perDay: Math.floor(46500 / 22), daysLeft: 22 });
-  assert.equal(safeToSpendLine(safe, '2026-10'), '£21.13 a day for the rest of October.');
+  assert.equal(safeToSpendLine(safe, '2026-10'), 'Spend up to £21.13 a day to stay within this month’s income.');
 });
 
 test('safe to spend: a negative headline says how far over', () => {
@@ -27,7 +27,7 @@ test('safe to spend: the last day of the month is all of what is left', () => {
   const hl = hlFor([income('2026-10-01', 10000), spend('2026-10-02', 2500)], '2026-10-31');
   const safe = safeToSpend(hl);
   assert.deepEqual(safe, { perDay: 7500, daysLeft: 1 });
-  assert.equal(safeToSpendLine(safe, '2026-10'), '£75.00 to spend today, the last day of October.');
+  assert.equal(safeToSpendLine(safe, '2026-10'), 'Spend up to £75.00 today, the last day of October, to stay within this month’s income.');
 });
 
 test('safe to spend: recurring costs still due come off first', () => {
@@ -42,8 +42,19 @@ test('safe to spend: trips always count, whatever the toggle (it follows the hea
   assert.equal(safeToSpend(hl).perDay, Math.floor(30000 / 21));
 });
 
+test('safe to spend: with a budget it divides what is left of the budget', () => {
+  const hl = hlFor([income('2026-10-01', 100000), spend('2026-10-02', 3500)], '2026-10-10');
+  const budget = { budgetPence: 50000, spentPence: 3500, costsDue: 0, leftPence: 46500 - 0 - 0 };
+  const fig = headlineFigure(hl, budget);
+  assert.equal(fig.basis, 'budget');
+  const safe = safeToSpend(fig);
+  assert.deepEqual(safe, { perDay: Math.floor(46500 / 22), daysLeft: 22 });
+  assert.equal(safeToSpendLine(safe, '2026-10', { basis: 'budget' }), 'Spend up to £21.13 a day to stay within budget.');
+  assert.equal(safeToSpendLine({ over: 3000, daysLeft: 9 }, '2026-10', { basis: 'budget' }), 'Over budget by £30.00 this month.');
+});
+
 test('safe to spend: an estimated headline carries a ~', () => {
-  assert.equal(safeToSpendLine({ perDay: 1240, daysLeft: 9 }, '2026-10', { estimated: true }), '~£12.40 a day for the rest of October.');
+  assert.equal(safeToSpendLine({ perDay: 1240, daysLeft: 9 }, '2026-10', { estimated: true }), 'Spend up to ~£12.40 a day to stay within this month’s income.');
   assert.equal(safeToSpendLine(null, '2026-10'), null);
 });
 
@@ -143,6 +154,10 @@ test('forecast: spent + still due + pace × days after today', () => {
   assert.equal(f.spare, 100000 - f.forecast);
   assert.equal(forecastLine(f), 'At this pace: £945.00 by 31 October, £55.00 to spare.');
   assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 to spare', over: false });
+  // With a budget the pace is compared with it, not with the income.
+  assert.equal(forecastLine(f, 85000), 'At this pace: £945.00 by 31 October, £95.00 over budget.');
+  assert.deepEqual(forecastRow(f, 85000), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£95.00 over budget', over: true });
+  assert.deepEqual(forecastRow(f, 100000), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 under budget', over: false });
   assert.equal(forecastReason(f), 'Counts £300.00 spent, £15.00 of recurring costs still due and about £30.00 a day for the 21 days left.');
 });
 

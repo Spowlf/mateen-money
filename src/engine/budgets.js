@@ -68,10 +68,13 @@ export function budgetStatus({ entries, trips = [], budgets = [], recurring = []
   };
 }
 
-/** Beside the budget: "£180.00 left", "£20.00 over" or "On track for £540.00". */
+/** How far over the budget the month ends at this pace, in pence (0 when it doesn't). */
+export const paceOverPence = (b) => (b.forecastPence !== null && b.forecastPence > b.budgetPence ? b.forecastPence - b.budgetPence : 0);
+
+/** Beside the budget: "£180.00 left", "£20.00 over" or "£94.96 over at this pace". */
 export function budgetStatusText(b) {
   if (b.status === 'over') return `${gbp(-b.leftPence)} over`;
-  if (b.status === 'heading') return `On track for ${gbp(b.forecastPence)}`;
+  if (b.status === 'heading') return `${gbp(paceOverPence(b))} over at this pace`;
   return `${gbp(b.leftPence)} left`;
 }
 
@@ -81,19 +84,12 @@ export function budgetDetail(b) {
   return `${gbp(b.spentPence)} spent${due}`;
 }
 
-/** The line on Log for a payment: "£180.00 of your £500.00 budget left this month." */
-export function budgetLogLine(b) {
-  const of = `your ${gbp(b.budgetPence)} budget`;
-  if (b.leftPence < 0) return `${gbp(-b.leftPence)} over ${of} this month.`;
-  return `${gbp(b.leftPence)} of ${of} left this month.`;
-}
-
-/** The weekly review's warning, or null when the budget is on track. */
+/** The warning on Log and in the review, or null when the budget is on track. */
 export function budgetWarningLine(b) {
   if (!b || b.status === 'ok') return null;
   const of = `your ${gbp(b.budgetPence)} budget for ${formatMonth(b.month).split(' ')[0]}`;
   if (b.status === 'over') return `${gbp(-b.leftPence)} over ${of}.`;
-  return `On track for ${gbp(b.forecastPence)} of ${of}.`;
+  return `At this pace: ${gbp(paceOverPence(b))} over ${of}.`;
 }
 
 /** Pounds as typed ("500", "500.50") to pence; '' is no budget (0). null if it can't be read. */

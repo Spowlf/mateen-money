@@ -8,6 +8,7 @@ import { budgetStatus } from './budgets.js';
 import { findHabits } from './habits.js';
 
 export const UNUSUAL_RATIO = 1.5;        // more than 50% above the 8-week average
+export const UNUSUAL_MIN_EXTRA = 1500;   // and at least £15 above it, so a tiny usual doesn't flag every week
 export const NEW_CATEGORY_MIN = 2000;    // £20: a category with no history counts as unusual from here
 
 /**
@@ -36,8 +37,9 @@ export function reviewStreak(reviews, todayDate) {
 }
 
 /**
- * Categories more than 50% above their average over the usual weeks. A category with no
- * spending in those weeks counts if it reached £20 (pct is null). Largest excess first.
+ * Categories more than 50% and at least £15 above their average over the usual weeks
+ * (extraPence is how far above). A category with no spending in those weeks counts if it
+ * reached £20 (pct is null). Largest excess first.
  */
 export function unusualCategories({ entries, categories, weekStart }) {
   const weekEnd = addDays(weekStart, 6);
@@ -55,17 +57,17 @@ export function unusualCategories({ entries, categories, weekStart }) {
     const averagePence = Math.round((history.get(r.categoryId) ?? 0) / weeks.length);
     if (averagePence === 0) {
       if (r.pence >= NEW_CATEGORY_MIN) out.push({ ...r, averagePence, pct: null });
-    } else if (r.pence > averagePence * UNUSUAL_RATIO) {
-      out.push({ ...r, averagePence, pct: Math.round(((r.pence - averagePence) / averagePence) * 100) });
+    } else if (r.pence > averagePence * UNUSUAL_RATIO && r.pence - averagePence >= UNUSUAL_MIN_EXTRA) {
+      out.push({ ...r, averagePence, extraPence: r.pence - averagePence, pct: Math.round(((r.pence - averagePence) / averagePence) * 100) });
     }
   }
   return out.sort((a, b) => (b.pence - b.averagePence) - (a.pence - a.averagePence));
 }
 
-/** "Groceries: £95.00, 58% above your usual £60." */
+/** "Groceries: £95.00, £35.00 more than your usual £60.00." Pounds, not a percentage, which runs wild on a small usual. */
 export function unusualLine(u) {
   if (u.pct === null) return `${u.name}: ${gbp(u.pence)}, with nothing here in the weeks before.`;
-  return `${u.name}: ${gbp(u.pence)}, ${u.pct}% above your usual ${gbp(u.averagePence)}.`;
+  return `${u.name}: ${gbp(u.pence)}, ${gbp(u.pence - u.averagePence)} more than your usual ${gbp(u.averagePence)}.`;
 }
 
 /** The review's steps. Sorting comes first, and only while something is waiting. */

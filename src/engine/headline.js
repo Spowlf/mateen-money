@@ -1,4 +1,6 @@
-// "£X left this month".
+// The figure at the top of Log.
+// With a monthly budget it's what's left of the budget (budgetStatus in budgets.js): the number
+// you're trying to stick to. Without one it's "£X left this month" of income:
 // left = income this month (the allowance's monthly share included)
 //      + recurring income still due this month
 //      − spending this month
@@ -74,13 +76,39 @@ export function monthHeadline({ entries, recurring = [], rates = [], month, toda
   };
 }
 
+/**
+ * The headline: { basis: 'budget' | 'income', left, daysLeft, estimated }.
+ * budget is this month's budgetStatus(), or null when there's no budget.
+ */
+export function headlineFigure(hl, budget = null) {
+  const left = budget ? budget.leftPence : hl.left;
+  return { basis: budget ? 'budget' : 'income', left, negative: left < 0, daysLeft: hl.daysLeft, estimated: hl.estimated };
+}
+
 /** The line under the headline figure: how it's made up, or what to log while nothing has come in. */
-export function headlineReason(hl) {
+export function headlineReason(hl, budget = null) {
   const income = hl.incomeReceived + hl.incomeDue;
+  if (budget) {
+    const due = budget.costsDue ? ` and ${gbp(budget.costsDue)} still due` : '';
+    return `${gbp(budget.budgetPence)} budget: ${gbp(budget.spentPence)} spent${due}.`;
+  }
   if (!income && !hl.spent && !hl.costsDue) return 'Log your income and spending to see what’s left.';
   if (!income) {
     const out = [hl.spent && `${gbp(hl.spent)} spent`, hl.costsDue && `${gbp(hl.costsDue)} still due`].filter(Boolean).join(' and ');
     return `${out} and nothing coming in this month yet. Log your existing cash or allowance as income.`;
   }
   return `${gbp(income)} coming in, ${gbp(hl.spent)} spent and ${gbp(hl.costsDue)} still due this month.`;
+}
+
+/**
+ * With a budget, the month's income only gets a line when it's the tighter limit (or nothing has
+ * come in yet), so the budget figure never hides that the money is running out first. null otherwise.
+ */
+export function incomeCheckLine(hl, budget) {
+  if (!budget) return null;
+  const income = hl.incomeReceived + hl.incomeDue;
+  if (!income) return 'Nothing has come in this month yet. Log your existing cash or allowance as income.';
+  if (hl.left >= budget.leftPence) return null;
+  if (hl.left < 0) return `Spending and what’s still due come to ${gbp(-hl.left)} more than this month’s income.`;
+  return `Only ${gbp(hl.left)} of this month’s income is left after spending and what’s still due.`;
 }

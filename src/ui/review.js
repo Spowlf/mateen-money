@@ -75,9 +75,9 @@ export function renderReview(el, { repo, showToSort }) {
     body = [
       card.unusual.length
         ? h('div', { class: 'review-list' },
-          h('p', {}, card.unusual.length === 1 ? 'One category ran more than 50% above usual:' : 'These ran more than 50% above usual:'),
+          h('p', {}, card.unusual.length === 1 ? 'One category ran well above usual:' : 'These ran well above usual:'),
           card.unusual.map((u) => h('p', { class: 'warning' }, unusualLine(u))))
-        : h('p', {}, 'Nothing ran more than 50% above usual that week.'),
+        : h('p', {}, 'Nothing ran well above usual that week.'),
       budgetWarningLine(card.budget) && h('p', { class: 'warning' }, budgetWarningLine(card.budget)),
       card.habits.length > 0 && h('div', { class: 'review-list' },
         h('h3', { class: 'review-sub' }, 'Frequent Buys'),

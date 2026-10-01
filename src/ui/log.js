@@ -8,8 +8,8 @@ import { sortPayment, openSortSheet, sortContext, reread } from './sort-sheet.js
 import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
   emptyForm, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
-  matchVendor, tripFor, toSortEntries, toSortNudge, sortChoices, topCategories,
-  COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, monthKey, budgetStatus, budgetLogLine,
+  matchVendor, tripFor, toSortEntries, toSortNudge, sortChoices, suggestCategories,
+  COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES,
 } from '../engine/index.js';
 
 const TO_SORT_SHOWN = 3;
@@ -53,7 +53,7 @@ export function renderLog(root, { repo }) {
       quick = h('div', { class: 'chips', role: 'group', 'aria-label': `Sort ${entry.merchant}` },
         vendor && h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { vendorId: vendor.id }) }, vendor.name),
         categories.map((c) => h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { categoryId: c.id, vendorName: tidyName(entry.merchant) }) }, categoryIcon(c.id), c.name)),
-        h('button', { type: 'button', class: 'chip', onclick: () => openSortSheet(repo, entry) }, 'Other'));
+        h('button', { type: 'button', class: 'chip', onclick: () => openSortSheet(repo, entry) }, 'More'));
     }
     return h('li', { class: 'sort-item' },
       h('button', { type: 'button', class: 'list-row', onclick: () => openSortSheet(repo, entry) },
@@ -115,7 +115,6 @@ export function renderLog(root, { repo }) {
     oninput: () => set({ note: noteInput.value }),
   });
   const quick = h('div', { class: 'field' });
-  const budgetNote = h('p', { class: 'reason budget-note', 'aria-live': 'polite' });
   const keypad = h('div', { class: 'keypad' }, KEYS.map((k) => h('button', {
     type: 'button', class: 'key',
     'aria-label': k === 'back' ? 'Delete' : k === '.' ? 'Decimal point' : k,
@@ -130,7 +129,7 @@ export function renderLog(root, { repo }) {
 
   // Amount first: the keypad sits right under it, then who it was with and what it was for.
   fill(el.entry, kind, display, keypad, h('label', { class: 'field' }, vendorLabel, vendorInput), vendorChips,
-    h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Description'), noteInput), quick, budgetNote, summary, details, offlineNote, saveButton);
+    h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Description'), noteInput), quick, summary, details, offlineNote, saveButton);
 
   function showDetails(open) {
     detailsOpen = open;
@@ -190,7 +189,7 @@ export function renderLog(root, { repo }) {
     const needsCategory = form.vendorName.trim() && !vendor?.categoryId;
     quick.hidden = !needsCategory;
     if (!needsCategory) return fill(quick);
-    let options = topCategories(S.entries, S.categories, { todayDate: today(), n: 4 });
+    let options = suggestCategories(form.vendorName, { ...sortContext(S), n: 4 });
     const chosen = S.categories.find((c) => c.id === form.categoryId);
     if (chosen && !options.includes(chosen)) options = [...options.slice(0, 3), chosen];
     const group = chips({
@@ -201,15 +200,6 @@ export function renderLog(root, { repo }) {
     });
     group.append(h('button', { type: 'button', class: 'chip', onclick: () => showDetails(true) }, 'More'));
     fill(quick, h('span', { class: 'field-label' }, `Category for ${form.vendorName.trim()}`), group);
-  }
-
-  // With a monthly budget, a payment says what's left of it, as on Overview.
-  function renderBudget() {
-    const todayDate = today();
-    const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
-    const budget = form.kind === 'spend' && budgetStatus({ entries: S.entries, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month: monthKey(todayDate), todayDate, excludeTrips });
-    budgetNote.hidden = !budget;
-    budgetNote.textContent = budget ? budgetLogLine(budget) : '';
   }
 
   function renderSave() {
@@ -257,7 +247,6 @@ export function renderLog(root, { repo }) {
     renderAmount();
     renderVendor();
     renderQuick();
-    renderBudget();
     renderSave();
     if (withDetails) renderDetails();
   }

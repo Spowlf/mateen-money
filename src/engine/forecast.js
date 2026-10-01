@@ -1,5 +1,6 @@
 // Safe to spend today and the month-end forecast.
-// Safe to spend is the headline ÷ the days left (today included), so it always counts trips.
+// Safe to spend is the headline (budget left, or income left without a budget) ÷ the days left,
+// today included, so it always counts trips. It's an allowance, never the pace.
 // The forecast adds day-to-day spending at this month's pace to what's spent and still due.
 // Day-to-day spending leaves out recurring items, bookings for a trip (filed under it but paid
 // outside its dates), and trips when the Overview toggle is on, so one trip doesn't set the
@@ -13,21 +14,28 @@ import { gbp } from './money.js';
 export const BLEND_DAYS = 7;          // days 1–7 blend this month with the 8 weeks before it
 export const HISTORY_DAYS = 56;       // the 8 weeks before the month
 
-/** { perDay } (pence, rounded down) or { over } when the headline is negative. null outside the month. */
-export function safeToSpend(hl) {
-  if (!hl.daysLeft) return null;
-  if (hl.left < 0) return { over: -hl.left, daysLeft: hl.daysLeft };
-  return { perDay: Math.floor(hl.left / hl.daysLeft), daysLeft: hl.daysLeft };
+/**
+ * { perDay } (pence, rounded down) or { over } when the headline is negative. null outside the month.
+ * figure is headlineFigure() (or anything with left and daysLeft).
+ */
+export function safeToSpend(figure) {
+  if (!figure.daysLeft) return null;
+  if (figure.left < 0) return { over: -figure.left, daysLeft: figure.daysLeft };
+  return { perDay: Math.floor(figure.left / figure.daysLeft), daysLeft: figure.daysLeft };
 }
 
-/** "£12.40 a day for the rest of October." or "Over by £30.00 this month." */
-export function safeToSpendLine(safe, month, { estimated = false } = {}) {
+/**
+ * "Spend up to £12.40 a day to stay within budget." or "Over budget by £30.00 this month."
+ * Worded as an allowance, so it can't be read as the pace.
+ * basis is the headline's: 'budget', or 'income' with no budget.
+ */
+export function safeToSpendLine(safe, month, { estimated = false, basis = 'income' } = {}) {
   if (!safe) return null;
   const tilde = estimated ? '~' : '';
-  if (safe.over !== undefined) return `Over by ${tilde}${gbp(safe.over)} this month.`;
-  const name = formatMonth(month).split(' ')[0];
-  if (safe.daysLeft === 1) return `${tilde}${gbp(safe.perDay)} to spend today, the last day of ${name}.`;
-  return `${tilde}${gbp(safe.perDay)} a day for the rest of ${name}.`;
+  const within = basis === 'budget' ? 'within budget' : 'within this month’s income';
+  if (safe.over !== undefined) return `${basis === 'budget' ? 'Over budget' : 'Over'} by ${tilde}${gbp(safe.over)} this month.`;
+  if (safe.daysLeft === 1) return `Spend up to ${tilde}${gbp(safe.perDay)} today, the last day of ${formatMonth(month).split(' ')[0]}, to stay ${within}.`;
+  return `Spend up to ${tilde}${gbp(safe.perDay)} a day to stay ${within}.`;
 }
 
 const onTrip = (e, excludeTrips) => !!e.tripId && (excludeTrips === true || (excludeTrips instanceof Set && excludeTrips.has(e.tripId)));
@@ -112,27 +120,40 @@ export function monthForecast({ entries, trips = [], recurring = [], rates = [],
   };
 }
 
-/** "At this pace: £1,240.00 by 31 October, £40.00 more than you have." */
-export function forecastLine(f) {
+/**
+ * How the forecast compares: with a budget (pence), against it ("£94.96 over budget"),
+ * otherwise against everything coming in this month ("£55.00 to spare").
+ */
+function forecastCompare(f, budgetPence) {
+  const tilde = f.estimated ? '~' : '';
+  if (budgetPence) {
+    const spare = budgetPence - f.forecast;
+    return { text: spare < 0 ? `${tilde}${gbp(-spare)} over budget` : `${tilde}${gbp(spare)} under budget`, over: spare < 0 };
+  }
+  return { text: f.spare < 0 ? `${tilde}${gbp(-f.spare)} more than you have` : `${tilde}${gbp(f.spare)} to spare`, over: f.spare < 0 };
+}
+
+/** "At this pace: £1,240.00 by 31 October, £40.00 over budget." */
+export function forecastLine(f, budgetPence = 0) {
   const tilde = f.estimated ? '~' : '';
   const [, , d] = parse(f.end);
-  const by = `${tilde}${gbp(f.forecast)} by ${d} ${formatMonth(f.month).split(' ')[0]}`;
-  if (f.spare < 0) return `At this pace: ${by}, ${tilde}${gbp(-f.spare)} more than you have.`;
-  return `At this pace: ${by}, ${tilde}${gbp(f.spare)} to spare.`;
+  return `At this pace: ${tilde}${gbp(f.forecast)} by ${d} ${formatMonth(f.month).split(' ')[0]}, ${forecastCompare(f, budgetPence).text}.`;
 }
 
 /**
- * The forecast as a row of the Overview totals: what the figure is, the figure, and how it compares.
- * { title: 'Spending by 31 Oct', amount: '£945', spare: '£55 to spare' | '£530 more than you have', over }
+ * The forecast as a row of the Overview totals: what the figure is, the figure, and how it compares
+ * (with the budget when there is one).
+ * { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 to spare' | '£94.96 over budget' | …, over }
  */
-export function forecastRow(f) {
+export function forecastRow(f, budgetPence = 0) {
   const tilde = f.estimated ? '~' : '';
   const [, , d] = parse(f.end);
+  const c = forecastCompare(f, budgetPence);
   return {
     title: `Spending by ${d} ${formatMonth(f.month).split(' ')[0].slice(0, 3)}`,
     amount: `${tilde}${gbp(f.forecast)}`,
-    spare: f.spare < 0 ? `${tilde}${gbp(-f.spare)} more than you have` : `${tilde}${gbp(f.spare)} to spare`,
-    over: f.spare < 0,
+    spare: c.text,
+    over: c.over,
   };
 }
 
