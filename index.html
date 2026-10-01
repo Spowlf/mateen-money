@@ -21,6 +21,8 @@
   <script type="module" src="src/app.js"></script>
 </head>
 <body>
+  <!-- Only this scrolls; the page itself never does, so iOS can't float the tab bar off the bottom. -->
+  <div id="scroller" class="scroller">
   <header class="top">
     <div>
       <h1 id="title">Log</h1>
@@ -32,6 +34,7 @@
   </header>
 
   <main id="view"></main>
+  </div>
 
   <nav class="tabs" aria-label="Screens">
     <a href="#log" data-screen="log">

@@ -123,6 +123,12 @@ test('priceEntry marks estimates and keeps a statement override', () => {
   assert.deepEqual([noRate.gbpPence, noRate.gbpStatus], [null, 'estimated']);
 });
 
+test('priceEntry converts foreign income at the rate with no fee: the fee is only charged on payments', () => {
+  const income = { kind: 'income', date: '2026-10-01', amountMinor: 1697, currency: 'SGD', gbpStatus: null };
+  const priced = priceEntry(income, { rates: RATES, feeBps: 299, todayDate: '2026-10-01' });
+  assert.deepEqual([priced.gbpPence, priced.feePence, priced.feeBps, priced.rate], [1000, 0, 0, 1.697]);
+});
+
 test('estimateGbp uses the latest rate and no fee', () => {
   assert.equal(estimateGbp(1697, 'SGD', RATES), 1000);
   assert.equal(estimateGbp(500, 'GBP', RATES), 500);

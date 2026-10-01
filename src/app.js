@@ -52,7 +52,7 @@ function show() {
     else a.removeAttribute('aria-current');
   }
   current = { name, view: SCREENS[name].render(root, app) };
-  window.scrollTo(0, 0);
+  document.getElementById('scroller').scrollTo(0, 0);
 }
 
 async function sync({ quiet = true } = {}) {

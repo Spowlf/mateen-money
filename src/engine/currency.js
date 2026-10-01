@@ -76,9 +76,11 @@ export function rateFor(rates, currency, date, todayDate) {
  * Fills in an entry's GBP fields from its amount, currency, rates and fee.
  * A statement override (gbpStatus 'statement') is never recalculated.
  * An entry with no rate available keeps gbpPence null and status 'estimated'.
+ * Income is converted at the rate with no fee: the fee is only charged on payments.
  */
 export function priceEntry(entry, { rates, feeBps = 0, todayDate }) {
   if (entry.gbpStatus === 'statement') return entry;
+  if (entry.kind === 'income') feeBps = 0;
   const rate = rateFor(rates, entry.currency, entry.date, todayDate);
   if (!rate) return { ...entry, gbpPence: null, feePence: 0, feeBps, rate: null, gbpStatus: 'estimated' };
   const { gbpPence, feePence } = convertToGbp({ amountMinor: entry.amountMinor, currency: entry.currency, perGbp: rate.perGbp, feeBps });

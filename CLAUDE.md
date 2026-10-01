@@ -36,7 +36,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: The Overview "leave trips out" toggle affects Overview totals only; the headline always counts everything.
 - 2026-10-01: Term dates start blank; the user enters them in Settings.
 - 2026-10-01: Rates come from Frankfurter (ECB), fetched by the Worker, never by the phone. An entry's GBP value is "estimated" until its date has passed and that date's rate is stored.
-- 2026-10-01: Foreign-currency fee is basis points per payment method (299 = 2.99%), applied to foreign-currency entries only, stored separately as `feePence` and included in `gbpPence`.
+- 2026-10-01: Foreign-currency fee is basis points per payment method (299 = 2.99%), applied to foreign-currency payments only (income is converted with no fee), stored separately as `feePence` and included in `gbpPence`.
 - 2026-10-01: Field names are camelCase in JS, JSON and D1 columns alike, so rows need no mapping.
 - 2026-10-01: The currency symbol table and default categories live in `src/engine/` (not config JSON) because the Worker imports them too and they rarely change.
 - 2026-10-01: Zero-decimal currencies come from a fixed list in `money.js`, not `Intl`, so the phone and the Worker always agree.
