@@ -101,7 +101,7 @@ To check it works offline: open the app once while online, turn on Airplane Mode
 
 ## Updating the app
 
-Push to `main`. Pages publishes the new files within a few minutes. The next time you open the app, it shows "Updated, tap to reload". Tap it to switch to the new version; otherwise it switches the time after.
+Push to `main`. Pages publishes the new files within a few minutes. The next time you open the app, or come back to it after a minute away, it shows "Updated, tap to reload". Tap it to switch to the new version; otherwise it switches the time after.
 
 If you delete or rename a file, also change the `CACHE` name at the top of `sw.js` (for example `mateen-money-v4`), so phones drop the old copy.
 

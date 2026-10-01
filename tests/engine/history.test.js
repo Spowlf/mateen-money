@@ -51,6 +51,14 @@ test('history: filters by category, To sort, income, trip and payment method, an
   assert.deepEqual(ids(searchEntries(entries, { methodId: 'card', query: 'cafe' }, context)), ['d']);
 });
 
+test('history: the Payments and Income tabs filter by kind, and income by its type', () => {
+  const more = [...entries, income('2026-09-29', 5000, { id: 'f', incomeType: 'family' })];
+  assert.deepEqual(ids(searchEntries(more, { kind: 'spend' }, context)), ['c', 'd', 'b', 'a']);
+  assert.deepEqual(ids(searchEntries(more, { kind: 'income' }, context)), ['f', 'e']);
+  assert.deepEqual(ids(searchEntries(more, { kind: 'income', incomeType: 'family' }, context)), ['f']);
+  assert.deepEqual(ids(searchEntries(more, { kind: 'income', query: 'college' }, context)), ['e']);
+});
+
 test('history: groups by day with each day\'s spending and income, "Today" only for today', () => {
   const groups = groupByDay(searchEntries(entries, {}, context), '2026-10-01');
   assert.deepEqual(groups.map((g) => [g.label, g.spent, g.income, ids(g.entries)]), [

@@ -31,9 +31,9 @@ function haystack(e, { vendors, categories, methods, trips }) {
 /**
  * Live entries matching the search and filters, newest first.
  * query matches names, notes, categories and amounts ("4.20" finds £4.20; "4" finds £4.xx and £40).
- * filters: { categoryId: id | 'to-sort' | 'income', tripId, methodId }, each null for any.
+ * filters: { kind: 'spend' | 'income', categoryId: id | 'to-sort' | 'income', incomeType, tripId, methodId }, each null for any.
  */
-export function searchEntries(entries, { query = '', categoryId = null, tripId = null, methodId = null } = {},
+export function searchEntries(entries, { query = '', kind = null, categoryId = null, incomeType = null, tripId = null, methodId = null } = {},
   { vendors = [], categories = [], methods = [], trips = [] } = {}) {
   const lookup = {
     vendors: new Map(vendors.map((v) => [v.id, v])),
@@ -46,6 +46,8 @@ export function searchEntries(entries, { query = '', categoryId = null, tripId =
   const words = q.split(/\s+/).filter(Boolean);
   return entries.filter((e) => {
     if (!isLive(e)) return false;
+    if (kind && e.kind !== kind) return false;
+    if (incomeType && (e.kind !== 'income' || e.incomeType !== incomeType)) return false;
     if (categoryId === TO_SORT && !(e.kind === 'spend' && (e.categoryId == null || e.needsCurrency))) return false;
     if (categoryId === INCOME && e.kind !== 'income') return false;
     if (categoryId && categoryId !== TO_SORT && categoryId !== INCOME && (e.kind !== 'spend' || e.categoryId !== categoryId)) return false;

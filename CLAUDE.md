@@ -56,7 +56,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: The weekly review card sits between the headline and To sort. It starts folded (one line and "Review the week"), so it never pushes the keypad far down. Its steps are sort (only while To sort isn't empty, skippable), the week, anything unusual, then "Done", which saves a review row with the week's Monday as its id.
 - 2026-10-01: Chart colours: spending `--series-1` (blue), income `--series-2` (orange), To sort grey. Checked with the dataviz validator in both modes. Every chart value is also text (the category table, or "Show as a table").
 - 2026-10-01: Settings is a screen (`#settings`, from the header icon), not a sheet or a tab: too long for a sheet, too rarely used for a tab. Each item is edited in its own sheet.
-- 2026-10-01: History has a Payments / Vendors switch. A To sort payment opens the sort sheet; any other opens the edit sheet. Vendor aliases are edited in the vendor sheet.
+- 2026-10-01: History has a Payments / Income / Merchants switch. Payments is spending only (category, paid with and trip filters); Income is income only, filtered by type. The search is shared. A To sort payment opens the sort sheet; any other opens the edit sheet. Vendor aliases are edited in the vendor sheet.
 - 2026-10-01: Editing a payment teaches its vendor only the choices that changed, so fixing an old payment never brings back an old category. Renaming a vendor keeps the old name as an alias; deleting one deletes its aliases, and Undo brings them back.
 - 2026-10-01: Removing a category archives it (kept for old payments, "Bring back" in Settings). Category order is the `sort` field, moved with ↑ / ↓.
 - 2026-10-01: Backup is JSON of every live row, made after a sync. Restore is `POST /restore`: one D1 batch deletes every live row and writes the backup's rows under one rev, so the phone's next sync pulls it and it's all-or-nothing. It asks first with `confirm()`.
@@ -77,6 +77,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: Overview has no headline card (it lives on Log only). "Left over" / "Overspent" is the stand-out row of the totals, so the big figure always matches the selected period. When the six months are all zero the chart is replaced by "Nothing logged in the last six months yet."
 - 2026-10-01: Income types are Allowance / Stipend, Existing Cash, Friends / Family, Refund and Other. "Part-time work" (`work`) was dropped; `family` was renamed. Never reuse the `work` id.
 - 2026-10-01: Income has no "Paid with": Log and the edit sheet hide it, the summary line leaves it out, and a manual income entry saves `methodId: null`. Apple Pay refunds keep their card.
+- 2026-10-01: The service worker refreshes files with `cache: 'no-cache'` (Pages sends `max-age=600`), and the app asks it to check every file on coming back to the screen, at most once a minute, because a resumed home screen app fetches nothing.
 
 ## Writing style
 

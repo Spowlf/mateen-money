@@ -1,9 +1,12 @@
 // Service worker: precache every file at install, then stale-while-revalidate for same-origin GETs,
 // and tell open pages when a file really changed ("Updated, tap to reload").
+// Refreshes ask the server ('no-cache'), since GitHub Pages lets browsers keep files for 10 minutes.
+// The app also sends { type: 'check' } when it comes back to the screen, because a home screen app
+// resumed from the background fetches nothing, so it would otherwise never see an update.
 // The API is on another origin, so it's never cached here; offline data comes from IndexedDB.
 // When you add a front-end file, add it to FILES (a test checks this).
 
-const CACHE = 'mateen-money-v3';
+const CACHE = 'mateen-money-v4';
 const FILES = [
   './',
   'index.html',
@@ -80,22 +83,36 @@ async function sameBody(a, b) {
   return true;
 }
 
-async function announce(url) {
+async function announce() {
   const windows = await self.clients.matchAll({ type: 'window' });
-  for (const w of windows) w.postMessage({ type: 'updated', url });
+  for (const w of windows) w.postMessage({ type: 'updated' });
 }
+
+/** Fetches a file from the server and stores it. Resolves true if it differs from the cached copy. */
+async function refresh(cache, url) {
+  const cached = await cache.match(url, { ignoreSearch: true });
+  const res = await fetch(new Request(url, { cache: 'no-cache' }));
+  if (!res.ok) return { res, changed: false };
+  const changed = !!cached && !(await sameBody(cached, res.clone()));
+  await cache.put(url, res.clone());
+  return { res, changed };
+}
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== 'check') return;
+  event.waitUntil(caches.open(CACHE).then(async (cache) => {
+    const results = await Promise.all(FILES.map((f) => refresh(cache, new URL(f, self.location).href).catch(() => null)));
+    if (results.some((r) => r?.changed)) await announce();
+  }));
+});
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(req, { ignoreSearch: true });
-    const before = cached?.clone();
-    const fresh = fetch(req).then(async (res) => {
-      if (!res.ok) return res;
-      const changed = before && !(await sameBody(before, res.clone()));
-      await cache.put(req, res.clone());
-      if (changed) await announce(req.url);
+    const fresh = refresh(cache, req.url).then(async ({ res, changed }) => {
+      if (changed) await announce();
       return res;
     }).catch(() => null);
     if (cached) { event.waitUntil(fresh); return cached; }

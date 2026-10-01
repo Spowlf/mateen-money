@@ -77,6 +77,7 @@ function load(server = {}) {
     install: () => dispatch('install'),
     activate: () => dispatch('activate'),
     get: (path, mode = 'no-cors') => dispatch('fetch', { request: new FakeRequest(path, { mode }) }),
+    check: () => dispatch('message', { data: { type: 'check' } }),
   };
 }
 
@@ -118,6 +119,33 @@ test('update: a changed file is served from cache now, stored, and announced onc
   const again = await sw.get('src/app.js');
   assert.equal(await again.res.text(), 'v2 src/app.js');
   assert.equal(sw.announced.length, 1);
+});
+
+test('update: the background refresh asks the server, never the browser\'s HTTP cache', async () => {
+  const sw = await installed();
+  await sw.get('src/app.js');
+  assert.deepEqual(sw.fetched.map((f) => [f.url.slice(BASE.length), f.cache]), [['src/app.js', 'no-cache']]);
+});
+
+test('check: the app returning to the screen refreshes every file and announces a change once', async () => {
+  const sw = await installed();
+  await sw.check();
+  assert.equal(sw.fetched.length, FILES.length);
+  assert.ok(sw.fetched.every((f) => f.cache === 'no-cache'));
+  assert.deepEqual(sw.announced, []);
+  sw.server['src/ui/history.js'] = 'v2';
+  sw.server['styles.css'] = 'v2';
+  await sw.check();
+  assert.equal(sw.announced.length, 1);
+  assert.equal(await (await sw.get('styles.css')).res.text(), 'v2');
+});
+
+test('check: offline, nothing is announced and the cache is kept', async () => {
+  const sw = await installed();
+  sw.setOnline(false);
+  await sw.check();
+  assert.deepEqual(sw.announced, []);
+  assert.equal(await (await sw.get('src/app.js')).res.text(), 'v1 src/app.js');
 });
 
 test('update: an unchanged file is not announced', async () => {

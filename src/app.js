@@ -98,8 +98,23 @@ function showUpdate() {
   button.hidden = false;
 }
 
+// Asks the service worker to look for new app files on coming back to the screen, since a home
+// screen app resumed from the background doesn't reload. (Opening it refreshes every file anyway.)
+// At most once a minute.
+const CHECK_MS = 60 * 1000;
+let lastCheck = Date.now();
+function checkForUpdate() {
+  if (Date.now() - lastCheck < CHECK_MS || !navigator.onLine) return;
+  lastCheck = Date.now();
+  navigator.serviceWorker.ready.then((reg) => {
+    reg.update().catch(() => {});
+    reg.active?.postMessage({ type: 'check' });
+  }).catch(() => {});
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
   navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'updated') showUpdate(); });
   const hadController = !!navigator.serviceWorker.controller;   // a first install is not an update
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdate(); });

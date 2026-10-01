@@ -1,4 +1,4 @@
-// History: every payment grouped by day, with search and filters; and every vendor.
+// History: payments and income on their own tabs, grouped by day, with search and filters; and every vendor.
 // Tapping a row opens its sheet. Nothing is edited in place.
 
 import { h, fill, chips } from './dom.js';
@@ -6,16 +6,16 @@ import { money, liveSorted } from './format.js';
 import { openEntrySheet } from './entry-sheet.js';
 import { openSortSheet } from './sort-sheet.js';
 import { openVendorSheet } from './vendor-sheet.js';
-import { today, gbp, formatDay, searchEntries, groupByDay, toSortEntries, TO_SORT, INCOME, INCOME_TYPES } from '../engine/index.js';
+import { today, gbp, formatDay, searchEntries, groupByDay, toSortEntries, TO_SORT, INCOME_TYPES } from '../engine/index.js';
 
 const PAGE = 100;
 
 // Kept between visits to the tab, so switching away and back keeps the search.
-let view = { kind: 'payments', query: '', categoryId: null, tripId: null, methodId: null, vendorQuery: '' };
+let view = { kind: 'payments', query: '', categoryId: null, incomeType: null, tripId: null, methodId: null, vendorQuery: '' };
 
 /** Opens History on one trip's payments (from a trip on Overview). */
 export function showTripPayments(tripId) {
-  view = { ...view, kind: 'payments', query: '', categoryId: null, methodId: null, tripId };
+  view = { ...view, kind: 'payments', query: '', categoryId: null, incomeType: null, methodId: null, tripId };
   location.hash = '#history';
 }
 
@@ -30,7 +30,12 @@ export function renderHistory(root, { repo }) {
   fill(root, h('div', { class: 'screen' }, el.switch, el.controls, el.body));
 
   const name = (rows, id) => rows.find((r) => r.id === id)?.name;
-  const filtering = () => view.query.trim() || view.categoryId || view.tripId || view.methodId;
+  const isIncome = () => view.kind === 'income';
+  // Each tab keeps its own filters; only the search is shared.
+  const filters = () => (isIncome()
+    ? { query: view.query, kind: 'income', incomeType: view.incomeType }
+    : { query: view.query, kind: 'spend', categoryId: view.categoryId, tripId: view.tripId, methodId: view.methodId });
+  const filtering = () => view.query.trim() || (isIncome() ? view.incomeType : view.categoryId || view.tripId || view.methodId);
 
   function select(label, value, options, onChange) {
     const control = h('select', { class: 'select select-small', 'aria-label': label, onchange: () => onChange(control.value || null) },
@@ -41,9 +46,9 @@ export function renderHistory(root, { repo }) {
   function renderSwitch() {
     fill(el.switch, chips({
       label: 'Show',
-      options: [{ value: 'payments', label: 'Payments' }, { value: 'vendors', label: 'Merchants' }],
+      options: [{ value: 'payments', label: 'Payments' }, { value: 'income', label: 'Income' }, { value: 'vendors', label: 'Merchants' }],
       value: view.kind,
-      onChange: (v) => { view.kind = v; renderControls(); renderBody(); },
+      onChange: (v) => { view.kind = v; shown = PAGE; renderControls(); renderBody(); },
     }));
   }
 
@@ -53,19 +58,22 @@ export function renderHistory(root, { repo }) {
         value: view.vendorQuery, oninput: () => { view.vendorQuery = search.value; renderBody(); } });
       return fill(el.controls, search);
     }
-    const search = h('input', { class: 'input', type: 'search', placeholder: 'Search names, descriptions or amounts', 'aria-label': 'Search payments', autocomplete: 'off',
+    const search = h('input', { class: 'input', type: 'search', placeholder: 'Search names, descriptions or amounts', 'aria-label': isIncome() ? 'Search income' : 'Search payments', autocomplete: 'off',
       value: view.query, oninput: () => { view.query = search.value; shown = PAGE; renderBody(); } });
+    const change = (key) => (v) => { view[key] = v; shown = PAGE; renderControls(); renderBody(); };
+    if (isIncome()) {
+      return fill(el.controls, search, h('div', { class: 'filter-row' },
+        select('Type of income', view.incomeType, [{ value: null, label: 'All types' }, ...INCOME_TYPES.map((t) => ({ value: t.id, label: t.name }))], change('incomeType'))));
+    }
     // Alphabetical here, Other last, whatever order Settings gives them.
     const categories = S.categories.filter((c) => !c.deletedAt && (!c.archived || c.id === view.categoryId))
       .sort((a, b) => (a.id === 'other') - (b.id === 'other') || a.name.localeCompare(b.name, 'en'));
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));
     const methods = liveSorted(S.methods, 'name');
-    const change = (key) => (v) => { view[key] = v; shown = PAGE; renderControls(); renderBody(); };
     fill(el.controls, search, h('div', { class: 'filter-row' },
       select('Category', view.categoryId, [
         { value: null, label: 'All categories' },
         { value: TO_SORT, label: 'To Sort' },
-        { value: INCOME, label: 'Income' },
         ...categories.map((c) => ({ value: c.id, label: c.name })),
       ], change('categoryId')),
       methods.length > 1 && select('Paid with', view.methodId, [{ value: null, label: 'Any payment method' }, ...methods.map((m) => ({ value: m.id, label: m.name }))], change('methodId')),
@@ -80,7 +88,8 @@ export function renderHistory(root, { repo }) {
       ? e.merchant || INCOME_TYPES.find((t) => t.id === e.incomeType)?.name || 'Income'
       : name(S.vendors, e.vendorId) ?? e.merchant ?? 'Payment';
     const sub = [
-      income ? INCOME_TYPES.find((t) => t.id === e.incomeType)?.name : name(S.categories, e.categoryId),
+      // The type is already the title when the income has no "From".
+      income ? e.merchant && INCOME_TYPES.find((t) => t.id === e.incomeType)?.name : name(S.categories, e.categoryId),
       name(S.methods, e.methodId),
       e.time,
       name(S.trips, e.tripId) && `${name(S.trips, e.tripId)} trip`,
@@ -97,14 +106,17 @@ export function renderHistory(root, { repo }) {
   }
 
   function renderPayments() {
-    const live = S.entries.filter((e) => !e.deletedAt);
-    if (!live.length) {
+    const income = isIncome();
+    const kind = income ? 'income' : 'spend';
+    if (!S.entries.some((e) => !e.deletedAt && e.kind === kind)) {
       return fill(el.body, h('section', { class: 'empty' },
-        h('h2', {}, 'Nothing logged yet'),
-        h('p', {}, 'Payments and income you log, or that Apple Pay sends, appear here by day.'),
-        h('a', { class: 'button primary', href: '#log' }, 'Log a payment')));
+        h('h2', {}, income ? 'No income yet' : 'No payments yet'),
+        h('p', {}, income
+          ? 'Income you log, like your allowance or existing cash, appears here by day.'
+          : 'Payments you log, or that Apple Pay sends, appear here by day.'),
+        h('a', { class: 'button primary', href: '#log' }, income ? 'Log income' : 'Log a payment')));
     }
-    const found = searchEntries(S.entries, view, { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
+    const found = searchEntries(S.entries, filters(), { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
     if (!found.length) {
       return fill(el.body, h('div', {},
         h('p', { class: 'empty-line' }, 'Nothing matches. Try fewer words or clear the filters.'),
@@ -112,21 +124,21 @@ export function renderHistory(root, { repo }) {
     }
     const waiting = toSortIds();
     const groups = groupByDay(found.slice(0, shown), today());
-    const spentAll = found.reduce((s, e) => s + (e.kind === 'spend' ? e.gbpPence ?? 0 : 0), 0);
+    const total = found.reduce((s, e) => s + (e.gbpPence ?? 0), 0);
     fill(el.body,
       filtering() && h('p', { class: 'reason' },
-        `${found.length === 1 ? '1 match' : `${found.length} matches`}, ${gbp(spentAll)} spent. `,
+        `${found.length === 1 ? '1 match' : `${found.length} matches`}, ${gbp(total)} ${income ? 'in' : 'spent'}. `,
         h('button', { type: 'button', class: 'text-button inline', onclick: clear }, 'Clear')),
       groups.map((g) => h('section', { class: 'section day' },
         h('h2', { class: 'day-head' }, h('span', {}, g.label),
-          (g.spent > 0 || g.income > 0) && h('span', { class: 'day-total' }, [g.spent && `${gbp(g.spent)} spent`, g.income && `${gbp(g.income)} in`].filter(Boolean).join(', '))),
+          (income ? g.income : g.spent) > 0 && h('span', { class: 'day-total' }, income ? `${gbp(g.income)} in` : `${gbp(g.spent)} spent`)),
         h('ul', { class: 'list' }, g.entries.map((e) => row(e, waiting.has(e.id)))))),
       found.length > shown && h('button', { type: 'button', class: 'button secondary', onclick: () => { shown += PAGE; renderBody(); } },
         `Show ${Math.min(PAGE, found.length - shown)} more`));
   }
 
   function clear() {
-    view = { ...view, query: '', categoryId: null, tripId: null, methodId: null };
+    view = { ...view, query: '', categoryId: null, incomeType: null, tripId: null, methodId: null };
     shown = PAGE;
     renderControls();
     renderBody();
