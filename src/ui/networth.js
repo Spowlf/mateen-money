@@ -2,7 +2,7 @@
 // the total over time; By Type; This Month's change split into markets, currencies and balances.
 // Accounts (and IBKR from there) are one tap away. Beside spending, never inside it: nothing here
 // changes the headline, budget, forecast or Overview. Gains and losses carry + / − and stay
-// neutral in colour, and the chart is ink: blue means money out.
+// neutral in colour, and the chart is accent blue (the user's choice).
 
 import { h, fill, segmented, icon } from './dom.js';
 import { worthChart, shareTable } from './charts.js';

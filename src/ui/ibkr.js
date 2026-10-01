@@ -23,7 +23,11 @@ export function renderIbkr(root, { repo }) {
     return r.gainMinor === null ? { amount: 'No cost', muted: true } : { amount: signedMoney(r.gainMinor, base), sub: signedPct(r.gainShare) };
   }
 
-  function holdingsList(rows, base) {
+  function holdingsList(rows, base, cashMinor) {
+    // Cash has no price or cost, so it shows with the values only.
+    const cash = show === 'value' && cashMinor !== 0 && h('li', {}, h('div', { class: 'list-row static' },
+      h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, 'Cash'), h('span', { class: 'list-sub' }, 'Not invested')),
+      h('span', { class: 'list-end' }, h('span', { class: 'list-amount' }, formatMoney(cashMinor, base)))));
     return h('ul', { class: 'list' }, rows.map((r) => {
       const a = holdingAmount(r, base);
       const units = fromMicro(r.holding.unitsMicro);
@@ -35,7 +39,7 @@ export function renderIbkr(root, { repo }) {
         h('span', { class: 'list-end' },
           h('span', { class: `list-amount${a.muted ? ' muted' : ''}` }, a.amount),
           a.sub && h('span', { class: 'list-sub' }, a.sub))));
-    }));
+    }), cash);
   }
 
   function render() {
@@ -73,7 +77,7 @@ export function renderIbkr(root, { repo }) {
         h('h2', { class: 'subhead' }, 'Holdings'),
         detail.holdings.length
           ? [segmented({ label: 'Show each holding’s', options: SHOW, value: show, onChange: (v) => { show = v; render(); } }),
-            holdingsList(detail.holdings, base)]
+            holdingsList(detail.holdings, base, detail.cashMinor)]
           : h('p', { class: 'empty-line' }, 'No holdings at the last close.')),
       detail.holdings.length > 1 && h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Mix'),

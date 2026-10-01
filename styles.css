@@ -161,7 +161,8 @@ main {
 .tabs a[aria-current] svg { background: var(--accent-soft); }
 .tabs a:focus-visible { outline-offset: -3px; }
 /* The narrowest phones: a slimmer pill so five labels still fit. */
-@media (max-width: 359px) { .tabs svg { width: 44px; padding: 2px 10px; } .tabs a { letter-spacing: -0.02em; } }
+/* The one exception to a single small-print size: labels 1px smaller, so five fit (the user's choice over shortening one). */
+@media (max-width: 359px) { .tabs svg { width: 40px; padding: 2px 8px; } .tabs a { letter-spacing: -0.02em; font-size: calc(var(--t-s) - 1px); } }
 .badge {
   position: absolute; top: 6px; left: calc(50% + 6px);
   min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
@@ -293,6 +294,16 @@ a.list-row { color: inherit; text-decoration: none; }
 .cat-table td { text-align: right; white-space: nowrap; font-family: var(--font-num); font-weight: 700; }
 .cat-table td + td { padding-left: 0; }
 .cat-table .share { color: var(--ink-2); font-weight: 600; min-width: 3.5em; }
+/* The narrowest phones: a one-word name, its amount and its share don't fit side by side, so the
+   share goes under the amount. */
+@media (max-width: 359px) {
+  .cat-table, .cat-table tbody { display: block; }
+  .cat-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .cat-table th { grid-row: 1 / span 2; }
+  .cat-table td, .cat-table td + td { padding-left: var(--s3); }
+  .cat-table td + td { padding-top: 0; }
+  .cat-table .share { min-width: 0; }
+}
 .cat-name { display: block; }
 .all-categories { display: grid; gap: var(--s2); }
 .meter { display: block; height: 8px; margin-top: var(--s2); border-radius: 4px; background: var(--line); overflow: hidden; }
@@ -300,14 +311,15 @@ a.list-row { color: inherit; text-decoration: none; }
 .fill-1 { background: var(--series-1); }
 .fill-muted { background: var(--series-muted); }
 /* Net worth's meters and line are ink: blue means money out. */
-.fill-ink { background: var(--ink); }
+/* Net worth's meters: accent blue, by the user's choice (an exception to blue meaning money out). */
+.fill-accent { background: var(--accent); }
 .fill-warn { background: var(--warn); }
 .fill-danger { background: var(--danger); }
 
 .mark-1 { fill: var(--series-1); }
 .mark-2 { fill: var(--series-2); }
-.mark-ink { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.mark-ink-dot { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.mark-accent { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.mark-accent-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .crosshair { stroke: var(--ink-2); stroke-width: 1; }
 /* Dragging across the line moves the crosshair; scrolling up and down still scrolls. */
 .worth-chart { cursor: crosshair; touch-action: pan-y; }

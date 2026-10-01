@@ -156,6 +156,8 @@ test('holding rows: value, today and gain per holding, largest first, with each 
   assert.equal(v.holdings[0].gainMinor, null);
   assert.equal(v.heldMinor, 41000);
   assert.equal(gld.share + v.holdings[0].share, 1);
+  // Cash is the rest of the value: the close (300000) moved on by GLD's +1000, less the holdings.
+  assert.equal(v.cashMinor, 301000 - 41000);
 });
 
 test('activity: newest first, in words, signed as it moved the cash', () => {

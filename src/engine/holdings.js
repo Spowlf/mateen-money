@@ -349,6 +349,8 @@ export function holdingRows(live) {
   }).sort((a, b) => b.valueMinor - a.valueMinor);
   return {
     heldMinor,
+    // What isn't in a holding: cash, and anything IBKR counts in the value that's due but not paid yet.
+    cashMinor: live.amountMinor - heldMinor,
     gainShare: live.costMinor ? live.gainMinor / Math.abs(live.costMinor) : null,
     holdings,
   };

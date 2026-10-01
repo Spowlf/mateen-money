@@ -44,10 +44,10 @@ export function categoryTable(rows, { caption }) {
 
 /**
  * Parts of a whole as a table whose first column carries each share as a meter. rows: [{ name,
- * pence, share, fill? }]. Net worth's are neutral (fill-ink, plain amounts): blue means money out.
+ * pence, share, fill? }]. Net worth's are accent blue (fill-accent, plain amounts), by the user's choice.
  * { amounts: false } leaves the amount out where a list beside it already says it (IBKR's Mix).
  */
-export function shareTable(rows, { caption, head, amountClass = '', fill = 'fill-ink', amounts = true }) {
+export function shareTable(rows, { caption, head, amountClass = '', fill = 'fill-accent', amounts = true }) {
   return h('table', { class: 'cat-table' },
     h('caption', { class: 'visually-hidden' }, caption),
     h('thead', { class: 'visually-hidden' }, h('tr', {}, head.map((t) => h('th', { scope: 'col' }, t)))),
@@ -168,7 +168,7 @@ export function budgetBar(r) {
 }
 
 /**
- * Net worth over time as one line in --ink (blue means money out), on an axis that fits the values
+ * Net worth over time as one line in --accent (the user's choice for net worth), on an axis that fits the values
  * rather than starting at zero. A crosshair finds the nearest day (pointer, tap, or arrow keys once
  * focused) and the tooltip says it; the same days are a table. points: [{ date, pence }], oldest first,
  * at least two.
@@ -189,7 +189,7 @@ export function worthChart(points, { width = 358, name }) {
 
   const tooltip = h('div', { class: 'chart-tip', hidden: true, role: 'status' });
   const cross = s('line', { y1: pad.top, y2: baseline, class: 'crosshair', visibility: 'hidden' });
-  const dot = s('circle', { r: 4, class: 'mark-ink-dot', visibility: 'hidden' });
+  const dot = s('circle', { r: 4, class: 'mark-accent-dot', visibility: 'hidden' });
   // Three dates under the axis: the first, the middle and the last ("Today").
   const mid = points[Math.floor((points.length - 1) / 2)];
   const dateLabels = [[first, 'start'], [mid.date, 'middle'], [last.date, 'end']]
@@ -225,8 +225,8 @@ export function worthChart(points, { width = 358, name }) {
     s('line', { x1: pad.left, x2: width - pad.right, y1: y(t), y2: y(t), class: 'grid' }),
     s('text', { x: pad.left - 8, y: y(t), class: 'axis', 'text-anchor': 'end', 'dominant-baseline': 'middle' }, document.createTextNode(gbp(t, { whole: true }))))),
   dateLabels,
-  s('path', { d: line, class: 'mark-ink' }),
-  s('circle', { cx: x(last.date), cy: y(last.pence), r: 4, class: 'mark-ink-dot' }),
+  s('path', { d: line, class: 'mark-accent' }),
+  s('circle', { cx: x(last.date), cy: y(last.pence), r: 4, class: 'mark-accent-dot' }),
   cross, dot,
   s('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH, class: 'hit' }));
 
