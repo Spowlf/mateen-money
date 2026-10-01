@@ -41,7 +41,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 ## Safe to spend and forecast
 
 - Under the headline on Log: "£12.40 a day for the rest of October." = the headline ÷ days left in the month, today included. On the last day: "£75.00 to spend today, the last day of October." If the headline is negative: "Over by £X this month." Like the headline, it always counts trips.
-- Overview, current month only: "At this pace: £X by 31 October, £Y more than you have." (or "£Y to spare."), with how it's counted under it.
+- Overview, current month only: an "At this pace" section under the totals, with one row like theirs: "Spending by 31 Oct", the figure, and "£Y to spare" (or, in red, "£Y more than you have"). How it's counted sits under it.
 - `forecast = spent so far + recurring costs still due + daily day-to-day rate × days after today`. "More than you have" / "to spare" compares it with everything coming in this month (income received + recurring income still due).
 - Day-to-day spending leaves out recurring items (entries with a `recurringId`) and, when the Overview toggle leaves trips out, trip spending. Trip spending still counts in "spent so far": the toggle only keeps one trip from setting the pace.
 - Daily rate: on days 1–7, `d/7 × this month's average + (1 − d/7) × the 8 weeks before the month`, so one big early purchase doesn't swing it; from day 7, this month's average alone. History counts only from the first logged payment; with none, this month stands alone.

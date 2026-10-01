@@ -141,6 +141,21 @@ export function forecastLine(f) {
   return `At this pace: ${by}, ${tilde}${gbpRounded(f.spare)} to spare.`;
 }
 
+/**
+ * The forecast as a row of the Overview totals: what the figure is, the figure, and how it compares.
+ * { title: 'Spending by 31 Oct', amount: '£945', spare: '£55 to spare' | '£530 more than you have', over }
+ */
+export function forecastRow(f) {
+  const tilde = f.estimated ? '~' : '';
+  const [, , d] = parse(f.end);
+  return {
+    title: `Spending by ${d} ${formatMonth(f.month).split(' ')[0].slice(0, 3)}`,
+    amount: `${tilde}${gbpRounded(f.forecast)}`,
+    spare: f.spare < 0 ? `${tilde}${gbpRounded(-f.spare)} more than you have` : `${tilde}${gbpRounded(f.spare)} to spare`,
+    over: f.spare < 0,
+  };
+}
+
 /** How the forecast is counted, next to it. */
 export function forecastReason(f) {
   const parts = [`${gbpRounded(f.spent)} spent`];

@@ -10,7 +10,7 @@ import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
 import {
   today, monthKey, gbp, gbpRounded, formatDay, formatDayShort, formatMonth, overview, shiftPeriod, termNow, termLabel, yearTerms, daysBetween,
-  forecastLine, forecastReason, budgetRows, budgetStatusText,
+  forecastRow, forecastReason, budgetRows, budgetStatusText,
 } from '../engine/index.js';
 
 // Kept between visits to the tab, so switching away and back doesn't lose the place.
@@ -28,7 +28,7 @@ export function renderOverview(root, { repo }) {
   const S = repo.state;
   const el = {
     filters: h('section', { class: 'filters', 'aria-label': 'Period' }),
-    body: h('div', { class: 'screen' }),
+    body: h('div', { class: 'screen sections' }),
   };
   fill(root, h('div', { class: 'screen' }, el.filters, el.body));
 
@@ -81,6 +81,19 @@ export function renderOverview(root, { repo }) {
       row(t.net < 0 ? 'Overspent' : 'Left over', `${tilde}${gbp(Math.abs(t.net))}`, null, t.net < 0 ? 'danger' : '', 'standout'));
   }
 
+  // The month in progress: where spending ends up at this pace, as a row like the totals, then how it's counted.
+  function forecastSection(f) {
+    const r = forecastRow(f);
+    return h('section', { class: 'section' },
+      h('h2', { class: 'subhead' }, 'At this pace'),
+      h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
+        h('span', { class: 'list-main' },
+          h('span', { class: 'list-title' }, r.title),
+          h('span', { class: `list-sub${r.over ? ' danger' : ''}` }, r.spare)),
+        h('span', { class: `list-amount${r.over ? ' danger' : ''}` }, r.amount))),
+      h('p', { class: 'reason' }, forecastReason(f)));
+  }
+
   // Budgets: this month with forecasts (tap to change one), other months budget against actual.
   function budgetsSection(data) {
     if (period.kind !== 'month') return null;
@@ -105,7 +118,7 @@ export function renderOverview(root, { repo }) {
         ? h('ul', { class: 'list' }, rows.map((r) => h('li', {}, current
           ? h('button', { type: 'button', class: 'list-row budget-row', 'aria-label': `${r.name}: ${budgetStatusText(r)}. Change the budget`, onclick: () => openBudgetSheet(repo, r.categoryId) }, content(r))
           : h('div', { class: 'list-row budget-row static' }, content(r)))))
-        : h('p', { class: 'empty-line' }, 'Set a monthly budget for a category to see how it’s going.'),
+        : h('p', { class: 'reason' }, 'Set a monthly budget for a category to see how it’s going.'),
       current && h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openBudgetSheet(repo, null) }, 'Set a budget')));
   }
 
@@ -166,8 +179,6 @@ export function renderOverview(root, { repo }) {
     fill(el.body,
       h('section', { class: 'section', 'aria-label': 'Totals' },
         totalsCard(data),
-        data.forecast && h('p', { class: `forecast${data.forecast.spare < 0 ? ' over' : ''}` }, forecastLine(data.forecast)),
-        data.forecast && h('p', { class: 'reason' }, forecastReason(data.forecast)),
         data.totals.estimated && h('p', { class: 'reason' }, '~ Foreign amounts are estimated until their rate is final.'),
         term && h('p', { class: 'reason' }, `${term.name} term runs ${dateSpan(term.start, term.end)}.`),
         excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out of these totals. The headline on Log still counts them.'),
@@ -175,6 +186,7 @@ export function renderOverview(root, { repo }) {
         liveTrips().length > 0 && h('label', { class: 'toggle' },
           h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
           h('span', {}, 'Leave trips out of these totals'))),
+      data.forecast && forecastSection(data.forecast),
       budgetsSection(data),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by category'),

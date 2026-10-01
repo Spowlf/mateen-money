@@ -148,8 +148,6 @@ main {
 .headline.negative .num { color: var(--danger); }
 .headline-safe { font-weight: 600; }
 .headline-safe.over { color: var(--danger); }
-.forecast { font-weight: 600; margin-top: var(--s3); }
-.forecast.over { color: var(--danger); }
 .budget-status { font-size: var(--t-s); }
 .budget-status.over { color: var(--danger); }
 .budget-status.heading { color: var(--warn); }
@@ -216,7 +214,7 @@ main {
 .period-label-small { font-size: var(--t-m); }
 .total-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 60px; padding: var(--s3) var(--s4); }
 .trip-row { align-items: flex-start; }
-.list-amount.danger { color: var(--danger); }
+.list-amount.danger, .list-sub.danger { color: var(--danger); }
 /* Left over: the figure the period comes down to, so it's the one row with a fill. */
 .total-row.standout { min-height: 72px; background: var(--accent-soft); }
 .total-row.standout .list-title { font-weight: 700; }
@@ -293,7 +291,8 @@ main {
 .term { display: grid; gap: var(--s1); margin: 0; padding: 0; border: 0; min-width: 0; }
 .button-stack { display: grid; gap: var(--s2); }
 .plan-summary { display: grid; gap: var(--s2); }
-.settings { gap: var(--s6); }
+/* Sections sit further apart than the lines inside them, so each reads as one group. */
+.settings, .sections { gap: var(--s6); }
 .text-button.inline { margin-left: 0; }
 
 /* Chips */
