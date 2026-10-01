@@ -11,6 +11,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - Dates are `'YYYY-MM-DD'` strings; date maths in UTC; "today" from local getters. Instants are ms timestamps.
 - Never commit the API token, backups or `.dev.vars`. The token is a Worker secret and is typed into Settings on the phone.
 - Build in stages. Tests for the maths before any interface. Check in with the user after each stage. **Don't commit or push until asked.**
+- Push straight to `main`, never to a feature branch (even one a session is set up with).
 - When you add a front-end file, add it to `FILES` in `sw.js` (a test checks this).
 
 ## Stages
