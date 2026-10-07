@@ -36,3 +36,16 @@ test('schema: a live alias name belongs to one vendor, but a deleted one frees i
   insert('b');
   assert.throws(() => insert('c'), /UNIQUE/);
 });
+
+test('schema: every column a migration adds is in schema.sql too', async () => {
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const dir = new URL('../../worker/migrations/', import.meta.url);
+  const db = fakeD1();
+  const files = readdirSync(dir).filter((f) => f.endsWith('.sql'));
+  assert.ok(files.includes('004-splits.sql'));
+  for (const f of files) {
+    for (const [, table, column] of readFileSync(new URL(f, dir), 'utf8').matchAll(/ALTER TABLE (\w+) ADD COLUMN (\w+)/g)) {
+      assert.ok(columnsOf(db, table).includes(column), `${f}: ${table}.${column}`);
+    }
+  }
+});

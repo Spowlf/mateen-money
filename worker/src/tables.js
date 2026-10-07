@@ -18,7 +18,7 @@ export const TABLES = {
   entries: table([
     'kind', 'date', 'time', 'at', 'amountMinor', 'currency', 'gbpPence', 'feePence', 'feeBps', 'rate', 'gbpStatus',
     'merchant', 'vendorId', 'categoryId', 'incomeType', 'methodId', 'note', 'tripId', 'tripManual', 'source',
-    'recurringId', 'occurrenceDate', 'spreadStart', 'spreadMonths', 'needsCurrency', 'symbol', 'card', 'accountId',
+    'recurringId', 'occurrenceDate', 'spreadStart', 'spreadMonths', 'needsCurrency', 'symbol', 'card', 'accountId', 'paidBy',
   ], {
     required: ['kind', 'date', 'amountMinor', 'currency'],
     defaults: { feePence: 0, feeBps: 0, gbpStatus: 'estimated', tripManual: 0, source: 'manual', spreadMonths: 1, needsCurrency: 0 },
@@ -44,6 +44,9 @@ export const TABLES = {
     clientWrites: false, defaults: { valueBaseMinor: 0, costBaseMinor: 0 },
   }),
   activity: table(['accountId', 'date', 'type', 'symbol', 'unitsMicro', 'priceMicro', 'amountMinor', 'currency'], { clientWrites: false }),
+  people: table(['name', 'sort', 'archived'], { required: ['name'], defaults: { sort: 0, archived: 0 } }),
+  splits: table(['entryId', 'personId', 'amountMinor', 'currency', 'direction', 'settlementId'], { clientWrites: false }),
+  settlements: table(['personId', 'date', 'amountMinor', 'currency', 'direction', 'accountId'], { clientWrites: false }),
   snapshots: table(['date', 'gbpPence'], { clientWrites: false }),
 };
 

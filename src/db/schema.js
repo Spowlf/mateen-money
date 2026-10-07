@@ -9,10 +9,10 @@
 // Money is integer minor units (see exponent() in src/engine/money.js). Dates are 'YYYY-MM-DD'.
 
 export const DB_NAME = 'mateen-money';
-export const DB_VERSION = 4;   // 2: budgets; 3: accounts and balances; 4: holdings, activity, snapshots
+export const DB_VERSION = 5;   // 2: budgets; 3: accounts and balances; 4: holdings, activity, snapshots; 5: people, splits, settlements
 
 /** Tables that sync from the backend. */
-export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots'];
+export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots', 'people', 'splits', 'settlements'];
 
 // store name -> { keyPath, indexes: { name: keyPath } }
 export const STORES = {
@@ -32,6 +32,9 @@ export const STORES = {
   holdings: { keyPath: 'id', indexes: {} },
   activity: { keyPath: 'id', indexes: {} },
   snapshots: { keyPath: 'id', indexes: {} },
+  people: { keyPath: 'id', indexes: {} },
+  splits: { keyPath: 'id', indexes: {} },
+  settlements: { keyPath: 'id', indexes: {} },
   meta: { keyPath: 'key', indexes: {} },      // device only: { key, value } (token, rev, lastSyncedAt, draft)
 };
 
@@ -65,6 +68,7 @@ export const STORES = {
  * @property {0|1} needsCurrency      1 = ambiguous symbol, ask which currency in "To sort"
  * @property {string|null} symbol     the ambiguous symbol as it arrived ('$')
  * @property {string|null} card       Wallet card name as it arrived (for remembering symbols)
+ * @property {string|null} paidBy     a person's id when they paid the whole bill (see src/engine/splits.js); null = you
  */
 
 /**
@@ -213,4 +217,11 @@ export const STORES = {
  * @property {string} id      the date
  * @property {string} date
  * @property {number} gbpPence
+ */
+
+/**
+ * Split payments (see src/engine/splits.js):
+ *   people       { id, name, sort, archived }
+ *   splits       { id, entryId, personId, amountMinor, currency, direction: 'owedToMe' | 'iOwe', settlementId }
+ *   settlements  { id, personId, date, amountMinor, currency, direction: 'in' | 'out', accountId }
  */

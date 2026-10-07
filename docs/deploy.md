@@ -136,6 +136,9 @@ Migrations so far, to run once each on a database made before them:
 npx wrangler d1 execute mateen-money --remote --command "ALTER TABLE methods ADD COLUMN accountId TEXT"
 # 003: the account income went into
 npx wrangler d1 execute mateen-money --remote --command "ALTER TABLE entries ADD COLUMN accountId TEXT"
+# 004: split payments: who paid a bill (the people, splits and settlements tables come from schema.sql)
+npx wrangler d1 execute mateen-money --remote --command "ALTER TABLE entries ADD COLUMN paidBy TEXT"
+npx wrangler d1 execute mateen-money --remote --file worker/schema.sql
 ```
 
 Run again, each says the column already exists, and that's harmless. `PRAGMA table_info(entries)` (or `methods`) shows whether it's there.

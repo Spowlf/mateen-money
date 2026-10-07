@@ -8,6 +8,7 @@ import { TABLES } from './tables.js';
 import { refuse } from './http.js';
 import { validDate, validCurrency } from './entries.js';
 import { ensureRates } from './rates.js';
+import { personInUse } from './splits.js';
 
 const blank = (v) => v === undefined || v === null || (typeof v === 'string' && !v.trim());
 const METHOD_KINDS = new Set(['card', 'cash', 'transfer']);
@@ -103,6 +104,10 @@ export async function saveRow(ctx, name, id, body) {
   }
   const problem = check(name, row, ctx.today);
   if (problem) throw refuse(problem);
+  if (name === 'people' && (row.archived || row.deletedAt) && !(existing?.archived || existing?.deletedAt)) {
+    const busy = await personInUse(store, id);
+    if (busy) throw refuse(busy, 409);
+  }
   if (name === 'trips') writes.entries = await tripEntries(store, existing, row);
   return store.write(writes, ctx.now);
 }
@@ -184,7 +189,7 @@ export async function saveBatch(ctx, body) {
 export async function deleteRow(ctx, name, id) {
   const row = await ctx.store.get(name, id);
   if (!row) throw refuse('that no longer exists.', 404);
-  if ((name === 'vendors' || name === 'trips') && !row.deletedAt) return saveRow(ctx, name, id, { deletedAt: ctx.now });
+  if ((name === 'vendors' || name === 'trips' || name === 'people') && !row.deletedAt) return saveRow(ctx, name, id, { deletedAt: ctx.now });
   return ctx.store.write({ [name]: [{ ...row, deletedAt: row.deletedAt ?? ctx.now }] }, ctx.now);
 }
 

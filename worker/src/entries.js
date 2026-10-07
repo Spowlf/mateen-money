@@ -10,12 +10,13 @@ import {
 import { TABLES } from './tables.js';
 import { ensureRates } from './rates.js';
 import { refuse } from './http.js';
+import { splitWrites, followEntry } from './splits.js';
 
 const ENTRY_DEFAULTS = Object.fromEntries(TABLES.entries.columns.map((c) => [c, TABLES.entries.defaults[c] ?? null]));
 
 // Fields the app may set. The rest (GBP value, rev, source...) belong to the Worker.
 const CLIENT_FIELDS = ['kind', 'date', 'time', 'at', 'amountMinor', 'currency', 'merchant', 'vendorId', 'categoryId',
-  'incomeType', 'methodId', 'accountId', 'note', 'tripId', 'tripManual', 'spreadStart', 'spreadMonths', 'needsCurrency', 'deletedAt'];
+  'incomeType', 'methodId', 'accountId', 'note', 'tripId', 'tripManual', 'spreadStart', 'spreadMonths', 'needsCurrency', 'paidBy', 'deletedAt'];
 
 const INCOME_IDS = new Set(INCOME_TYPES.map((t) => t.id));
 const isInt = (n) => Number.isInteger(n);
@@ -83,6 +84,7 @@ export async function saveEntry(ctx, id, body) {
   if (e.kind === 'income') {
     e.categoryId = null;
     e.vendorId = null;
+    e.paidBy = null;
   } else {
     // Only income goes into an account; a payment's account comes from its card.
     e.accountId = null;
@@ -92,6 +94,13 @@ export async function saveEntry(ctx, id, body) {
   }
   const problem = checkEntry(e);
   if (problem) throw refuse(problem);
+  // A bill someone else paid never touched the user's cards.
+  if (e.paidBy) {
+    const payer = typeof e.paidBy === 'string' && await store.get('people', e.paidBy);
+    if (!payer || payer.deletedAt) throw refuse('pick who paid from your list.');
+    e.methodId = null;
+  }
+  const splits = [...await splitWrites(ctx, existing, e, body), ...await followEntry(ctx, existing, e)];
   if (e.spreadMonths > 1 && !e.spreadStart) e.spreadStart = defaultSpreadStart(e.date, e);
   if (e.spreadMonths === 1) e.spreadStart = null;
 
@@ -120,6 +129,7 @@ export async function saveEntry(ctx, id, body) {
   const { priced: [entry], freshRates } = await price(ctx, [suggestTripFor(e, trips)], methods, rates);
   writes.entries.push(entry);
   writes.rates = freshRates;
+  writes.splits = splits;
   return store.write(writes, ctx.now);
 }
 

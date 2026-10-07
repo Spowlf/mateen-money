@@ -1,10 +1,12 @@
 // The Mateen Money API: a Cloudflare Worker in front of D1.
 //
 //   GET    /sync?since=rev        everything changed after rev (0 = everything)
-//   PUT    /entries/:id           add or edit an entry; the Worker prices it
+//   PUT    /entries/:id           add or edit an entry; the Worker prices it. With paidBy and splits: [{ personId, amountMinor }]
 //   POST   /entries/:id/sort      file a To sort entry: { vendorId?, categoryId?, vendorName?, currency?, note? }
 //   PUT    /:table/:id            add or edit a vendor, alias, category, method, recurring item, trip, review, setting,
 //                                  account or balance
+//   POST   /settle                settle up with one person in one currency: { id, personId, currency, accountId, date }
+//   DELETE /settlements/:id       undo a settle-up (its bills are open again)
 //   POST   /batch                 accounts, balances and linked cards in one write: { accounts?, balances?, methods? }
 //   DELETE /:table/:id            soft delete (Undo is a PUT with deletedAt: null)
 //   POST   /restore               replace everything with a backup file's contents
@@ -23,6 +25,7 @@ import { createStore } from './store.js';
 import { HttpError, json, text, withCors, authorised, readJson, refuse } from './http.js';
 import { saveEntry, sortEntry, ingestApplePay } from './entries.js';
 import { saveRow, saveBatch, deleteRow, ensureSeeded } from './rows.js';
+import { deleteEntry, settle, undoSettlement } from './splits.js';
 import { addRecurring, refreshRates, saveSnapshot } from './jobs.js';
 import { syncIbkr, ibkrStatus, ibkrConfigured } from './ibkr.js';
 import { refreshPrices, storedPrices } from './prices.js';
@@ -90,6 +93,15 @@ async function route(request, ctx, env) {
   if (method === 'POST' && first === 'ibkr' && id === 'sync' && !action) {
     if (!ibkrConfigured(env)) throw refuse('add the IBKR token and query id to the Worker first (docs/ibkr.md).');
     return json({ status: await syncIbkr(ctx, env, { force: true }) });
+  }
+  if (method === 'POST' && first === 'settle' && !id) {
+    return json(await settle(ctx, await readJson(request)));
+  }
+  if (method === 'DELETE' && first === 'settlements' && id && !action) {
+    return json(await undoSettlement(ctx, id));
+  }
+  if (method === 'DELETE' && first === 'entries' && id && !action) {
+    return json(await deleteEntry(ctx, id));
   }
   if (method === 'POST' && first === 'batch' && !id) {
     return json(await saveBatch(ctx, await readJson(request)));

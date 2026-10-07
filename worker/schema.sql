@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS entries (
   symbol TEXT,
   card TEXT,
   accountId TEXT, -- income only: the Net Worth account it went into (migrations/003)
+  paidBy TEXT, -- a person's id when they paid the whole bill; null = the user paid (migrations/004)
   updatedAt INTEGER NOT NULL,
   deletedAt INTEGER,
   rev INTEGER NOT NULL
@@ -266,3 +267,51 @@ CREATE TABLE IF NOT EXISTS prices (
   quoteAt INTEGER,
   fetchedAt INTEGER NOT NULL
 );
+
+-- Split payments (docs/superpowers/specs/2026-10-07-split-expenses-design.md, migrations/004).
+-- People the user splits bills with. A removed person is archived, so old bills keep their name.
+CREATE TABLE IF NOT EXISTS people (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  sort INTEGER NOT NULL DEFAULT 0,
+  archived INTEGER NOT NULL DEFAULT 0,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS people_rev ON people (rev);
+
+-- One row per person per split bill, in the bill's currency. owedToMe: the user paid and this
+-- person owes their part; iOwe: this person paid the whole bill and the user owes their share.
+-- settlementId is set once it's settled up. Written by the Worker only (through PUT /entries).
+CREATE TABLE IF NOT EXISTS splits (
+  id TEXT PRIMARY KEY,
+  entryId TEXT NOT NULL,
+  personId TEXT NOT NULL,
+  amountMinor INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  direction TEXT NOT NULL CHECK (direction IN ('owedToMe', 'iOwe')),
+  settlementId TEXT,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS splits_rev ON splits (rev);
+CREATE INDEX IF NOT EXISTS splits_entry ON splits (entryId);
+
+-- A settle-up: one person, one currency, the whole net amount. in: they paid the user; out: the
+-- user paid them. accountId is where it went in or came out (null for a 0 one that only closes
+-- bills that cancel out). Written by the Worker only (POST /settle).
+CREATE TABLE IF NOT EXISTS settlements (
+  id TEXT PRIMARY KEY,
+  personId TEXT NOT NULL,
+  date TEXT NOT NULL,
+  amountMinor INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+  accountId TEXT,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS settlements_rev ON settlements (rev);
