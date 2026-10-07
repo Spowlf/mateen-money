@@ -4,6 +4,7 @@ import { exponent } from './money.js';
 import { normaliseMerchant } from './vendors.js';
 import { formatDay, today, nowTime } from './dates.js';
 import { INCOME_TYPES } from './defaults.js';
+import { emptySplit, splitPhrase } from './splits.js';
 
 const MAX_DIGITS = 7;
 
@@ -47,6 +48,7 @@ export function nextForm(form, { id, time }) {
     tripManual: false,
     spreadMonths: 1,
     spreadStart: null,
+    split: emptySplit(),
   };
 }
 
@@ -98,7 +100,7 @@ export function syncedPhrase(ms, now = new Date()) {
 }
 
 /** The one line under the keypad saying what else will be saved: "Food, on Card, today at 12:30". */
-export function summaryLine(form, { categories = [], methods = [], accounts = [], trips = [], todayDate }) {
+export function summaryLine(form, { categories = [], methods = [], accounts = [], trips = [], people = [], todayDate }) {
   const parts = [];
   if (form.kind === 'income') {
     const type = INCOME_TYPES.find((t) => t.id === form.incomeType);
@@ -107,7 +109,9 @@ export function summaryLine(form, { categories = [], methods = [], accounts = []
     const category = categories.find((c) => c.id === form.categoryId);
     if (category) parts.push(category.name);
   }
-  const method = form.kind !== 'income' && methods.find((m) => m.id === form.methodId);
+  const split = form.kind !== 'income' && splitPhrase(form.split, people);
+  // Someone else paid: no card of yours was used.
+  const method = form.kind !== 'income' && !form.split?.paidBy && methods.find((m) => m.id === form.methodId);
   if (method) parts.push(`on ${method.name}`);
   const account = form.kind === 'income' && accounts.find((a) => a.id === form.accountId);
   if (account) parts.push(`into ${account.name}`);
@@ -115,6 +119,7 @@ export function summaryLine(form, { categories = [], methods = [], accounts = []
   parts.push(form.time ? `${day} at ${form.time}` : day);
   const trip = trips.find((t) => t.id === form.tripId);
   if (trip) parts.push(`${trip.name} trip`);
+  if (split) parts.push(split);
   if (form.kind === 'income' && form.spreadMonths > 1) parts.push(`spread over ${form.spreadMonths} months`);
   return capitalise(parts.join(', '));
 }

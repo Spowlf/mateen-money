@@ -6,9 +6,10 @@ import { renderHeadline } from './headline.js';
 import { renderReview } from './review.js';
 import { sortPayment, openSortSheet, sortContext, reread } from './sort-sheet.js';
 import { intoField } from './accounts.js';
+import { splitBlock, saveLabel } from './split-block.js';
 import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
-  emptyForm, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
+  emptyForm, emptySplit, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
   matchVendor, tripFor, toSortEntries, toSortNudge, sortChoices, suggestCategories,
   COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES,
 } from '../engine/index.js';
@@ -207,12 +208,12 @@ export function renderLog(root, { repo }) {
     const need = missing(form);
     const minor = toMinor(form.amount, form.currency);
     saveButton.disabled = busy || !!need;
-    saveButton.textContent = need ?? `Save ${formatMoney(minor, form.currency)}`;
+    saveButton.textContent = need ?? (form.kind === 'income' ? `Save ${formatMoney(minor, form.currency)}` : saveLabel(form.split, minor, form.currency));
     offlineNote.hidden = !offline;
     details.hidden = !detailsOpen;
     changeButton.textContent = detailsOpen ? 'Hide details' : 'Change';
     changeButton.setAttribute('aria-expanded', String(detailsOpen));
-    summaryText.textContent = summaryLine(form, { categories: S.categories, methods: S.methods, accounts: S.accounts, trips: S.trips, todayDate: today() });
+    summaryText.textContent = summaryLine(form, { categories: S.categories, methods: S.methods, accounts: S.accounts, trips: S.trips, people: S.people ?? [], todayDate: today() });
   }
 
   function renderDetails() {
@@ -231,8 +232,14 @@ export function renderLog(root, { repo }) {
     fill(details,
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       field('Currency', currency),
-      !income && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
+      // Someone else paid: none of your cards was used.
+      !income && !form.split?.paidBy && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
         chips({ label: 'Paid with', options: methods.map((m) => ({ value: m.id, label: m.name })), value: form.methodId, onChange: (v) => set({ methodId: v }) })),
+      !income && splitBlock({
+        repo,
+        get: () => ({ split: form.split ?? emptySplit(), amountMinor: toMinor(form.amount, form.currency), currency: form.currency }),
+        onChange: (split, { quiet = false } = {}) => set({ split }, { details: !quiet }),
+      }).el,
       income && intoField(S, form.accountId, (v) => set({ accountId: v })),
       !income && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
         chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: form.categoryId, onChange: (v) => set({ categoryId: v }, { details: true }) })),

@@ -178,3 +178,74 @@ test('duplicates: a bill a friend paid never matches your own payment', () => {
   assert.equal(findDuplicate(incoming, [mine])?.id, 'm');
   assert.equal(findDuplicate(incoming, [{ ...mine, paidBy: 'alex' }]), null);
 });
+
+// The Split block.
+import { emptySplit, splitParts, splitMissing, splitPhrase, splitFromEntry, isSplitOn } from '../../src/engine/splits.js';
+import { emptyForm, missing, formToEntry } from '../../src/engine/draft.js';
+import { summaryLine } from '../../src/engine/form.js';
+
+const PEOPLE = [ALEX, SAM];
+const on = (extra) => ({ ...emptySplit(), ...extra });
+
+test('split block: not split sends no parts', () => {
+  assert.equal(isSplitOn(emptySplit()), false);
+  assert.deepEqual(splitParts(emptySplit(), 4000, 'GBP'), { paidBy: null, parts: [], shareMinor: 4000 });
+  assert.equal(splitMissing(emptySplit(), 4000, 'GBP'), null);
+});
+
+test('split block: you paid, evenly', () => {
+  const got = splitParts(on({ with: ['alex', 'sam'] }), 1000, 'GBP');
+  assert.deepEqual(got, { paidBy: null, parts: [{ personId: 'alex', amountMinor: 333 }, { personId: 'sam', amountMinor: 333 }], shareMinor: 334 });
+});
+
+test('split block: you paid, by amount', () => {
+  const split = on({ with: ['alex', 'sam'], mode: 'amount', amounts: { alex: '15', sam: '1,000.50' } });
+  assert.deepEqual(splitParts(split, 200000, 'GBP').parts, [{ personId: 'alex', amountMinor: 1500 }, { personId: 'sam', amountMinor: 100050 }]);
+  assert.equal(splitParts(split, 200000, 'GBP').shareMinor, 200000 - 1500 - 100050);
+  assert.equal(splitMissing(on({ with: ['alex'], mode: 'amount', amounts: {} }), 4000, 'GBP'), 'Enter an amount for each person');
+  assert.equal(splitMissing(on({ with: ['alex'], mode: 'amount', amounts: { alex: '50' } }), 4000, 'GBP'), 'Shares add up to more than £40.00');
+});
+
+test('split block: someone else paid; your share evenly, or typed', () => {
+  // Alex paid £40.00 for Alex, Sam and you: £13.34 is yours (the odd penny).
+  assert.deepEqual(splitParts(on({ paidBy: 'alex', with: ['sam'] }), 4000, 'GBP'),
+    { paidBy: 'alex', parts: [{ personId: 'alex', amountMinor: 1334 }], shareMinor: 1334 });
+  // Picking the payer in "with" too doesn't count them twice.
+  assert.equal(splitParts(on({ paidBy: 'alex', with: ['alex'] }), 4000, 'GBP').shareMinor, 2000);
+  assert.deepEqual(splitParts(on({ paidBy: 'alex', mode: 'amount', share: '12.50' }), 4000, 'GBP').parts, [{ personId: 'alex', amountMinor: 1250 }]);
+  assert.equal(splitMissing(on({ paidBy: 'alex', mode: 'amount', share: '' }), 4000, 'GBP'), 'Enter your share');
+});
+
+test('split block: the summary line names it', () => {
+  assert.equal(splitPhrase(emptySplit(), PEOPLE), null);
+  assert.equal(splitPhrase(on({ with: ['alex', 'sam'] }), PEOPLE), 'split with Alex, Sam');
+  assert.equal(splitPhrase(on({ paidBy: 'alex' }), PEOPLE), 'Alex paid');
+  assert.equal(splitPhrase(on({ paidBy: 'alex', with: ['sam'] }), PEOPLE), 'Alex paid, split with Sam');
+});
+
+test('split block: read back from a saved payment', () => {
+  const e = pay(1000);
+  assert.deepEqual(splitFromEntry(e, [split('alex', 333), split('sam', 333)]), on({ with: ['alex', 'sam'] }));
+  assert.deepEqual(splitFromEntry(e, [split('alex', 500), split('sam', 100)]), on({ with: ['alex', 'sam'], mode: 'amount', amounts: { alex: '5.00', sam: '1.00' } }));
+  assert.deepEqual(splitFromEntry({ ...e, paidBy: 'alex' }, [split('alex', 500, { direction: I_OWE })]), on({ paidBy: 'alex' }));
+  assert.deepEqual(splitFromEntry({ ...e, paidBy: 'alex' }, [split('alex', 300, { direction: I_OWE })]), on({ paidBy: 'alex', mode: 'amount', share: '3.00' }));
+  assert.deepEqual(splitFromEntry(e, []), emptySplit());
+});
+
+test('Log form: the split is checked, sent and summed up', () => {
+  const form = { ...emptyForm({ id: 'f', date: '2026-10-01', time: '12:00', methodId: 'card' }), amount: '40', vendorName: 'Dishoom', categoryId: 'food' };
+  assert.equal(missing({ ...form, split: on({ with: ['alex'], mode: 'amount', amounts: { alex: '50' } }) }), 'Shares add up to more than £40.00');
+  const mine = formToEntry({ ...form, split: on({ with: ['alex', 'sam'] }) }, { id: 'e', now: 1 });
+  assert.deepEqual([mine.paidBy, mine.methodId, mine.splits.length, mine.amountMinor], [null, 'card', 2, 4000]);
+  const theirs = formToEntry({ ...form, split: on({ paidBy: 'alex' }) }, { id: 'e', now: 1 });
+  assert.deepEqual([theirs.paidBy, theirs.methodId, theirs.splits], ['alex', null, [{ personId: 'alex', amountMinor: 2000 }]]);
+  // Not split, and income, as before (income sends no split at all).
+  assert.deepEqual(formToEntry(form, { id: 'e', now: 1 }).splits, []);
+  assert.equal('splits' in formToEntry({ ...form, kind: 'income', incomeType: 'other' }, { id: 'e', now: 1 }), false);
+  // An old draft from before splits still saves.
+  const { split: _, ...old } = form;
+  assert.equal(missing(old), null);
+  assert.deepEqual(formToEntry(old, { id: 'e', now: 1 }).splits, []);
+  const line = summaryLine({ ...form, split: on({ paidBy: 'alex', with: ['sam'] }) }, { categories: [{ id: 'food', name: 'Food' }], methods: [{ id: 'card', name: 'Card' }], people: PEOPLE, todayDate: '2026-10-01' });
+  assert.equal(line, 'Food, today at 12:00, Alex paid, split with Sam');
+});

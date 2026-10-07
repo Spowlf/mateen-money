@@ -9,7 +9,7 @@
 // settlements: { id, personId, date, amountMinor, currency, direction ('in' | 'out'), accountId }.
 // See docs/superpowers/specs/2026-10-07-split-expenses-design.md.
 
-import { formatMoney } from './money.js';
+import { formatMoney, toMinor, toDecimalText } from './money.js';
 import { isLive } from './totals.js';
 
 export const OWED_TO_ME = 'owedToMe';
@@ -63,7 +63,7 @@ export const isSplit = (entry, splits) => splitsOf(splits, entry.id).length > 0;
  */
 export function validateSplit({ amountMinor, currency, paidBy = null, parts = [] }) {
   if (!parts.length) return paidBy ? 'Enter your share' : null;
-  if (parts.some((p) => !Number.isInteger(p.amountMinor) || p.amountMinor <= 0)) return 'Enter an amount for each person';
+  if (parts.some((p) => !Number.isInteger(p.amountMinor) || p.amountMinor <= 0)) return paidBy ? 'Enter your share' : 'Enter an amount for each person';
   if (new Set(parts.map((p) => p.personId)).size !== parts.length) return 'Pick each person once';
   if (paidBy && (parts.length !== 1 || parts[0].personId !== paidBy)) return 'Enter your share';
   if (sum(parts) > amountMinor) {
@@ -141,4 +141,86 @@ export function withShares(entries, splits = []) {
   }) : entries;
   shareCache.set(entries, { splits, result });
   return result;
+}
+
+// --- The Split block (Log, the edit sheet, Sort Payment) --------------------------------------
+//
+// Its state, kept in the Log form and its offline draft:
+//   { paidBy: null | personId, with: [personId], mode: 'even' | 'amount', amounts: { personId: text }, share: text, open }
+// with: the other people the bill is shared with (not who paid). amounts: by amount, when the user
+// paid. share: by amount, the user's share when someone else paid.
+
+// open: "Split this bill" was tapped, so the block stays open before anyone is picked.
+export const emptySplit = () => ({ paidBy: null, with: [], mode: 'even', amounts: {}, share: '', open: false });
+
+/** True when the Split block says the bill is shared with anyone (or someone else paid). */
+export const isSplitOn = (split) => !!split && (!!split.paidBy || split.with.length > 0);
+
+const minorOf = (text, currency) => {
+  const m = toMinor(String(text ?? '').replace(/,/g, '').trim(), currency);
+  return m === null ? 0 : m;
+};
+
+/**
+ * The split as the Worker takes it: { paidBy, parts: [{ personId, amountMinor }] } (parts [] when
+ * not split), and the user's share. Even: everyone, the payer and the user included, the same
+ * whole number of minor units, the leftover to the user.
+ */
+export function splitParts(split, amountMinor, currency) {
+  if (!isSplitOn(split)) return { paidBy: null, parts: [], shareMinor: amountMinor };
+  const others = split.with.filter((id) => id !== split.paidBy);
+  if (split.paidBy) {
+    const shareMinor = split.mode === 'amount'
+      ? minorOf(split.share, currency)
+      : evenSplit(amountMinor, others.length + 2).mineMinor;
+    return { paidBy: split.paidBy, parts: [{ personId: split.paidBy, amountMinor: shareMinor }], shareMinor };
+  }
+  if (split.mode === 'amount') {
+    const parts = others.map((personId) => ({ personId, amountMinor: minorOf(split.amounts[personId], currency) }));
+    return { paidBy: null, parts, shareMinor: amountMinor - parts.reduce((s, p) => s + p.amountMinor, 0) };
+  }
+  const { eachMinor, mineMinor } = evenSplit(amountMinor, others.length + 1);
+  return { paidBy: null, parts: others.map((personId) => ({ personId, amountMinor: eachMinor })), shareMinor: mineMinor };
+}
+
+/** What's missing from the split, as the Save button says it, or null. */
+export function splitMissing(split, amountMinor, currency) {
+  if (!isSplitOn(split) || !amountMinor) return null;
+  const { paidBy, parts } = splitParts(split, amountMinor, currency);
+  if (!paidBy && !parts.length) return 'Pick who it’s split with';
+  return validateSplit({ amountMinor, currency, paidBy, parts });
+}
+
+/** "split with Alex, Sam" / "Alex paid" / "Alex paid, split with Sam", for the summary line. */
+export function splitPhrase(split, people) {
+  if (!isSplitOn(split)) return null;
+  const name = (id) => people.find((p) => p.id === id)?.name ?? 'Someone';
+  const others = split.with.filter((id) => id !== split.paidBy).map(name);
+  const parts = [];
+  if (split.paidBy) parts.push(`${name(split.paidBy)} paid`);
+  if (others.length) parts.push(`split with ${others.join(', ')}`);
+  return parts.join(', ');
+}
+
+/**
+ * The Split block's state for a saved payment and its splits (to edit it): by amount unless the
+ * parts are exactly an even split.
+ */
+export function splitFromEntry(entry, splits) {
+  const own = splitsOf(splits, entry.id);
+  if (!own.length) return emptySplit();
+  if (entry.paidBy) {
+    const share = own.find((s) => s.direction === I_OWE)?.amountMinor ?? 0;
+    const even = evenSplit(entry.amountMinor, 2).mineMinor === share;
+    return { ...emptySplit(), paidBy: entry.paidBy, mode: even ? 'even' : 'amount', share: even ? '' : toDecimalText(share, entry.currency) };
+  }
+  const withIds = own.map((s) => s.personId);
+  const even = evenSplit(entry.amountMinor, own.length + 1);
+  const isEven = own.every((s) => s.amountMinor === even.eachMinor);
+  return {
+    ...emptySplit(),
+    with: withIds,
+    mode: isEven ? 'even' : 'amount',
+    amounts: isEven ? {} : Object.fromEntries(own.map((s) => [s.personId, toDecimalText(s.amountMinor, entry.currency)])),
+  };
 }

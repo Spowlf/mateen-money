@@ -456,6 +456,14 @@ a.list-row { color: inherit; text-decoration: none; }
 .kind-switch .segment[data-value="income"]:not([aria-checked="true"]):active { background: var(--income-soft); }
 .segment:focus-visible { outline-offset: -2px; }
 
+/* The Split block (Log, the edit sheet, Sort Payment): its rows sit apart like the form's fields. */
+.split-block { display: grid; gap: var(--s4); }
+.split-off { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: var(--touch); }
+.split-off .text-button { margin: 0 calc(-1 * var(--s3)) 0 0; }
+.split-add { display: flex; gap: var(--s2); }
+.split-add .input { flex: 1; min-width: 0; }
+.split-add .button { width: auto; flex: none; margin: 0; }
+
 /* The entry form */
 
 .entry { display: grid; gap: var(--s3); }
