@@ -25,3 +25,4 @@ export * from './terms.js';
 export * from './export.js';
 export * from './networth.js';
 export * from './holdings.js';
+export * from './splits.js';

@@ -186,7 +186,7 @@ test('carried: payments with a linked card since the balance come off', () => {
     pay('2026-09-29', 5000, 'SGD', 'dbs-visa', { deletedAt: 3 }),
     pay('2026-09-29', 300, 'SGD', null),            // no card
   ];
-  assert.deepEqual(carriedBalance({ balance, accountId: 'dbs', methods, entries, rates: RATES }), { amountMinor: 230010 - 450 - 1200, payments: 2, income: 0 });
+  assert.deepEqual(carriedBalance({ balance, accountId: 'dbs', methods, entries, rates: RATES }), { amountMinor: 230010 - 450 - 1200, payments: 2, income: 0, settled: 0 });
 });
 
 function balance0() {
@@ -206,14 +206,14 @@ test('carried: on the balance’s own day, only payments after it was typed', ()
 test('carried: a refund to a linked card goes back on', () => {
   const entries = [pay('2026-09-28', 1000, 'SGD', 'dbs-visa'), { ...pay('2026-09-29', 400, 'SGD', 'dbs-visa'), kind: 'income', incomeType: 'refund' }];
   const got = carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs')], entries });
-  assert.deepEqual(got, { amountMinor: 230010 - 1000 + 400, payments: 2, income: 0 });
+  assert.deepEqual(got, { amountMinor: 230010 - 1000 + 400, payments: 2, income: 0, settled: 0 });
 });
 
 test('carried: a payment in another currency comes off through its GBP value', () => {
   // £10.00 (fee included) at S$1.725 = S$17.25.
   const entries = [pay('2026-09-28', 1000, 'GBP', 'dbs-visa', { gbpPence: 1000 }), pay('2026-09-28', 500, 'EUR', 'dbs-visa', { gbpPence: null })];
   const got = carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs')], entries, rates: RATES });
-  assert.deepEqual(got, { amountMinor: 230010 - 1725, payments: 1, income: 0 });
+  assert.deepEqual(got, { amountMinor: 230010 - 1725, payments: 1, income: 0, settled: 0 });
 });
 
 test('carried: income logged into the account goes on, whatever its card', () => {
@@ -227,13 +227,13 @@ test('carried: income logged into the account goes on, whatever its card', () =>
     income('2026-09-29', 300, 'SGD'),                                                  // no account, no card
   ];
   const got = carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs')], entries, rates: RATES });
-  assert.deepEqual(got, { amountMinor: 230010 + 140000 + 1725, payments: 0, income: 2 });
+  assert.deepEqual(got, { amountMinor: 230010 + 140000 + 1725, payments: 0, income: 2, settled: 0 });
 });
 
 test('carried: no linked card, or a removed one, leaves the balance as typed', () => {
   const entries = [pay('2026-09-28', 1000, 'SGD', 'dbs-visa')];
-  assert.deepEqual(carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [], entries }), { amountMinor: 230010, payments: 0, income: 0 });
-  assert.deepEqual(carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs', { deletedAt: 1 })], entries }), { amountMinor: 230010, payments: 0, income: 0 });
+  assert.deepEqual(carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [], entries }), { amountMinor: 230010, payments: 0, income: 0, settled: 0 });
+  assert.deepEqual(carriedBalance({ balance: balance0(), accountId: 'dbs', methods: [card('dbs-visa', 'dbs', { deletedAt: 1 })], entries }), { amountMinor: 230010, payments: 0, income: 0, settled: 0 });
   assert.equal(carriedBalance({ balance: null, accountId: 'dbs' }), null);
 });
 

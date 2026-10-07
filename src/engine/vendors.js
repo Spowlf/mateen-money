@@ -88,7 +88,8 @@ export const DUPLICATE_WINDOW_MS = 2 * 60 * 1000;
  */
 export function findDuplicate(incoming, entries) {
   const norm = normaliseMerchant(incoming.merchant);
-  return entries.find((e) => !e.deletedAt
+  // A bill a friend paid never touched the user's card, so it's never the same payment.
+  return entries.find((e) => !e.deletedAt && !e.paidBy
     && e.amountMinor === incoming.amountMinor
     && e.currency === incoming.currency
     && e.at != null && incoming.at != null

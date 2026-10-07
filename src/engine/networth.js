@@ -10,6 +10,7 @@ import { convertToGbp, rateFor } from './currency.js';
 import { toMinor, exponent, formatMoney } from './money.js';
 import { isLive } from './totals.js';
 import { liveInvestment } from './holdings.js';
+import { settlementMinor } from './splits.js';
 
 /** Kinds of account, in the order Net Worth shows them. */
 export const ACCOUNT_KINDS = [
@@ -67,10 +68,11 @@ const afterBalance = (entry, balance) => entry.date > balance.date
  * go back on, and income logged into the account (entries[].accountId, which wins over its
  * card's account) goes on. Other income, and money moved between accounts, can't be seen.
  * A payment in another currency is converted through its GBP value (fee included) at the latest
- * rate. Returns { amountMinor, payments, income } (entries counted), or the balance as it is when
- * nothing has happened since.
+ * rate. A settle-up with a friend naming the account (settlements[].accountId) moves it in or out,
+ * converted the same way. Returns { amountMinor, payments, income, settled } (rows counted), or the
+ * balance as it is when nothing has happened since.
  */
-export function carriedBalance({ balance, accountId, methods = [], entries = [], rates = [] }) {
+export function carriedBalance({ balance, accountId, methods = [], entries = [], rates = [], settlements = [] }) {
   if (!balance) return null;
   const linked = new Set(methods.filter((m) => isLive(m) && m.accountId === accountId).map((m) => m.id));
   let amountMinor = balance.amountMinor;
@@ -84,7 +86,23 @@ export function carriedBalance({ balance, accountId, methods = [], entries = [],
     amountMinor += e.kind === 'income' ? minor : -minor;
     if (e.kind === 'income' && e.accountId) income += 1; else payments += 1;
   }
-  return { amountMinor, payments, income };
+  // Settling up with a friend moves money in or out of the account it names (a 0 one names none).
+  let settled = 0;
+  for (const t of settlements) {
+    if (!isLive(t) || t.accountId !== accountId || !t.amountMinor || !afterBalance({ date: t.date, at: t.updatedAt ?? null }, balance)) continue;
+    const signed = settlementMinor(t);
+    const minor = t.currency === balance.currency ? signed : convertThroughGbp(signed, t.currency, balance.currency, rates);
+    if (minor === null) continue;
+    amountMinor += minor;
+    settled += 1;
+  }
+  return { amountMinor, payments, income, settled };
+}
+
+/** Minor units of one currency in another through GBP at the latest rates, or null without them. */
+function convertThroughGbp(minor, from, to, rates) {
+  const got = latestGbp(minor, from, rates);
+  return got ? fromGbp(got.pence, to, rates) : null;
 }
 
 /**
@@ -99,18 +117,18 @@ export function carriedBalance({ balance, accountId, methods = [], entries = [],
  *   noBalance: [row]     accounts with no balance yet
  *   noRate: [row]        balances waiting for an exchange rate (left out of the total)
  * }
- * Each row is { account, balance, amountMinor (carried on, or moved with prices), payments, income (entries logged since), live, currency, pence, daysOld, stale }.
+ * Each row is { account, balance, amountMinor (carried on, or moved with prices), payments, income (entries logged since), settled (settle-ups since), live, currency, pence, daysOld, stale }.
  * live is liveInvestment()'s answer for an account with holdings (from holdings and prices), else null.
  * methods and entries carry each balance on (see carriedBalance); without them it's as typed.
  * share is the group's part of the total (0 when the total isn't above zero).
  */
-export function netWorth({ accounts, balances, rates, todayDate, methods = [], entries = [], holdings = [], prices = [] }) {
+export function netWorth({ accounts, balances, rates, todayDate, methods = [], entries = [], holdings = [], prices = [], settlements = [] }) {
   const rows = accounts.filter(isLive).sort(byOrder).map((account) => {
     const balance = latestBalance(balances, account.id);
     // An account with holdings (IBKR) moves with prices; any other is carried on with card payments.
     const live = holdings.some((h) => isLive(h) && h.accountId === account.id)
       ? liveInvestment({ account, balance, holdings, prices, rates }) : null;
-    const carried = live ? { amountMinor: live.amountMinor, payments: 0, income: 0 } : carriedBalance({ balance, accountId: account.id, methods, entries, rates });
+    const carried = live ? { amountMinor: live.amountMinor, payments: 0, income: 0, settled: 0 } : carriedBalance({ balance, accountId: account.id, methods, entries, rates, settlements });
     const got = balance ? latestGbp(carried.amountMinor, balance.currency, rates) : null;
     const daysOld = balance ? Math.max(0, daysBetween(balance.date, todayDate)) : null;
     return {
@@ -119,6 +137,7 @@ export function netWorth({ accounts, balances, rates, todayDate, methods = [], e
       amountMinor: carried?.amountMinor ?? null,
       payments: carried?.payments ?? 0,
       income: carried?.income ?? 0,
+      settled: carried?.settled ?? 0,
       live,
       currency: balance?.currency ?? account.currency,
       pence: got?.pence ?? null,
@@ -139,8 +158,8 @@ export function netWorth({ accounts, balances, rates, todayDate, methods = [], e
 
   return {
     totalPence,
-    estimated: rateDates.length > 0 || rows.some((r) => r.payments > 0 || r.income > 0 || r.live?.pricedAt),
-    carried: rows.filter((r) => r.payments > 0 || r.income > 0),
+    estimated: rateDates.length > 0 || rows.some((r) => r.payments > 0 || r.income > 0 || r.settled > 0 || r.live?.pricedAt),
+    carried: rows.filter((r) => r.payments > 0 || r.income > 0 || r.settled > 0),
     rateDate: rateDates[0] ?? null,
     groups,
     stale: rows.filter((r) => r.stale),
@@ -262,9 +281,9 @@ const MONEY_MOVES = new Set(['deposit', 'withdrawal']);
  *   from: 'YYYY-MM-01', pence, marketPence, currencyPence, balancesPence, investments (any counted)
  * } or null when no account has a balance to start from.
  */
-export function monthChange({ accounts, balances, rates, todayDate, methods = [], entries = [], holdings = [], prices = [], activity = [] }) {
+export function monthChange({ accounts, balances, rates, todayDate, methods = [], entries = [], holdings = [], prices = [], activity = [], settlements = [] }) {
   const from = monthStart(monthKey(todayDate));
-  const nw = netWorth({ accounts, balances, rates, todayDate, methods, entries, holdings, prices });
+  const nw = netWorth({ accounts, balances, rates, todayDate, methods, entries, holdings, prices, settlements });
   const out = { from, pence: 0, marketPence: 0, currencyPence: 0, balancesPence: 0, investments: false };
   let counted = 0;
   for (const r of nw.groups.flatMap((g) => g.accounts)) {
@@ -278,7 +297,7 @@ export function monthChange({ accounts, balances, rates, todayDate, methods = []
     const currency = first.currency;
     // Carried on to the 1st with card payments logged before it; an investment's close stands as it is.
     const startMinor = before && !r.live
-      ? carriedBalance({ balance: before, accountId: id, methods, entries: entries.filter((e) => e.date < from), rates }).amountMinor
+      ? carriedBalance({ balance: before, accountId: id, methods, entries: entries.filter((e) => e.date < from), rates, settlements: settlements.filter((t) => t.date < from) }).amountMinor
       : first.amountMinor;
     const thenRate = rateOnOrBefore(rates, currency, startDate);
     const nowRate = currency === 'GBP' ? { perGbp: 1 } : rateFor(rates, currency, '9999-12-31', '0000-01-01');
