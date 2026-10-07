@@ -102,14 +102,26 @@ What you own, beside the spending tracker, never inside it: no balance, holding 
 - **Accounts** (from the tab): each account by kind with its balance, its own currency under the GBP figure, and when it was last updated; "Add an account".
 - **IBKR** (from Accounts): value, today, cost and gain; holdings with a Value / Today / Gain switch; Mix (each holding's share); recent activity.
 
+## Split expenses
+
+A bill shared with other people. The payment keeps the full amount charged (card balances, Apple Pay duplicates and statements still see it); only the user's share counts as spending. Full design: `docs/superpowers/specs/2026-10-07-split-expenses-design.md`.
+
+- **People** `{ id, name, sort, archived }`: one list, called People everywhere. Removing someone archives them (old bills keep the name); refused while anything with them is open.
+- **Splits** `{ id, entryId, personId, amountMinor, currency, direction, settlementId }`, one per person per bill, in the bill's currency: `owedToMe` when the user paid, `iOwe` when that person paid (`entries.paidBy`, `methodId` null, one split: the user's share). Evenly: each person `floor(total / count)`, the leftover to the user. By amount: typed; the parts can't add up to more than the bill.
+- **Spending** reads `withShares(entries, splits)` (`src/engine/splits.js`): a split payment's amount, GBP value and fee become the user's share (fee in proportion), everywhere: headline, budget, forecast, Overview, trips, review, weekly summary, habits, History totals and search. Net Worth, card balances and duplicate checks read the real entries. A friend-paid bill never matches an Apple Pay duplicate.
+- **Who owes whom** nets per person per currency (`owed`): "Alex owes you £12.50", "You owe Sam S$8.00", "Even".
+- **Settle-ups** `{ id, personId, date, amountMinor, currency, direction ('in' | 'out'), accountId }` clear a whole currency line with one person (`POST /settle`; no partial settle-ups: edit the bill instead), into or out of a live current or savings account, which moves its carried balance ("1 settle-up since"). An even line closes with a 0 settle-up and no account. `DELETE /settlements/:id` undoes one.
+- **Rules**: a settled bill's amount, currency, payer and split are locked (other fields still save); income can't be split; a payment waiting for its currency can't be split until it's picked; a currency or amount change sends the split again. Money owed isn't an asset in Net Worth, so it dips until the settle-up. Refunds on a split bill aren't shared: log only your share of the refund.
+- **Screens**: the Split block on Log, the edit sheet and Sort Payment ("Save £40.00, your share £10.00"); History's People view and a person's sheet (open bills, Settle, past settle-ups with Undo); Settings › People; the CSV's Your Share, Split With and Paid By columns.
+
 ## Screens
 
 1. **Log**: headline, weekly review card (when due), To sort, entry form.
 2. **Overview**: totals with "Left over" standing out (no headline card); month and year to date; spending by category (inline SVG chart + table); income vs spending; change vs last month; month picker. Year is calendar or academic (Oct–Sep), plus a term view (Michaelmas, Lent, Easter) with editable dates (blank by default). Trips section.
-3. **History**: grouped by day, search, filters (category, trip, payment method), edit and delete.
+3. **History**: Payments / Income / Merchants / People; grouped by day, search, filters (category, trip, payment method), edit and delete; People settles split bills.
 4. **Plan**: recurring items and income sources.
 5. **Net Worth**: accounts, IBKR holdings and the total in GBP (see Net worth).
-- **Settings** (header icon): categories, budget, payment methods and fees, term dates, trips, allowance schedule, backup, CSV export, backend token.
+- **Settings** (header icon): categories, budget, payment methods and fees, people, term dates, trips, allowance schedule, backup, CSV export, backend token.
 
 ## Default categories
 
@@ -132,3 +144,4 @@ Delivery, Events and Societies, Food, Gifts, Groceries, Health, Kelly, Leisure, 
 - Net worth (latest balance per account, conversion to GBP, a balance over 30 days old flagged), one snapshot a day (running the job twice writes one).
 - Price refresh (market hours only, at most once a minute on demand, the Flex close kept when the source fails).
 - Flex sync replacing holdings and adding activity once only, however often it runs.
+- Split bills: even rounding (leftover to the user, zero-decimal currencies), validation, the share with a fee, every spending figure counting only the share, netting per person per currency, settle-ups moving carried balances, the settled lock, and settling or undoing in one write.

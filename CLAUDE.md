@@ -27,6 +27,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 9. Accounts and balances: tables, routes, the net worth maths with tests, the Accounts screen.
 10. IBKR and prices: Flex sync, price adapter and refresh, daily snapshot, `docs/ibkr.md` for the Flex Query setup.
 11. Net Worth tab: total, chart, By Type, This Month, the IBKR screen.
+12. Split expenses: people, splits, the Split block, History People and settle-ups.
 
 ## Commands
 
@@ -120,6 +121,10 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-01: This Month splits the change since the 1st three ways that add up to it (`monthChange` in `src/engine/networth.js`): market moves (investments' change in their own currency, less deposits and withdrawals), currency moves (each balance at the 1st, at today's rate less the 1st's) and money in and out (bank balances, and money moved into IBKR). Each account starts from its balance before the 1st carried on to it, or, added this month, its first balance. Currency moves shows only with a foreign account.
 - 2026-10-01: IBKR's Holdings ends with a Cash row ("Not invested") in the Value view: the value less the holdings (`cashMinor` in `holdingRows`). It can include fees or dividends due but not paid yet, so it can be below zero; the user was happy to call it Cash.
 - 2026-10-01: IBKR's Mix shows shares only (the values are in Holdings just above). Holding names come out of IBKR's capitals (`holdingName`: "SPDR Gold Shares"), keeping acronyms.
+- 2026-10-07: Split expenses (`docs/superpowers/specs/2026-10-07-split-expenses-design.md`). A split payment keeps the full amount charged; only the user's share is spending (`withShares` in `src/engine/splits.js`, read through `spending(S)` in `src/ui/format.js`), while Net Worth, card balances and duplicate checks read the real entries. One `splits` row per person per bill in its currency (`owedToMe` / `iOwe`); a friend who paid is `entries.paidBy` with one `iOwe` split (the user's share) and no payment method. Evenly gives each person the same whole minor units and the leftover to the user. One name, "People", everywhere.
+- 2026-10-07: Settle-ups clear a whole currency line with one person, never part of it (edit the bill for a partial repayment), into or out of a live current or savings account, moving its carried balance ("1 settle-up since"). An even line closes with a 0 settle-up and no account. A settled bill's amount, currency, payer and split are locked until its settle-up is undone. Money owed isn't an asset, so Net Worth dips until the settle-up, knowingly.
+- 2026-10-07: Splitting waits for an ambiguous currency ("Pick the currency first."); a currency or amount change sends the split again; income can't be split. A refund on a split bill isn't shared yet: the user logs only their share of it.
+- 2026-10-07: History's switch is Payments / Income / Merchants / People, each segment as wide as its label (`segmented({ className: 'fit' })`), so all four fit at 375px; under 360px they're 1px smaller, like the tab labels. People shows "Owes you £12.50" in the income colour and "You owe £8.00" in the spend colour (the way the money will move). A split payment's row shows the share with "of £40.00, split".
 
 ## Writing style
 
