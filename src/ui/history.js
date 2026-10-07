@@ -2,7 +2,7 @@
 // Tapping a row opens its sheet. Nothing is edited in place.
 
 import { h, fill, segmented, categoryIcon } from './dom.js';
-import { money, liveSorted } from './format.js';
+import { money, liveSorted, spending } from './format.js';
 import { openEntrySheet } from './entry-sheet.js';
 import { openSortSheet } from './sort-sheet.js';
 import { openVendorSheet } from './vendor-sheet.js';
@@ -127,7 +127,7 @@ export function renderHistory(root, { repo }) {
         h('h2', {}, income ? 'No Income Yet' : 'No Payments Yet'),
         h('a', { class: 'button primary', href: '#log' }, income ? 'Log income' : 'Log a payment')));
     }
-    const found = searchEntries(S.entries, filters(), { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
+    const found = searchEntries(spending(S), filters(), { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
     if (!found.length) {
       return fill(el.body, h('div', {},
         h('p', { class: 'empty-line' }, 'Nothing matches.'),

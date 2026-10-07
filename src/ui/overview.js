@@ -3,7 +3,7 @@
 // a trip opens a sheet with its breakdown, and its payments in History.
 
 import { h, fill, segmented, icon, sheet } from './dom.js';
-import { runAction } from './format.js';
+import { runAction, spending } from './format.js';
 import { categoryTable, foldCategories, incomeSpendingChart, budgetBar } from './charts.js';
 import { openBudgetSheet } from './budget-sheet.js';
 import { openTripSheet } from './settings.js';
@@ -179,7 +179,7 @@ export function renderOverview(root, { repo }) {
 
   function render() {
     const data = overview({
-      entries: S.entries, categories: S.categories, trips: liveTrips(), recurring: S.recurring, rates: S.rates, period, todayDate: today(),
+      entries: spending(S), categories: S.categories, trips: liveTrips(), recurring: S.recurring, rates: S.rates, period, todayDate: today(),
       yearMode: yearMode(), terms: terms(), excludeTrips: excludeTrips(),
     });
     renderFilters(data);
@@ -191,7 +191,7 @@ export function renderOverview(root, { repo }) {
       return;
     }
     const budget = period.kind === 'month' ? budgetStatus({
-      entries: S.entries, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
+      entries: spending(S), trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates,
       month: period.month, todayDate: today(), excludeTrips: excludeTrips() && new Set(liveTrips().map((t) => t.id)),
     }) : null;
     const term = period.kind === 'term' && yearTerms(terms(), period.year).find((t) => t.name === period.name);

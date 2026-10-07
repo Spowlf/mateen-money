@@ -1,6 +1,6 @@
 // Small display helpers shared by screens.
 
-import { formatMoney, gbp, formatDay, today, toDecimalText } from '../engine/index.js';
+import { formatMoney, gbp, formatDay, today, toDecimalText, withShares } from '../engine/index.js';
 import { OfflineError } from '../errors.js';
 import { toast } from './dom.js';
 
@@ -45,3 +45,9 @@ export function withRemoved(rows, selectedId, all) {
   if (gone) out.push({ value: gone.id, label: `${gone.name}, removed` });
   return out;
 }
+
+/**
+ * The payments as spending sees them: a split bill counts only your share (see withShares in
+ * src/engine/splits.js). Every spending figure reads these; Net Worth reads S.entries.
+ */
+export const spending = (S) => withShares(S.entries, S.splits ?? []);

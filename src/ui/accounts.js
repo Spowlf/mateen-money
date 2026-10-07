@@ -31,7 +31,7 @@ export function kindIcon(kind) {
 // IBKR moves with the latest prices instead.
 export const worth = (S) => netWorth({
   accounts: S.accounts, balances: S.balances, rates: S.rates, methods: S.methods, entries: S.entries,
-  holdings: S.holdings, prices: S.prices, todayDate: today(),
+  holdings: S.holdings, prices: S.prices, settlements: S.settlements ?? [], todayDate: today(),
 });
 export const rowsOf = (S) => worth(S).groups.flatMap((g) => g.accounts);
 export const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

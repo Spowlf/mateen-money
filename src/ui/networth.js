@@ -67,7 +67,7 @@ export function renderNetWorth(root, { repo }) {
     const day = dayChange({ snapshots: S.snapshots, totalPence: nw.totalPence, todayDate });
     const month = monthChange({
       accounts: S.accounts, balances: S.balances, rates: S.rates, methods: S.methods, entries: S.entries,
-      holdings: S.holdings, prices: S.prices, activity: S.activity, todayDate,
+      holdings: S.holdings, prices: S.prices, activity: S.activity, settlements: S.settlements ?? [], todayDate,
     });
     const changes = changeLine(day, month, todayDate);
     const notes = [

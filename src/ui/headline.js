@@ -8,6 +8,7 @@ import {
   today, monthKey, monthHeadline, headlineFigure, headlineReason, incomeCheckLine, safeToSpend, safeToSpendLine, gbp,
   budgetStatus, budgetWarningLine,
 } from '../engine/index.js';
+import { spending } from './format.js';
 
 // The figure last shown. It eases in only when it changes (after a save or a sync), never on every redraw.
 let shownFigure = null;
@@ -23,9 +24,9 @@ export function renderHeadline(el, repo) {
   }
   const todayDate = today();
   const month = monthKey(todayDate);
-  const hl = monthHeadline({ entries: S.entries, recurring: S.recurring, rates: S.rates, month, todayDate });
+  const hl = monthHeadline({ entries: spending(S), recurring: S.recurring, rates: S.rates, month, todayDate });
   const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
-  const budget = budgetStatus({ entries: S.entries, trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month, todayDate, excludeTrips });
+  const budget = budgetStatus({ entries: spending(S), trips: S.trips, budgets: S.budgets, recurring: S.recurring, rates: S.rates, month, todayDate, excludeTrips });
   const fig = headlineFigure(hl, budget);
   // Over budget reads as a positive amount over, never as "−£20.00 left".
   const figure = `${fig.estimated ? '~' : ''}${gbp(budget && fig.negative ? -fig.left : fig.left)}`;

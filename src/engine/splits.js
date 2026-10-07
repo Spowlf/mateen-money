@@ -111,3 +111,34 @@ export function owedPhrase(name, line) {
  * money out below.
  */
 export const settlementMinor = (t) => (t.direction === 'out' ? -t.amountMinor : t.amountMinor);
+
+const shareCache = new WeakMap();
+
+/**
+ * The payments as spending sees them: a split one's amountMinor, gbpPence and feePence are the
+ * user's share (fee in proportion), with the whole bill kept as fullAmountMinor / fullGbpPence for
+ * "of £40.00". Unsplit entries and income come back as they are (the same objects). Every spending
+ * figure reads these; Net Worth, card balances and duplicate checks read the real entries.
+ * Remembered per (entries, splits) pair, since screens ask on every render.
+ */
+export function withShares(entries, splits = []) {
+  if (!splits.length) return entries;
+  const cached = shareCache.get(entries);
+  if (cached?.splits === splits) return cached.result;
+  const byEntry = new Map();
+  for (const s of splits) {
+    if (!isLive(s)) continue;
+    if (!byEntry.has(s.entryId)) byEntry.set(s.entryId, []);
+    byEntry.get(s.entryId).push(s);
+  }
+  const result = byEntry.size ? entries.map((e) => {
+    const own = e.kind === 'spend' ? byEntry.get(e.id) : null;
+    if (!own) return e;
+    const amountMinor = shareMinor(e, own);
+    const gbpPence = shareGbpPence(e, own);
+    const feePence = e.feePence && e.amountMinor ? Math.round((e.feePence * amountMinor) / e.amountMinor) : e.feePence;
+    return { ...e, amountMinor, gbpPence, feePence, fullAmountMinor: e.amountMinor, fullGbpPence: e.gbpPence, split: true };
+  }) : entries;
+  shareCache.set(entries, { splits, result });
+  return result;
+}

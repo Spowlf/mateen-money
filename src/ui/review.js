@@ -2,7 +2,7 @@
 // check anything unusual, then "Done".
 
 import { h, fill, toast } from './dom.js';
-import { money, whenPhrase, runAction } from './format.js';
+import { money, whenPhrase, runAction, spending } from './format.js';
 import { categoryTable } from './charts.js';
 import { partsInZone, DEFAULT_TIME_ZONE, gbp, formatDayShort, reviewCard, reviewSteps, unusualLine, habitLine, comparePhrase, budgetWarningLine } from '../engine/index.js';
 
@@ -17,7 +17,7 @@ export function renderReview(el, { repo, showToSort }) {
   const todayDate = partsInZone(Date.now(), repo.setting('timeZone', DEFAULT_TIME_ZONE)).date;
   const excludeTrips = repo.setting('excludeTrips', false) === true && new Set(S.trips.filter((t) => !t.deletedAt).map((t) => t.id));
   const card = repo.connected() && reviewCard({
-    entries: S.entries, categories: S.categories, vendors: S.vendors, trips: S.trips, reviews: S.reviews, todayDate,
+    entries: spending(S), categories: S.categories, vendors: S.vendors, trips: S.trips, reviews: S.reviews, todayDate,
     budgets: S.budgets, recurring: S.recurring, rates: S.rates, excludeTrips,
   });
   el.hidden = !card;
