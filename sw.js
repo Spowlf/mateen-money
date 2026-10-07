@@ -71,6 +71,7 @@ const FILES = [
   'src/ui/settings.js',
   'src/ui/sort-sheet.js',
   'src/ui/split-block.js',
+  'src/ui/people.js',
   'src/ui/vendor-sheet.js',
 ];
 

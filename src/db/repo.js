@@ -203,6 +203,16 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
     async sortEntry(id, choice) {
       return applyWrite(await api.post(`/entries/${encodeURIComponent(id)}/sort`, choice));
     },
+
+    /** Settles everything open with a person in one currency: { personId, currency, accountId, date }. */
+    async settle(choice) {
+      return applyWrite(await api.post('/settle', { id: crypto.randomUUID(), ...choice }));
+    },
+
+    /** Undoes a settle-up: its bills are open again. */
+    async undoSettlement(id) {
+      return applyWrite(await api.del(`/settlements/${encodeURIComponent(id)}`));
+    },
   };
   return repo;
 }

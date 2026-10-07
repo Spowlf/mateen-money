@@ -1,4 +1,5 @@
-// History: payments and income on their own tabs, grouped by day, with search and filters; and every vendor.
+// History: payments and income on their own tabs, grouped by day, with search and filters; every vendor;
+// and People, who owes whom from split bills.
 // Tapping a row opens its sheet. Nothing is edited in place.
 
 import { h, fill, segmented, categoryIcon } from './dom.js';
@@ -6,7 +7,8 @@ import { money, liveSorted, spending } from './format.js';
 import { openEntrySheet } from './entry-sheet.js';
 import { openSortSheet } from './sort-sheet.js';
 import { openVendorSheet } from './vendor-sheet.js';
-import { today, gbp, formatDay, searchEntries, groupByDay, toSortEntries, TO_SORT, INCOME_TYPES } from '../engine/index.js';
+import { renderPeople } from './people.js';
+import { today, gbp, formatDay, formatMoney, searchEntries, groupByDay, toSortEntries, TO_SORT, INCOME_TYPES } from '../engine/index.js';
 
 const PAGE = 100;
 
@@ -46,7 +48,8 @@ export function renderHistory(root, { repo }) {
   function renderSwitch() {
     fill(el.switch, segmented({
       label: 'Show',
-      options: [{ value: 'payments', label: 'Payments' }, { value: 'income', label: 'Income' }, { value: 'vendors', label: 'Merchants' }],
+      className: 'fit',
+      options: [{ value: 'payments', label: 'Payments' }, { value: 'income', label: 'Income' }, { value: 'vendors', label: 'Merchants' }, { value: 'people', label: 'People' }],
       value: view.kind,
       onChange: (v) => { view.kind = v; shown = PAGE; renderControls(); renderBody(); },
     }));
@@ -61,6 +64,7 @@ export function renderHistory(root, { repo }) {
 
   function renderControls() {
     dropGoneTrip();
+    if (view.kind === 'people') return fill(el.controls);
     if (view.kind === 'vendors') {
       const search = h('input', { class: 'input', type: 'search', placeholder: 'Search merchants', 'aria-label': 'Search merchants', autocomplete: 'off',
         value: view.vendorQuery, oninput: () => { view.vendorQuery = search.value; renderBody(); } });
@@ -115,6 +119,8 @@ export function renderHistory(root, { repo }) {
           e.source === 'recurring' && h('span', { class: 'tag' }, 'Added automatically'),
           e.gbpStatus === 'statement' && h('span', { class: 'tag' }, 'From statement')),
         sub && h('span', { class: 'list-sub' }, sub),
+        // A split bill's amount is the user's share; the whole bill is said here.
+        e.split && h('span', { class: 'list-sub' }, `of ${formatMoney(e.fullAmountMinor, e.currency)}, split`),
         e.note && h('span', { class: 'list-sub list-note' }, e.note)),
       h('span', { class: `list-amount ${income ? 'income' : 'spend'}` }, `${income ? '+' : ''}${money(e)}`)));
   }
@@ -183,6 +189,7 @@ export function renderHistory(root, { repo }) {
 
   function renderBody() {
     if (view.kind === 'vendors') renderVendors();
+    else if (view.kind === 'people') renderPeople(el.body, repo);
     else renderPayments();
   }
 
