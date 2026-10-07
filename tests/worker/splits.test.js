@@ -217,3 +217,28 @@ test('restore brings back people, splits and settle-ups', async () => {
   assert.equal(fresh.rows('splits', "settlementId = 't1'").length, 1);
   assert.equal(fresh.rows('settlements', 'deletedAt IS NULL').length, 1);
 });
+
+test('sort: a split typed while sorting is saved with it, on that payment only', async () => {
+  const w = await setup();
+  await w.call('POST', '/applepay', { body: applePay({ amount: '£40.00', merchant: 'DISHOOM KINGS X' }) });
+  await w.call('POST', '/applepay', { body: applePay({ amount: '£12.00', merchant: 'DISHOOM KINGS X', timestamp: '2026-10-01T15:00:00+01:00' }) });
+  const [first] = w.rows('entries', 'amountMinor = 4000');
+  const res = await w.call('POST', `/entries/${first.id}/sort`, { body: { categoryId: 'food', vendorName: 'Dishoom', splits: [{ personId: 'alex', amountMinor: 2000 }] } });
+  assert.equal(res.status, 200);
+  assert.deepEqual(liveSplits(w, first.id), [['alex', 2000, 'owedToMe', 'GBP']]);
+  // The other Dishoom payment was sorted too, but not split.
+  assert.equal(w.rows('entries', 'categoryId IS NULL').length, 0);
+  assert.equal(w.rows('splits').length, 1);
+});
+
+test('sort: a payment still waiting for its currency can’t be split', async () => {
+  const w = await setup();
+  await w.call('POST', '/applepay', { body: applePay({ amount: '$12.50', merchant: 'Toast Box' }) });
+  const [e] = w.rows('entries');
+  const res = await w.call('POST', `/entries/${e.id}/sort`, { body: { categoryId: 'food', splits: [{ personId: 'alex', amountMinor: 500 }] } });
+  assert.equal(res.body.error, 'Nothing changed: pick the currency first.');
+  // Picking the currency in the same go is fine.
+  const ok = await w.call('POST', `/entries/${e.id}/sort`, { body: { categoryId: 'food', currency: 'SGD', splits: [{ personId: 'alex', amountMinor: 500 }] } });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(liveSplits(w, e.id), [['alex', 500, 'owedToMe', 'SGD']]);
+});

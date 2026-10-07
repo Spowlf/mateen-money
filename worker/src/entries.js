@@ -139,6 +139,7 @@ export async function sortEntry(ctx, id, body) {
   let e = await store.get('entries', id);
   if (!e || e.deletedAt) throw refuse('that payment no longer exists.', 404);
   if (!body.vendorId && !body.categoryId && !body.currency) throw refuse('pick a merchant or a category.');
+  const arrived = e;
   if (body.currency && !validCurrency(body.currency)) throw refuse('pick a currency.');
 
   const [vendors, aliases, methods, rates, entries] = await Promise.all(
@@ -155,6 +156,10 @@ export async function sortEntry(ctx, id, body) {
     const method = methods.find((m) => m.id === e.methodId);
     if (method && e.symbol) writes.methods.push({ ...method, symbolMemory: { ...method.symbolMemory, [e.symbol]: body.currency } });
   }
+
+  // A split typed while sorting goes on this payment only, in the same write. It came in by card,
+  // so the user paid; and a payment still waiting for its currency can't be split (splitWrites).
+  const splits = Array.isArray(body.splits) ? await splitWrites(ctx, arrived, { ...e, paidBy: null }, { splits: body.splits }) : [];
 
   let vendor = null;
   if (body.vendorId) {
@@ -192,6 +197,7 @@ export async function sortEntry(ctx, id, body) {
   const { priced, freshRates } = await price(ctx, sorted, writes.methods.length ? writes.methods.concat(methods) : methods, rates);
   writes.entries = priced;
   writes.rates = freshRates;
+  writes.splits = splits;
   return store.write(writes, ctx.now);
 }
 

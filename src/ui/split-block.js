@@ -16,9 +16,11 @@ export const livePeople = (S) => (S.people ?? []).filter((p) => !p.deletedAt && 
  * The block. get() returns { split, amountMinor, currency } as the form has them now. onChange(split,
  * { quiet }) saves a change; quiet means the block has already shown it (typing an amount), so the
  * caller needn't redraw it. locked: a reason the split can't change (a settled bill), shown instead.
+ * waiting: a reason it can't be split yet (a payment still waiting for its currency). payer: false
+ * leaves out "Who paid" (an Apple Pay payment was always the user's card).
  * Returns { el, render }.
  */
-export function splitBlock({ repo, get, onChange, locked = null }) {
+export function splitBlock({ repo, get, onChange, locked = null, waiting = null, payer: askPayer = true }) {
   const S = repo.state;
   const el = h('div', { class: 'split-block' });
   let adding = null;   // 'payer' | 'with' while the name box shows
@@ -78,8 +80,8 @@ export function splitBlock({ repo, get, onChange, locked = null }) {
 
   function render() {
     const { split, currency } = get();
-    if (locked) {
-      return fill(el, field('Split', h('p', { class: 'field-hint' }, locked)));
+    if (locked || waiting) {
+      return fill(el, h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Split'), h('p', { class: 'field-hint' }, locked || waiting)));
     }
     // Opened by "Split this bill" before anyone is picked; a split already set is always open.
     const on = isSplitOn(split) || split.open;
@@ -111,8 +113,8 @@ export function splitBlock({ repo, get, onChange, locked = null }) {
           renderShare();
         }));
     fill(el,
-      field('Who paid', payer),
-      adding === 'payer' && nameBox(),
+      askPayer && field('Who paid', payer),
+      askPayer && adding === 'payer' && nameBox(),
       field(split.paidBy ? 'Also shared with' : 'Split with', withChips),
       adding === 'with' && nameBox(),
       segmented({ label: 'How it’s split', options: MODES, value: split.mode, onChange: (v) => change({ mode: v }) }),
