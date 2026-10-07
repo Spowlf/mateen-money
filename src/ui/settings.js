@@ -1,4 +1,4 @@
-// Settings, opened from the header: categories, payment methods and fees, trips, term dates,
+// Settings, opened from the header: categories, payment methods and fees, people, trips, term dates,
 // the allowance, the time zone, backup and export, and the backend connection.
 // Rarely touched, so it's a screen of its own rather than a tab. Every edit happens in a sheet.
 
@@ -99,6 +99,68 @@ function categoriesSection(repo, view) {
       h('ul', { class: 'list' }, archived.map((c) => h('li', { class: 'total-row' },
         h('span', { class: 'list-title' }, c.name),
         h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('categories', c.id, { archived: 0 })).then((r) => r && toast(`Brought back ${c.name}`)) }, 'Bring back'))))));
+}
+
+// People (split bills). Removing someone archives them, so old bills keep their name; the
+// Worker refuses while anything with them is still open.
+
+function openPersonEditSheet(repo, person) {
+  const S = repo.state;
+  const name = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'words', value: person?.name ?? '' });
+  const save = h('button', { type: 'button', class: 'button primary' });
+  const renderSave = () => {
+    const taken = (S.people ?? []).some((p) => !p.deletedAt && p.id !== person?.id && p.name.toLowerCase() === name.value.trim().toLowerCase());
+    save.disabled = !name.value.trim() || taken;
+    save.textContent = !name.value.trim() ? 'Enter a name' : taken ? 'That name is taken' : person ? 'Save changes' : `Add ${name.value.trim()}`;
+  };
+  name.addEventListener('input', renderSave);
+  const s = sheet(person ? person.name : 'Add a Person', h('div', { class: 'sheet-form' },
+    field('Name', name, null),
+    h('div', { class: 'sheet-actions' },
+      save,
+      person && h('button', {
+        type: 'button', class: 'button danger',
+        onclick: async () => {
+          if (!(await runAction(() => repo.saveRow('people', person.id, { archived: 1 })))) return;
+          s.close();
+          toast(`Removed ${person.name}`, { label: 'Undo', run: () => runAction(() => repo.saveRow('people', person.id, { archived: 0 })) });
+        },
+      }, 'Remove person')),
+    person && h('p', { class: 'field-hint' }, 'Old split bills keep their name. You can bring them back later.')));
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    const fields = { name: name.value.trim() };
+    const id = person?.id ?? crypto.randomUUID();
+    if (!person) Object.assign(fields, { sort: nextSort(S.people ?? []), archived: 0 });
+    const before = person && { name: person.name };
+    if (!(await runAction(() => repo.saveRow('people', id, fields)))) return renderSave();
+    s.close();
+    toast(person ? 'Saved changes' : `Added ${fields.name}`, {
+      label: 'Undo',
+      run: () => runAction(() => (person ? repo.saveRow('people', id, before) : repo.deleteRow('people', id))),
+    });
+  });
+  renderSave();
+  name.focus();
+}
+
+function peopleSection(repo) {
+  const S = repo.state;
+  const all = (S.people ?? []).filter((p) => !p.deletedAt).sort((a, b) => a.name.localeCompare(b.name));
+  const live = all.filter((p) => !p.archived);
+  const archived = all.filter((p) => p.archived);
+  return h('section', { class: 'section' },
+    h('h2', { class: 'subhead' }, 'People'),
+    live.length > 0 && h('ul', { class: 'list' }, live.map((p) => h('li', {},
+      h('button', { type: 'button', class: 'list-row', onclick: () => openPersonEditSheet(repo, p) },
+        h('span', { class: 'list-title' }, p.name))))),
+    !live.length && h('p', { class: 'hint' }, 'The people you split bills with.'),
+    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openPersonEditSheet(repo, null) }, 'Add a Person')),
+    archived.length > 0 && h('details', { class: 'table-view' },
+      h('summary', {}, `Removed people, ${archived.length}`),
+      h('ul', { class: 'list' }, archived.map((p) => h('li', { class: 'total-row' },
+        h('span', { class: 'list-title' }, p.name),
+        h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('people', p.id, { archived: 0 })).then((r) => r && toast(`Brought back ${p.name}`)) }, 'Bring back'))))));
 }
 
 // Budget
@@ -488,6 +550,7 @@ export function renderSettings(root, { repo, onConnected }) {
       categoriesSection(repo, categoryView),
       budgetSection(repo),
       methodsSection(repo),
+      peopleSection(repo),
       tripsSection(repo),
       termsSection(repo),
       allowanceSection(repo),

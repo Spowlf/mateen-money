@@ -51,10 +51,26 @@ test('csv: payments oldest first, with names, amounts as decimals and GBP values
     trips: [{ id: 't1', name: 'Singapore' }],
   });
   assert.equal(csv, [
-    'Date,Time,Type,Merchant,Category,Amount,Currency,GBP,Fee GBP,GBP is,Paid with,Into,Trip,Description,Added by',
-    '2026-09-28,,Income,,Allowance / Stipend,12000.00,GBP,12000.00,,Final,,HSBC UK,,,Plan',
-    '2026-09-30,12:00,Spending,PRET A MANGER,To Sort,4.20,GBP,4.20,,Final,,,,,Apple Pay',
-    '2026-10-01,12:00,Spending,Lau Pa Sat,Eating out,12.50,SGD,7.57,0.22,Estimated,Card,,Singapore,"Dinner, with Sam",You',
+    'Date,Time,Type,Merchant,Category,Amount,Currency,GBP,Fee GBP,GBP is,Paid with,Into,Trip,Your Share,Split With,Paid By,Description,Added by',
+    '2026-09-28,,Income,,Allowance / Stipend,12000.00,GBP,12000.00,,Final,,HSBC UK,,,,,,Plan',
+    '2026-09-30,12:00,Spending,PRET A MANGER,To Sort,4.20,GBP,4.20,,Final,,,,,,,,Apple Pay',
+    '2026-10-01,12:00,Spending,Lau Pa Sat,Eating out,12.50,SGD,7.57,0.22,Estimated,Card,,Singapore,,,,"Dinner, with Sam",You',
     '',
   ].join('\r\n'));
+});
+
+test('csv: a split bill keeps its whole amount, with your share and who it was split with', () => {
+  const people = [{ id: 'alex', name: 'Alex' }, { id: 'sam', name: 'Sam' }];
+  const owedBack = (id, personId, amountMinor, direction = 'owedToMe') => ({ id, entryId: id.split(':')[0], personId, amountMinor, currency: 'GBP', direction, settlementId: null, deletedAt: null });
+  const csv = entriesCsv({
+    entries: [
+      spend('2026-10-01', 4000, 'other', { id: 'a', amountMinor: 4000, source: 'manual' }),
+      spend('2026-10-02', 2400, 'other', { id: 'b', amountMinor: 2400, source: 'manual', paidBy: 'sam', methodId: null }),
+    ],
+    categories: [{ id: 'other', name: 'Other' }],
+    splits: [owedBack('a:1', 'alex', 1500), owedBack('a:2', 'sam', 1500), owedBack('b:1', 'sam', 900, 'iOwe')],
+    people,
+  }).split('\r\n');
+  assert.equal(csv[1].split(',').slice(5, 16).join(','), '40.00,GBP,40.00,,Final,,,,10.00,Alex / Sam,');
+  assert.equal(csv[2].split(',').slice(5, 16).join(','), '24.00,GBP,24.00,,Final,,,,9.00,,Sam');
 });

@@ -3,6 +3,7 @@
 import { toDecimalText } from './money.js';
 import { INCOME_TYPES } from './defaults.js';
 import { isLive } from './totals.js';
+import { splitsOf, shareMinor } from './splits.js';
 
 export const BACKUP_APP = 'mateen-money';
 export const BACKUP_VERSION = 1;
@@ -42,18 +43,22 @@ export function csvCell(value) {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-const CSV_COLUMNS = ['Date', 'Time', 'Type', 'Merchant', 'Category', 'Amount', 'Currency', 'GBP', 'Fee GBP', 'GBP is', 'Paid with', 'Into', 'Trip', 'Description', 'Added by'];
+const CSV_COLUMNS = ['Date', 'Time', 'Type', 'Merchant', 'Category', 'Amount', 'Currency', 'GBP', 'Fee GBP', 'GBP is', 'Paid with', 'Into', 'Trip', 'Your Share', 'Split With', 'Paid By', 'Description', 'Added by'];
 const STATUS = { final: 'Final', estimated: 'Estimated', statement: 'From statement' };
 const SOURCE = { manual: 'You', applepay: 'Apple Pay', recurring: 'Plan' };
 
-/** Live payments and income as CSV, oldest first. Amounts are plain decimals ("4.20"). */
-export function entriesCsv({ entries, vendors = [], categories = [], methods = [], accounts = [], trips = [] }) {
+/**
+ * Live payments and income as CSV, oldest first. Amounts are plain decimals ("4.20"). Amount is the
+ * whole bill; a split one has Your Share (in its currency), Split With and Paid By (blank: you).
+ */
+export function entriesCsv({ entries, vendors = [], categories = [], methods = [], accounts = [], trips = [], splits = [], people = [] }) {
   const name = (rows, id) => rows.find((r) => r.id === id)?.name ?? '';
   const rows = entries.filter(isLive).sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1)
     : (a.time ?? '') < (b.time ?? '') ? -1 : (a.time ?? '') > (b.time ?? '') ? 1 : (a.at ?? 0) - (b.at ?? 0)));
   const lines = [CSV_COLUMNS.join(',')];
   for (const e of rows) {
     const income = e.kind === 'income';
+    const own = income ? [] : splitsOf(splits, e.id);
     lines.push([
       e.date,
       e.time ?? '',
@@ -68,6 +73,9 @@ export function entriesCsv({ entries, vendors = [], categories = [], methods = [
       name(methods, e.methodId),
       income ? name(accounts, e.accountId) : '',
       name(trips, e.tripId),
+      own.length ? toDecimalText(shareMinor(e, own), e.currency) : '',
+      own.filter((x) => x.personId !== e.paidBy).map((x) => name(people, x.personId)).join(' / '),
+      e.paidBy ? name(people, e.paidBy) : '',
       e.note ?? '',
       SOURCE[e.source] ?? '',
     ].map(csvCell).join(','));

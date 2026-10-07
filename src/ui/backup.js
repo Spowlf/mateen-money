@@ -44,7 +44,7 @@ export async function exportBackup(repo) {
 
 export async function exportCsv(repo) {
   const S = repo.state;
-  const csv = entriesCsv({ entries: S.entries, vendors: S.vendors, categories: S.categories, methods: S.methods, accounts: S.accounts, trips: S.trips });
+  const csv = entriesCsv({ entries: S.entries, vendors: S.vendors, categories: S.categories, methods: S.methods, accounts: S.accounts, trips: S.trips, splits: S.splits ?? [], people: S.people ?? [] });
   const file = new File([csv], `mateen-money-payments-${today()}.csv`, { type: 'text/csv' });
   if (await deliver(file)) toast('Exported payments');
 }
