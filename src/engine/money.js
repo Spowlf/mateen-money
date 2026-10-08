@@ -40,7 +40,7 @@ export function toDecimalText(minor, currency = 'GBP') {
 export const prefix = (currency) => PREFIX[currency] ?? `${currency} `;
 
 /**
- * "£1,234.50", "S$12.50", "-£4.20". With { whole: true }, whole amounts drop the pence ("£1,000"):
+ * "£1,234.50", "S$12.50", "−£4.20" (a minus sign, not a hyphen, so "~−£4.20" reads right). With { whole: true }, whole amounts drop the pence ("£1,000"):
  * only for chart axis ticks, which mark a scale rather than an amount.
  */
 export function formatMoney(minor, currency = 'GBP', { whole = false } = {}) {
@@ -48,7 +48,7 @@ export function formatMoney(minor, currency = 'GBP', { whole = false } = {}) {
   const value = Math.abs(minor) / 10 ** e;
   const digits = whole && Math.abs(minor) % 10 ** e === 0 ? 0 : e;
   const number = value.toLocaleString('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  return `${minor < 0 ? '-' : ''}${prefix(currency)}${number}`;
+  return `${minor < 0 ? '−' : ''}${prefix(currency)}${number}`;
 }
 
 /** Pounds, always with pence ("£108.00"); a fraction of a penny (an average) rounds to the nearest. */

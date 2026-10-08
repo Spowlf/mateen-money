@@ -26,7 +26,7 @@ test('zero-decimal currencies', () => {
 test('formatMoney uses a prefix and thousands separators', () => {
   assert.equal(formatMoney(123450, 'GBP'), '£1,234.50');
   assert.equal(formatMoney(1250, 'SGD'), 'S$12.50');
-  assert.equal(formatMoney(-420, 'GBP'), '-£4.20');
+  assert.equal(formatMoney(-420, 'GBP'), '−£4.20');   // a minus sign, not a hyphen
   assert.equal(formatMoney(100000, 'GBP', { whole: true }), '£1,000');
   assert.equal(formatMoney(100050, 'GBP', { whole: true }), '£1,000.50');
   assert.equal(formatMoney(500, 'JPY'), '¥500');
