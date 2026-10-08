@@ -155,7 +155,7 @@ export function incomeSpendingChart(series, { width = 358, name, step }) {
     h('span', {}, h('span', { class: 'swatch swatch-1' }), 'Spending'));
 
   const table = h('details', { class: 'table-view' },
-    h('summary', {}, 'Show as a table'),
+    h('summary', {}, 'Show as a Table'),
     h('table', { class: 'data-table' },
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, step), h('th', { scope: 'col' }, 'Income'), h('th', { scope: 'col' }, 'Spent'))),
       h('tbody', {}, series.filter((m) => m.spent !== null).map((m) => h('tr', {},
@@ -251,9 +251,9 @@ export function worthChart(points, { width = 358, name }) {
   });
 
   const table = h('details', { class: 'table-view' },
-    h('summary', {}, 'Show as a table'),
+    h('summary', {}, 'Show as a Table'),
     h('table', { class: 'data-table' },
-      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Day'), h('th', { scope: 'col' }, 'Net worth'))),
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Day'), h('th', { scope: 'col' }, 'Net Worth'))),
       h('tbody', {}, [...points].reverse().map((p, i) => h('tr', {},
         h('th', { scope: 'row' }, i === 0 ? 'Today' : formatDay(p.date)),
         h('td', { class: 'num' }, gbp(p.pence)))))));

@@ -5,7 +5,7 @@ import { h, fill, chips, segmented, field, sheet, toast, withCategoryIcons } fro
 import { liveSorted, runAction, withRemoved } from './format.js';
 import {
   today, gbp, formatMoney, formatDay, toMinor, toDecimalText, planSummary, catchUpDates,
-  FREQUENCIES, INCOME_TYPES, COMMON_CURRENCIES,
+  FREQUENCIES, INCOME_TYPES, COMMON_CURRENCIES, titleCase,
 } from '../engine/index.js';
 
 const FIELDS = ['kind', 'label', 'amountMinor', 'currency', 'frequency', 'nextDate', 'anchorDay', 'categoryId', 'incomeType', 'methodId', 'spreadMonths', 'active'];
@@ -35,17 +35,17 @@ export function openRecurringSheet(repo, item = {}) {
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit() });
 
   function missing() {
-    if (!f.label.trim()) return f.kind === 'income' ? 'Name the income' : 'Name the cost';
-    if (!toMinor(f.amount, f.currency)) return 'Enter an amount';
-    if (!f.nextDate) return 'Pick the next date';
-    if (f.kind === 'income' && !f.incomeType) return 'Pick a type of income';
+    if (!f.label.trim()) return f.kind === 'income' ? 'Name the Income' : 'Name the Cost';
+    if (!toMinor(f.amount, f.currency)) return 'Enter an Amount';
+    if (!f.nextDate) return 'Pick the Next Date';
+    if (f.kind === 'income' && !f.incomeType) return 'Pick a Type of Income';
     return null;
   }
 
   function renderSave() {
     const need = missing();
     save.disabled = !!need;
-    save.textContent = need ?? (existing ? 'Save changes' : `Add ${formatMoney(toMinor(f.amount, f.currency), f.currency)} ${frequencyName(f.frequency).toLowerCase()}`);
+    save.textContent = need ? titleCase(need) : (existing ? 'Save Changes' : `Add ${formatMoney(toMinor(f.amount, f.currency), f.currency)} ${titleCase(frequencyName(f.frequency))}`);
     renderCatchUp();
   }
 
@@ -84,29 +84,29 @@ export function openRecurringSheet(repo, item = {}) {
       }),
       field('Name', label),
       h('div', { class: 'row-2' }, field('Amount', amount), field('Currency', currency)),
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'How often'),
-        chips({ label: 'How often', options: FREQUENCIES.map((x) => ({ value: x.id, label: x.name })), value: f.frequency,
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'How Often'),
+        chips({ label: 'How Often', options: FREQUENCIES.map((x) => ({ value: x.id, label: titleCase(x.name) })), value: f.frequency,
           onChange: (v) => set({ frequency: v, spread: income && f.incomeType === 'allowance' && v === 'yearly' }, true) })),
-      field(existing ? 'Next date' : 'First date', next, f.frequency === 'termly' ? 'Every term means every 4 months from this date.' : null),
+      field(existing ? 'Next Date' : 'First Date', next, f.frequency === 'termly' ? 'Every term means every 4 months from this date.' : null),
       catchUp,
       income
-        ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Type of income'),
-          chips({ label: 'Type of income', options: INCOME_TYPES.filter((t) => !t.oneOff || t.id === f.incomeType).map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
+        ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Type of Income'),
+          chips({ label: 'Type of Income', options: INCOME_TYPES.filter((t) => !t.oneOff || t.id === f.incomeType).map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
             onChange: (v) => set({ incomeType: v, spread: v === 'allowance' && f.frequency === 'yearly' }, true) }))
         : h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
           chips({ label: 'Category', options: withCategoryIcons(withRemoved(categories, f.categoryId, S.categories)), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
       income && f.incomeType === 'allowance' && f.frequency === 'yearly' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
-        h('span', {}, 'Spread over October to September')),
-      methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, income ? 'Paid into' : 'Paid with'),
-        chips({ label: income ? 'Paid into' : 'Paid with', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
+        h('span', {}, 'Spread Over October to September')),
+      methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, income ? 'Paid Into' : 'Paid With'),
+        chips({ label: income ? 'Paid Into' : 'Paid With', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
       existing && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.active, onchange: (e) => set({ active: e.target.checked }) }),
-        h('span', {}, 'Add it automatically')),
+        h('span', {}, 'Add It Automatically')),
       existing && !f.active && h('p', { class: 'field-hint' }, 'Paused.'),
       h('div', { class: 'sheet-actions' },
         save,
-        existing && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, income ? 'Delete income' : 'Delete cost')),
+        existing && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, income ? 'Delete Income' : 'Delete Cost')),
     ].filter(Boolean));
     renderSave();
   }
@@ -183,8 +183,8 @@ export function renderPlan(root, { repo }) {
       return fill(root, h('section', { class: 'empty' },
         h('h2', {}, 'Nothing Planned Yet'),
         h('p', {}, 'Each item is logged for you on its date.'),
-        h('button', { type: 'button', class: 'button primary', onclick: () => openRecurringSheet(repo, { kind: 'spend' }) }, 'Add a recurring cost'),
-        h('button', { type: 'button', class: 'button secondary', onclick: () => openRecurringSheet(repo, { kind: 'income' }) }, 'Add recurring income')));
+        h('button', { type: 'button', class: 'button primary', onclick: () => openRecurringSheet(repo, { kind: 'spend' }) }, 'Add a Recurring Cost'),
+        h('button', { type: 'button', class: 'button secondary', onclick: () => openRecurringSheet(repo, { kind: 'income' }) }, 'Add Recurring Income')));
     }
     const tilde = p.estimated ? '~' : '';
     fill(root, h('div', { class: 'screen' },
@@ -193,8 +193,8 @@ export function renderPlan(root, { repo }) {
           h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount income' }, `${tilde}${gbp(p.monthlyIncome)}`)),
           h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount spend' }, `${tilde}${gbp(p.monthlyCosts)}`))),
         h('p', { class: 'reason' }, 'In an average month.')),
-      section('Costs', p.costs, 'No recurring costs.', 'Add a recurring cost', 'spend'),
-      section('Income', p.income, 'No recurring income.', 'Add recurring income', 'income')));
+      section('Costs', p.costs, 'No recurring costs.', 'Add a Recurring Cost', 'spend'),
+      section('Income', p.income, 'No recurring income.', 'Add Recurring Income', 'income')));
   }
 
   render();

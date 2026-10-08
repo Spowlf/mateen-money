@@ -136,7 +136,7 @@ export function renderOverview(root, { repo }) {
     return h('div', { class: 'all-categories' },
       categoryTable(folded, { caption }),
       h('details', { class: 'table-view' },
-        h('summary', {}, 'Show all categories'),
+        h('summary', {}, 'Show All Categories'),
         categoryTable(rows, { caption: `${caption}, every category` })));
   }
 
@@ -159,7 +159,7 @@ export function renderOverview(root, { repo }) {
           : h('p', { class: 'empty-line' }, 'No payments on it yet.'),
         h('div', { class: 'sheet-actions' },
           count > 0 && h('button', { type: 'button', class: 'button primary', onclick: () => { s.close(); showTripPayments(trip.id); } }, `See the ${countPhrase(count)}`),
-          h('button', { type: 'button', class: count > 0 ? 'button secondary' : 'button primary', onclick: () => { s.close(); openTripSheet(repo, trip); } }, 'Change the name or dates'))));
+          h('button', { type: 'button', class: count > 0 ? 'button secondary' : 'button primary', onclick: () => { s.close(); openTripSheet(repo, trip); } }, 'Change the Name or Dates'))));
   }
 
   function tripsSection(data) {
@@ -174,7 +174,7 @@ export function renderOverview(root, { repo }) {
             t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence)}`).join(', '))),
           h('span', { class: 'list-amount spend' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
         : h('p', { class: 'empty-line' }, 'No trips yet.'),
-      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
+      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a Trip')));
   }
 
   function render() {
@@ -187,7 +187,7 @@ export function renderOverview(root, { repo }) {
       fill(el.body, h('section', { class: 'empty' },
         h('h2', {}, `No Dates for ${termLabel(period)} Yet`),
         h('p', {}, 'Add them in Settings.'),
-        h('a', { class: 'button primary', href: '#settings' }, 'Add term dates')));
+        h('a', { class: 'button primary', href: '#settings' }, 'Add Term Dates')));
       return;
     }
     const budget = period.kind === 'month' ? budgetStatus({
@@ -205,7 +205,7 @@ export function renderOverview(root, { repo }) {
         // Under the totals it changes, so the figures come first.
         liveTrips().length > 0 && h('label', { class: 'toggle' },
           h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
-          h('span', {}, 'Leave trips out of these totals'))),
+          h('span', {}, 'Leave Trips Out of These Totals'))),
       data.forecast && forecastSection(data.forecast, budget),
       budgetSection(data, budget),
       h('section', { class: 'section' },

@@ -75,7 +75,7 @@ export function renderHistory(root, { repo }) {
     const change = (key) => (v) => { view[key] = v; shown = PAGE; renderControls(); renderBody(); };
     if (isIncome()) {
       return fill(el.controls, search, h('div', { class: 'filter-row' },
-        select('Type of income', view.incomeType, [{ value: null, label: 'All types' }, ...INCOME_TYPES.map((t) => ({ value: t.id, label: t.name }))], change('incomeType'))));
+        select('Type of Income', view.incomeType, [{ value: null, label: 'All Types' }, ...INCOME_TYPES.map((t) => ({ value: t.id, label: t.name }))], change('incomeType'))));
     }
     // Alphabetical here, Other last, whatever order Settings gives them.
     const categories = S.categories.filter((c) => !c.deletedAt && (!c.archived || c.id === view.categoryId))
@@ -83,15 +83,15 @@ export function renderHistory(root, { repo }) {
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));
     const methods = liveSorted(S.methods, 'name');
     const categorySelect = select('Category', view.categoryId, [
-      { value: null, label: 'All categories' },
+      { value: null, label: 'All Categories' },
       { value: TO_SORT, label: 'To Sort' },
       ...categories.map((c) => ({ value: c.id, label: c.name })),
     ], change('categoryId'));
     fill(el.controls, search, h('div', { class: 'filter-row' },
       // The picked category's icon sits in the pill beside its name.
       view.categoryId ? h('span', { class: 'select-icon' }, categoryIcon(view.categoryId === TO_SORT ? 'to-sort' : view.categoryId), categorySelect) : categorySelect,
-      methods.length > 1 && select('Paid with', view.methodId, [{ value: null, label: 'Any payment method' }, ...methods.map((m) => ({ value: m.id, label: m.name }))], change('methodId')),
-      (trips.length > 0 || view.tripId) && select('Trip', view.tripId, [{ value: null, label: 'Any trip' }, ...trips.map((t) => ({ value: t.id, label: t.name }))], change('tripId'))));
+      methods.length > 1 && select('Paid With', view.methodId, [{ value: null, label: 'Any Payment Method' }, ...methods.map((m) => ({ value: m.id, label: m.name }))], change('methodId')),
+      (trips.length > 0 || view.tripId) && select('Trip', view.tripId, [{ value: null, label: 'Any Trip' }, ...trips.map((t) => ({ value: t.id, label: t.name }))], change('tripId'))));
   }
 
   const toSortIds = () => new Set(toSortEntries(S.entries).map((e) => e.id));
@@ -131,13 +131,13 @@ export function renderHistory(root, { repo }) {
     if (!S.entries.some((e) => !e.deletedAt && e.kind === kind)) {
       return fill(el.body, h('section', { class: 'empty' },
         h('h2', {}, income ? 'No Income Yet' : 'No Payments Yet'),
-        h('a', { class: 'button primary', href: '#log' }, income ? 'Log income' : 'Log a payment')));
+        h('a', { class: 'button primary', href: '#log' }, income ? 'Log Income' : 'Log a Payment')));
     }
     const found = searchEntries(spending(S), filters(), { vendors: S.vendors, categories: S.categories, methods: S.methods, trips: S.trips });
     if (!found.length) {
       return fill(el.body, h('div', {},
         h('p', { class: 'empty-line' }, 'Nothing matches.'),
-        h('button', { type: 'button', class: 'text-button', onclick: clear }, 'Clear search and filters')));
+        h('button', { type: 'button', class: 'text-button', onclick: clear }, 'Clear Search and Filters')));
     }
     const waiting = toSortIds();
     const groups = groupByDay(found.slice(0, shown), today());
@@ -151,7 +151,7 @@ export function renderHistory(root, { repo }) {
           (income ? g.income : g.spent) > 0 && h('span', { class: 'day-total' }, income ? `${gbp(g.income)} in` : `${gbp(g.spent)} spent`)),
         h('ul', { class: 'list' }, g.entries.map((e) => row(e, waiting.has(e.id)))))),
       found.length > shown && h('button', { type: 'button', class: 'button secondary', onclick: () => { shown += PAGE; renderBody(); } },
-        `Show ${Math.min(PAGE, found.length - shown)} more`));
+        `Show ${Math.min(PAGE, found.length - shown)} More`));
   }
 
   function clear() {

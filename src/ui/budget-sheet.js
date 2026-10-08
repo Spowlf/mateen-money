@@ -16,12 +16,12 @@ export function openBudgetSheet(repo) {
     oninput: () => { amount.value = amount.value.replace(/[^\d.,£]/g, ''); f.amount = amount.value; renderSave(); },
   });
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit(budgetPence(f.amount)) });
-  const remove = h('button', { type: 'button', class: 'button danger', onclick: () => submit(0) }, 'Remove the budget');
+  const remove = h('button', { type: 'button', class: 'button danger', onclick: () => submit(0) }, 'Remove the Budget');
 
   function renderSave() {
     const pence = budgetPence(f.amount);
     save.disabled = !pence;
-    save.textContent = pence ? `${current ? 'Save' : 'Set'} ${gbp(pence)} a month` : 'Enter an amount';
+    save.textContent = pence ? `${current ? 'Save' : 'Set'} ${gbp(pence)} a month` : 'Enter an Amount';
     remove.hidden = !current;
   }
 

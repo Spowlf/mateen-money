@@ -40,7 +40,7 @@ export function renderReview(el, { repo, showToSort }) {
   if (!place.open) {
     fill(el, h('div', { class: 'review' }, head,
       h('p', { class: 'reason' }, headline),
-      h('button', { type: 'button', class: 'button secondary', onclick: () => { place.open = true; renderReview(el, { repo, showToSort }); } }, 'Review the week')));
+      h('button', { type: 'button', class: 'button secondary', onclick: () => { place.open = true; renderReview(el, { repo, showToSort }); } }, 'Review the Week')));
     return;
   }
 
@@ -50,7 +50,7 @@ export function renderReview(el, { repo, showToSort }) {
       h('p', {}, card.toSort === 1 ? '1 payment is waiting in To Sort.' : `${card.toSort} payments are waiting in To Sort.`),
       h('div', { class: 'review-actions' },
         h('button', { type: 'button', class: 'button secondary', onclick: showToSort }, 'Go to To Sort'),
-        h('button', { type: 'button', class: 'text-button', onclick: next }, 'Skip for now')),
+        h('button', { type: 'button', class: 'text-button', onclick: next }, 'Skip for Now')),
     ];
   } else if (place.step === 'week') {
     body = [

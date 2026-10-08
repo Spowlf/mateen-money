@@ -11,7 +11,7 @@ import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
   emptyForm, emptySplit, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
   matchVendor, tripFor, toSortEntries, toSortNudge, sortChoices, suggestCategories,
-  COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES,
+  COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, titleCase,
 } from '../engine/index.js';
 
 const TO_SORT_SHOWN = 3;
@@ -77,7 +77,7 @@ export function renderLog(root, { repo }) {
       nudge && h('p', { class: 'hint' }, nudge),
       h('ul', { class: 'list' }, shown.map(sortRow)),
       items.length > shown.length && h('div', {},
-        h('button', { type: 'button', class: 'text-button', onclick: () => { showAllToSort = true; renderToSort(); } }, `Show ${items.length - shown.length} more`)));
+        h('button', { type: 'button', class: 'text-button', onclick: () => { showAllToSort = true; renderToSort(); } }, `Show ${items.length - shown.length} More`)));
   }
 
   // Entry form
@@ -182,8 +182,8 @@ export function renderLog(root, { repo }) {
   function renderQuick() {
     if (form.kind === 'income') {
       quick.hidden = false;
-      return fill(quick, h('span', { class: 'field-label' }, 'Type of income'), chips({
-        label: 'Type of income', options: INCOME_TYPES.map((t) => ({ value: t.id, label: t.name })), value: form.incomeType,
+      return fill(quick, h('span', { class: 'field-label' }, 'Type of Income'), chips({
+        label: 'Type of Income', options: INCOME_TYPES.map((t) => ({ value: t.id, label: t.name })), value: form.incomeType,
         onChange: (v) => set({ incomeType: v, spreadMonths: v === 'allowance' ? 12 : 1 }, { details: true }),
       }));
     }
@@ -208,10 +208,10 @@ export function renderLog(root, { repo }) {
     const need = missing(form);
     const minor = toMinor(form.amount, form.currency);
     saveButton.disabled = busy || !!need;
-    saveButton.textContent = need ?? (form.kind === 'income' ? `Save ${formatMoney(minor, form.currency)}` : saveLabel(form.split, minor, form.currency));
+    saveButton.textContent = need ? titleCase(need) : (form.kind === 'income' ? `Save ${formatMoney(minor, form.currency)}` : saveLabel(form.split, minor, form.currency));
     offlineNote.hidden = !offline;
     details.hidden = !detailsOpen;
-    changeButton.textContent = detailsOpen ? 'Hide details' : 'Change';
+    changeButton.textContent = detailsOpen ? 'Hide Details' : 'Change';
     changeButton.setAttribute('aria-expanded', String(detailsOpen));
     summaryText.textContent = summaryLine(form, { categories: S.categories, methods: S.methods, accounts: S.accounts, trips: S.trips, people: S.people ?? [], todayDate: today() });
   }
@@ -227,14 +227,14 @@ export function renderLog(root, { repo }) {
     const categories = liveSorted(S.categories).filter((c) => !c.archived || c.id === form.categoryId);
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));
     const trip = h('select', { class: 'select', onchange: () => set({ tripId: trip.value || null, tripManual: true }) },
-      h('option', { value: '', selected: !form.tripId }, 'No trip'),
+      h('option', { value: '', selected: !form.tripId }, 'No Trip'),
       trips.map((t) => h('option', { value: t.id, selected: t.id === form.tripId }, t.name)));
     fill(details,
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       field('Currency', currency),
       // Someone else paid: none of your cards was used.
-      !income && !form.split?.paidBy && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
-        chips({ label: 'Paid with', options: methods.map((m) => ({ value: m.id, label: m.name })), value: form.methodId, onChange: (v) => set({ methodId: v }) })),
+      !income && !form.split?.paidBy && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid With'),
+        chips({ label: 'Paid With', options: methods.map((m) => ({ value: m.id, label: m.name })), value: form.methodId, onChange: (v) => set({ methodId: v }) })),
       !income && splitBlock({
         repo,
         get: () => ({ split: form.split ?? emptySplit(), amountMinor: toMinor(form.amount, form.currency), currency: form.currency }),
@@ -245,7 +245,7 @@ export function renderLog(root, { repo }) {
         chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: form.categoryId, onChange: (v) => set({ categoryId: v }, { details: true }) })),
       income && form.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: form.spreadMonths === 12, onchange: (e) => set({ spreadMonths: e.target.checked ? 12 : 1 }) }),
-        h('span', {}, 'Spread over October to September')),
+        h('span', {}, 'Spread Over October to September')),
       !income && trips.length > 0 && field('Trip', trip, form.tripManual ? null : 'Suggested from the date.'));
   }
 

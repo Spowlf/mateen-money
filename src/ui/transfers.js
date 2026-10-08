@@ -53,17 +53,17 @@ export function openMoveSheet(repo, move = null) {
   let receivedInput = null;
 
   function missing() {
-    if (!f.from || !f.to) return 'Pick two accounts';
-    if (sentMinor() === null) return 'Enter an amount';
-    if (receivedMinor() === null) return 'Enter the amount received';
-    if (!f.date) return 'Pick the date';
+    if (!f.from || !f.to) return 'Pick Two Accounts';
+    if (sentMinor() === null) return 'Enter an Amount';
+    if (receivedMinor() === null) return 'Enter the Amount Received';
+    if (!f.date) return 'Pick the Date';
     return null;
   }
 
   function renderSave() {
     const need = missing();
     save.disabled = !!need;
-    save.textContent = need ?? (move ? 'Save changes' : `Move ${formatMoney(sentMinor(), fromCurrency())}`);
+    save.textContent = need ?? (move ? 'Save Changes' : `Move ${formatMoney(sentMinor(), fromCurrency())}`);
   }
 
   // Received follows Sent at the latest rates until it's typed in.
@@ -107,7 +107,7 @@ export function openMoveSheet(repo, move = null) {
       received,
       h('div', { class: 'sheet-actions' },
         save,
-        move && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete move')),
+        move && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete Move')),
     ].filter(Boolean));
     renderSave();
   }
@@ -146,7 +146,7 @@ export function openMoveSheet(repo, move = null) {
 export function moveButton(repo) {
   const enough = liveAccounts(repo.state).length >= 2;
   return h('button', { type: 'button', class: 'button secondary', disabled: !enough, onclick: () => openMoveSheet(repo) },
-    enough ? 'Move money' : 'Add two accounts');
+    enough ? 'Move Money' : 'Add Two Accounts');
 }
 
 /** The Moves section on Accounts, newest first; null with none. */
@@ -167,5 +167,5 @@ export function movesSection(repo, { showAll, onShowAll }) {
     h('h2', { class: 'subhead' }, 'Moves'),
     h('ul', { class: 'list' }, shown.map(row)),
     moves.length > shown.length && h('div', {},
-      h('button', { type: 'button', class: 'text-button', onclick: onShowAll }, `Show ${moves.length - shown.length} more`)));
+      h('button', { type: 'button', class: 'text-button', onclick: onShowAll }, `Show ${moves.length - shown.length} More`)));
 }

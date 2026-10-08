@@ -6,7 +6,7 @@ import { h, fill, chips, segmented, field } from './dom.js';
 import { runAction } from './format.js';
 import { formatMoney, splitParts, splitMissing, isSplitOn, emptySplit } from '../engine/index.js';
 
-const MODES = [{ value: 'even', label: 'Evenly' }, { value: 'amount', label: 'By amount' }];
+const MODES = [{ value: 'even', label: 'Evenly' }, { value: 'amount', label: 'By Amount' }];
 
 /** People who can be picked: live and not removed, in their order. */
 export const livePeople = (S) => (S.people ?? []).filter((p) => !p.deletedAt && !p.archived)
@@ -88,39 +88,39 @@ export function splitBlock({ repo, get, onChange, locked = null, waiting = null,
     if (!on) {
       return fill(el, h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Split'),
         h('div', { class: 'split-off' }, h('span', {}, 'Not split'),
-          h('button', { type: 'button', class: 'text-button', onclick: () => change({ open: true }) }, 'Split this bill'))));
+          h('button', { type: 'button', class: 'text-button', onclick: () => change({ open: true }) }, 'Split This Bill'))));
     }
     const people = livePeople(S);
     const payerOptions = [{ value: '', label: 'You' }, ...people.map((p) => ({ value: p.id, label: p.name }))];
     // Several can share a bill: toggles, not one choice.
-    const withChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Split with' },
+    const withChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Split With' },
       people.filter((p) => p.id !== split.paidBy).map((p) => {
         const pressed = split.with.includes(p.id);
         return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(pressed),
           onclick: () => change({ with: pressed ? split.with.filter((x) => x !== p.id) : [...split.with, p.id] }) }, p.name);
       }),
-      h('button', { type: 'button', class: 'chip', onclick: () => { adding = 'with'; render(); } }, 'Add person'));
-    const payer = chips({ label: 'Who paid', options: payerOptions, value: split.paidBy ?? '',
+      h('button', { type: 'button', class: 'chip', onclick: () => { adding = 'with'; render(); } }, 'Add Person'));
+    const payer = chips({ label: 'Who Paid', options: payerOptions, value: split.paidBy ?? '',
       onChange: (v) => change({ paidBy: v || null, with: split.with.filter((x) => x !== v) }) });
-    payer.append(h('button', { type: 'button', class: 'chip', onclick: () => { adding = 'payer'; render(); } }, 'Add person'));
+    payer.append(h('button', { type: 'button', class: 'chip', onclick: () => { adding = 'payer'; render(); } }, 'Add Person'));
     const others = split.with.filter((id) => id !== split.paidBy);
     const amounts = split.mode !== 'amount' ? null
       : split.paidBy
-        ? amountInput(split.share, `Your share in ${currency}`, (v) => { onChange({ ...get().split, share: v }, { quiet: true }); renderShare(); })
+        ? amountInput(split.share, `Your Share in ${currency}`, (v) => { onChange({ ...get().split, share: v }, { quiet: true }); renderShare(); })
         : others.map((id) => amountInput(split.amounts[id], `${name(id)} in ${currency}`, (v) => {
           const now = get().split;
           onChange({ ...now, amounts: { ...now.amounts, [id]: v } }, { quiet: true });
           renderShare();
         }));
     fill(el,
-      askPayer && field('Who paid', payer),
+      askPayer && field('Who Paid', payer),
       askPayer && adding === 'payer' && nameBox(),
-      field(split.paidBy ? 'Also shared with' : 'Split with', withChips),
+      field(split.paidBy ? 'Also Shared With' : 'Split With', withChips),
       adding === 'with' && nameBox(),
       segmented({ label: 'How it’s split', options: MODES, value: split.mode, onChange: (v) => change({ mode: v }) }),
       amounts,
       shareLine,
-      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => { adding = null; change(emptySplit()); } }, 'Don’t split')));
+      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => { adding = null; change(emptySplit()); } }, 'Don’t Split')));
     renderShare();
   }
 
@@ -132,6 +132,6 @@ export function splitBlock({ repo, get, onChange, locked = null, waiting = null,
 export function saveLabel(split, amountMinor, currency) {
   const base = `Save ${formatMoney(amountMinor, currency)}`;
   if (!isSplitOn(split)) return base;
-  return `${base}, your share ${formatMoney(splitParts(split, amountMinor, currency).shareMinor, currency)}`;
+  return `${base}, Your Share ${formatMoney(splitParts(split, amountMinor, currency).shareMinor, currency)}`;
 }
 

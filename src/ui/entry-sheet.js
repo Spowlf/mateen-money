@@ -7,7 +7,7 @@ import { intoField } from './accounts.js';
 import { splitBlock } from './split-block.js';
 import {
   gbp, formatMoney, formatDay, toMinor, toDecimalText, matchVendor, INCOME_TYPES, COMMON_CURRENCIES,
-  splitFromEntry, splitParts, splitMissing, splitsOf, emptySplit,
+  splitFromEntry, splitParts, splitMissing, splitsOf, emptySplit, titleCase,
 } from '../engine/index.js';
 
 // The fields the app sends when saving an entry (the backend owns the rest).
@@ -85,12 +85,12 @@ export function openEntrySheet(repo, shown) {
   const listId = `vendors-${entry.id}`;
 
   function missing() {
-    if (!toMinor(f.amount, f.currency)) return 'Enter an amount';
-    if (f.kind === 'spend' && !f.vendorText.trim()) return 'Enter a merchant';
-    if (f.kind === 'spend' && !f.categoryId) return 'Pick a category';
-    if (f.kind === 'income' && !f.incomeType) return 'Pick a type of income';
-    if (!f.date) return 'Pick a date';
-    if (f.statement && toMinor(f.statementText, 'GBP') === null) return 'Enter the statement amount';
+    if (!toMinor(f.amount, f.currency)) return 'Enter an Amount';
+    if (f.kind === 'spend' && !f.vendorText.trim()) return 'Enter a Merchant';
+    if (f.kind === 'spend' && !f.categoryId) return 'Pick a Category';
+    if (f.kind === 'income' && !f.incomeType) return 'Pick a Type of Income';
+    if (!f.date) return 'Pick a Date';
+    if (f.statement && toMinor(f.statementText, 'GBP') === null) return 'Enter the Statement Amount';
     if (f.kind === 'spend' && !locked) return splitMissing(f.split, toMinor(f.amount, f.currency), f.currency);
     return null;
   }
@@ -98,7 +98,7 @@ export function openEntrySheet(repo, shown) {
   function renderSave() {
     const need = missing();
     save.disabled = !!need;
-    save.textContent = need ?? 'Save changes';
+    save.textContent = need ? titleCase(need) : 'Save Changes';
   }
 
   const set = (changes, rerender = false) => { Object.assign(f, changes); if (rerender) render(); else renderSave(); };
@@ -122,7 +122,7 @@ export function openEntrySheet(repo, shown) {
     const methods = liveSorted(S.methods, 'name');
     const trips = S.trips.filter((t) => !t.deletedAt).sort((a, b) => (a.start < b.start ? 1 : -1));
     const trip = h('select', { class: 'select', onchange: () => set({ tripId: trip.value || null, tripManual: true }) },
-      h('option', { value: '', selected: !f.tripId }, 'No trip'),
+      h('option', { value: '', selected: !f.tripId }, 'No Trip'),
       withRemoved(trips, f.tripId, S.trips).map((t) => h('option', { value: t.value, selected: t.value === f.tripId }, t.label)));
     const note = h('input', { class: 'input', type: 'text', autocomplete: 'off', value: f.note, oninput: () => set({ note: note.value }) });
     const statement = h('input', { class: 'input num', type: 'text', inputmode: 'decimal', autocomplete: 'off', value: f.statementText,
@@ -145,25 +145,25 @@ export function openEntrySheet(repo, shown) {
         unchangedMoney && !f.statement && gbpLine(entry) && h('p', { class: 'reason' }, gbpLine(entry)),
         h('label', { class: 'toggle' },
           h('input', { type: 'checkbox', checked: f.statement, onchange: (e) => set({ statement: e.target.checked }, true) }),
-          h('span', {}, 'Use the amount on my statement')),
-        f.statement && field('Amount on your statement, in £', statement, null)),
+          h('span', {}, 'Use the Amount on My Statement')),
+        f.statement && field('Amount on Your Statement, in £', statement, null)),
       field(income ? 'From' : 'Merchant', vendorInput,
         !income && vendor && f.vendorText === initialVendorText && entry.merchant && entry.merchant !== vendor.name ? `Arrived as ${entry.merchant}.` : null),
       h('datalist', { id: listId }, liveSorted(S.vendors, 'name').map((v) => h('option', { value: v.name }))),
       field('Description', note),
       income
-        ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Type of income'),
-          chips({ label: 'Type of income', options: INCOME_TYPES.map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
+        ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Type of Income'),
+          chips({ label: 'Type of Income', options: INCOME_TYPES.map((t) => ({ value: t.id, label: t.name })), value: f.incomeType,
             onChange: (v) => set({ incomeType: v, spread: v === 'allowance' ? f.spread : false }, true) }))
         : h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
           chips({ label: 'Category', options: withCategoryIcons(withRemoved(categories, f.categoryId, S.categories)), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
       income && f.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
-        h('span', {}, 'Spread over October to September')),
+        h('span', {}, 'Spread Over October to September')),
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       // Someone else paid: none of your cards was used.
-      !income && !f.split.paidBy && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid with'),
-        chips({ label: 'Paid with', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
+      !income && !f.split.paidBy && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid With'),
+        chips({ label: 'Paid With', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
       !income && splitBlock({
         repo,
         get: () => ({ split: f.split, amountMinor: toMinor(f.amount, f.currency), currency: f.currency }),
@@ -175,7 +175,7 @@ export function openEntrySheet(repo, shown) {
       ((!income && trips.length > 0) || f.tripId) && field('Trip', trip, f.tripManual ? null : 'Suggested from the date.'),
       h('div', { class: 'sheet-actions' },
         save,
-        h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, entry.kind === 'income' ? 'Delete income' : 'Delete payment')),
+        h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, entry.kind === 'income' ? 'Delete Income' : 'Delete Payment')),
     ].filter(Boolean));
     renderSave();
   }

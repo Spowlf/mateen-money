@@ -31,7 +31,7 @@ function openCategorySheet(repo, category) {
   const renderSave = () => {
     const taken = S.categories.some((c) => !c.deletedAt && c.id !== category?.id && c.name.toLowerCase() === name.value.trim().toLowerCase());
     save.disabled = !name.value.trim() || taken;
-    save.textContent = !name.value.trim() ? 'Enter a name' : taken ? 'That name is taken' : category ? 'Save changes' : `Add ${name.value.trim()}`;
+    save.textContent = !name.value.trim() ? 'Enter a Name' : taken ? 'That Name Is Taken' : category ? 'Save Changes' : `Add ${name.value.trim()}`;
   };
   name.addEventListener('input', renderSave);
   const used = category ? S.entries.filter((e) => !e.deletedAt && e.categoryId === category.id).length : 0;
@@ -46,7 +46,7 @@ function openCategorySheet(repo, category) {
           s.close();
           toast(`Removed ${category.name}`, { label: 'Undo', run: () => runAction(() => repo.saveRow('categories', category.id, { archived: 0 })) });
         },
-      }, 'Remove category')),
+      }, 'Remove Category')),
     category && h('p', { class: 'field-hint' }, used
       ? `${used === 1 ? '1 payment keeps' : `${used} payments keep`} this category if you remove it. You can bring it back later.`
       : 'You can bring it back later.')));
@@ -92,13 +92,13 @@ function categoriesSection(repo, view) {
     live.length > CATEGORIES_SHOWN && h('div', {}, h('button', {
       type: 'button', class: 'text-button', 'aria-expanded': String(view.showAll),
       onclick: () => { view.showAll = !view.showAll; view.render(); },
-    }, view.showAll ? 'Show fewer' : 'Show more')),
+    }, view.showAll ? 'Show Fewer' : 'Show More')),
     h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openCategorySheet(repo, null) }, 'Add a Category')),
     archived.length > 0 && h('details', { class: 'table-view' },
-      h('summary', {}, `Removed categories, ${archived.length}`),
+      h('summary', {}, `Removed Categories, ${archived.length}`),
       h('ul', { class: 'list' }, archived.map((c) => h('li', { class: 'total-row' },
         h('span', { class: 'list-title' }, c.name),
-        h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('categories', c.id, { archived: 0 })).then((r) => r && toast(`Brought back ${c.name}`)) }, 'Bring back'))))));
+        h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('categories', c.id, { archived: 0 })).then((r) => r && toast(`Brought back ${c.name}`)) }, 'Bring Back'))))));
 }
 
 // People (split bills). Removing someone archives them, so old bills keep their name; the
@@ -111,7 +111,7 @@ function openPersonEditSheet(repo, person) {
   const renderSave = () => {
     const taken = (S.people ?? []).some((p) => !p.deletedAt && p.id !== person?.id && p.name.toLowerCase() === name.value.trim().toLowerCase());
     save.disabled = !name.value.trim() || taken;
-    save.textContent = !name.value.trim() ? 'Enter a name' : taken ? 'That name is taken' : person ? 'Save changes' : `Add ${name.value.trim()}`;
+    save.textContent = !name.value.trim() ? 'Enter a Name' : taken ? 'That Name Is Taken' : person ? 'Save Changes' : `Add ${name.value.trim()}`;
   };
   name.addEventListener('input', renderSave);
   const s = sheet(person ? person.name : 'Add a Person', h('div', { class: 'sheet-form' },
@@ -125,7 +125,7 @@ function openPersonEditSheet(repo, person) {
           s.close();
           toast(`Removed ${person.name}`, { label: 'Undo', run: () => runAction(() => repo.saveRow('people', person.id, { archived: 0 })) });
         },
-      }, 'Remove person')),
+      }, 'Remove Person')),
     person && h('p', { class: 'field-hint' }, 'Old split bills keep their name. You can bring them back later.')));
   save.addEventListener('click', async () => {
     save.disabled = true;
@@ -157,10 +157,10 @@ function peopleSection(repo) {
     !live.length && h('p', { class: 'hint' }, 'The people you split bills with.'),
     h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openPersonEditSheet(repo, null) }, 'Add a Person')),
     archived.length > 0 && h('details', { class: 'table-view' },
-      h('summary', {}, `Removed people, ${archived.length}`),
+      h('summary', {}, `Removed People, ${archived.length}`),
       h('ul', { class: 'list' }, archived.map((p) => h('li', { class: 'total-row' },
         h('span', { class: 'list-title' }, p.name),
-        h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('people', p.id, { archived: 0 })).then((r) => r && toast(`Brought back ${p.name}`)) }, 'Bring back'))))));
+        h('button', { type: 'button', class: 'text-button', onclick: () => runAction(() => repo.saveRow('people', p.id, { archived: 0 })).then((r) => r && toast(`Brought back ${p.name}`)) }, 'Bring Back'))))));
 }
 
 // Budget
@@ -199,22 +199,22 @@ function openMethodSheet(repo, method) {
     oninput: () => { fee.value = fee.value.replace(/[^\d.]/g, ''); f.fee = fee.value; renderSave(); } });
   const wallet = h('input', { class: 'input', type: 'text', autocomplete: 'off', value: f.walletCard, oninput: () => { f.walletCard = wallet.value; } });
   // Only a card has a foreign currency fee or pays with Apple Pay, so only a card asks for them.
-  const feeField = field('Foreign currency fee, %', fee, '2.99 for most UK cards, 0 for Monzo, Starling or Wise.');
-  const walletField = field('Apple Pay card name', wallet, 'As it appears in Wallet.');
+  const feeField = field('Foreign Currency Fee, %', fee, '2.99 for most UK cards, 0 for Monzo, Starling or Wise.');
+  const walletField = field('Apple Pay Card Name', wallet, 'As it appears in Wallet.');
   const showCardFields = () => { feeField.hidden = walletField.hidden = f.kind !== 'card'; };
   const memory = h('div', { class: 'field' });
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit() });
 
   function renderSave() {
-    const need = !f.name.trim() ? 'Enter a name' : f.kind === 'card' && percentToBps(f.fee) === null ? 'Enter a fee from 0 to 100%' : null;
+    const need = !f.name.trim() ? 'Enter a Name' : f.kind === 'card' && percentToBps(f.fee) === null ? 'Enter a Fee from 0 to 100%' : null;
     save.disabled = !!need;
-    save.textContent = need ?? (method ? 'Save changes' : `Add ${f.name.trim()}`);
+    save.textContent = need ?? (method ? 'Save Changes' : `Add ${f.name.trim()}`);
   }
 
   function renderMemory() {
     const pairs = Object.entries(f.symbolMemory);
     memory.hidden = !pairs.length;
-    fill(memory, h('span', { class: 'field-label' }, 'Symbols it remembers'),
+    fill(memory, h('span', { class: 'field-label' }, 'Symbols It Remembers'),
       h('ul', { class: 'list' }, pairs.map(([symbol, currency]) => h('li', { class: 'total-row' },
         h('span', { class: 'list-title' }, `${symbol} is read as ${currency}`),
         h('button', { type: 'button', class: 'text-button', onclick: () => { delete f.symbolMemory[symbol]; renderMemory(); } }, 'Forget')))),
@@ -249,7 +249,7 @@ function openMethodSheet(repo, method) {
           s.close();
           toast(`Deleted ${method.name}`, { label: 'Undo', run: () => runAction(() => repo.restoreRow('methods', method.id)) });
         },
-      }, 'Delete payment method'))));
+      }, 'Delete Payment Method'))));
   showCardFields();
   renderMemory();
   renderSave();
@@ -276,13 +276,13 @@ export function openTripSheet(repo, trip) {
   const end = h('input', { class: 'input', type: 'date', value: f.end, onchange: () => { f.end = end.value; renderSave(); } });
   const save = h('button', { type: 'button', class: 'button primary' });
   const renderSave = () => {
-    const need = !f.name.trim() ? 'Name the trip' : !f.start ? 'Pick the first day' : !f.end ? 'Pick the last day' : f.end < f.start ? 'End it on or after the first day' : null;
+    const need = !f.name.trim() ? 'Name the Trip' : !f.start ? 'Pick the First Day' : !f.end ? 'Pick the Last Day' : f.end < f.start ? 'End It on or After the First Day' : null;
     save.disabled = !!need;
-    save.textContent = need ?? (trip ? 'Save changes' : `Add ${f.name.trim()}`);
+    save.textContent = need ?? (trip ? 'Save Changes' : `Add ${f.name.trim()}`);
   };
   const s = sheet(trip ? trip.name : 'Add a Trip', h('div', { class: 'sheet-form' },
     field('Name', name),
-    h('div', { class: 'row-2' }, field('First day', start), field('Last day', end)),
+    h('div', { class: 'row-2' }, field('First Day', start), field('Last Day', end)),
     h('div', { class: 'sheet-actions' },
       save,
       trip && h('button', {
@@ -292,7 +292,7 @@ export function openTripSheet(repo, trip) {
           s.close();
           toast(`Deleted ${trip.name}`, { label: 'Undo', run: () => runAction(() => repo.restoreRow('trips', trip.id)) });
         },
-      }, 'Delete trip'))));
+      }, 'Delete Trip'))));
   save.addEventListener('click', async () => {
     save.disabled = true;
     const fields = { name: f.name.trim(), start: f.start, end: f.end };
@@ -317,7 +317,7 @@ function tripsSection(repo) {
       ? h('ul', { class: 'list' }, trips.map((t) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openTripSheet(repo, t) },
         h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, t.name), h('span', { class: 'list-sub' }, dateSpan(t.start, t.end)))))))
       : h('p', { class: 'empty-line' }, 'No trips yet.'),
-    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a trip')));
+    h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a Trip')));
 }
 
 // Term dates
@@ -331,7 +331,7 @@ function termsSection(repo) {
   termsYear ??= Math.min(Math.max(termYearOf(today()), TERM_YEARS[0]), TERM_YEARS.at(-1));
   const terms = yearTerms(saved, termsYear).filter(inTermSpan).map((t) => ({ ...t }));
   const problem = h('p', { class: 'warning', hidden: true });
-  const save = h('button', { type: 'button', class: 'button secondary', disabled: true }, 'Save term dates');
+  const save = h('button', { type: 'button', class: 'button secondary', disabled: true }, 'Save Term Dates');
   const next = () => replaceYearTerms(saved, termsYear, terms);
   const changed = () => {
     const issue = checkTerms(terms) ?? checkTerms(next());
@@ -363,7 +363,7 @@ function termsSection(repo) {
       h('button', { type: 'button', class: 'icon-button', 'aria-label': 'Next year', disabled: termsYear >= TERM_YEARS.at(-1), onclick: () => step(1) }, icon('forward'))),
     h('div', { class: 'terms' }, terms.map((t) => h('fieldset', { class: 'term' },
       h('legend', {}, termLabel(t)),
-      h('div', { class: 'row-2' }, field('First day', input(t, 'start')), field('Last day', input(t, 'end')))))),
+      h('div', { class: 'row-2' }, field('First Day', input(t, 'start')), field('Last Day', input(t, 'end')))))),
     problem,
     save);
 }
@@ -393,7 +393,7 @@ function allowanceSection(repo) {
       type: 'button', class: 'text-button',
       // No date: only you know when it arrives, so the sheet asks for it ("Pick the next date").
       onclick: () => openRecurringSheet(repo, { kind: 'income', incomeType: 'allowance', label: 'Allowance', frequency: 'yearly', spreadMonths: 12, nextDate: '' }),
-    }, 'Plan your yearly allowance')));
+    }, 'Plan Your Yearly Allowance')));
 }
 
 // Time zone
@@ -415,10 +415,10 @@ function openTimeZoneSheet(repo) {
   const save = h('button', { type: 'button', class: 'button primary' });
   const renderSave = () => {
     save.disabled = select.value === current;
-    save.textContent = select.value === current ? 'Pick another time zone' : `Use ${zoneName(select.value)}`;
+    save.textContent = select.value === current ? 'Pick Another Time Zone' : `Use ${zoneName(select.value)}`;
   };
   const s = sheet('Time Zone', h('div', { class: 'sheet-form' },
-    field('Time zone', select, 'Listed by region, then city.'),
+    field('Time Zone', select, 'Listed by region, then city.'),
     h('div', { class: 'sheet-actions' }, save)));
   save.addEventListener('click', async () => {
     save.disabled = true;
@@ -439,7 +439,7 @@ function timeZoneSection(repo) {
         h('span', { class: 'list-title' }, zoneName(current)),
         h('span', { class: 'list-sub' }, `${current.replace(/_/g, ' ')}, ${partsInZone(Date.now(), current).time} there now`))))),
     differs
-      ? h('div', {}, h('button', { type: 'button', class: 'button secondary', onclick: () => saveTimeZone(repo, phone) }, 'Use this phone’s time zone'))
+      ? h('div', {}, h('button', { type: 'button', class: 'button secondary', onclick: () => saveTimeZone(repo, phone) }, 'Use This Phone’s Time Zone'))
       : h('p', { class: 'field-hint' }, 'This phone is on the same time zone.'),
     differs && h('p', { class: 'field-hint' }, `This phone is on ${zoneName(phone)} time.`));
 }
@@ -454,9 +454,9 @@ function backupSection(repo) {
     h('h2', { class: 'subhead' }, 'Backup and Export'),
     h('p', { class: 'reason' }, last ? `Last backup ${formatDay(today(new Date(last)))}.` : 'No backup yet.'),
     h('div', { class: 'button-stack' },
-      h('button', { type: 'button', class: 'button secondary', onclick: () => runAction(() => exportBackup(repo)) }, 'Export backup'),
-      h('button', { type: 'button', class: 'button secondary', onclick: () => exportCsv(repo) }, 'Export payments as CSV'),
-      h('button', { type: 'button', class: 'button danger', onclick: () => file.click() }, 'Restore from a backup'),
+      h('button', { type: 'button', class: 'button secondary', onclick: () => runAction(() => exportBackup(repo)) }, 'Export Backup'),
+      h('button', { type: 'button', class: 'button secondary', onclick: () => exportCsv(repo) }, 'Export Payments as CSV'),
+      h('button', { type: 'button', class: 'button danger', onclick: () => file.click() }, 'Restore from a Backup'),
       file));
 }
 
@@ -470,7 +470,7 @@ async function updateApp(button) {
   const sw = navigator.serviceWorker;
   if (!sw?.controller) return location.reload();
   button.disabled = true;
-  button.textContent = 'Checking for updates';
+  button.textContent = 'Checking for Updates';
   const reg = await sw.ready;
   reg.update().catch(() => {});
   const reply = await new Promise((resolve) => {
@@ -482,11 +482,11 @@ async function updateApp(button) {
   if (reply?.reached) return location.reload();
   toast('Nothing changed: the app’s files couldn’t be reached. Check your connection.');
   button.disabled = false;
-  button.textContent = 'Update the app';
+  button.textContent = 'Update the App';
 }
 
 function appSection() {
-  const button = h('button', { type: 'button', class: 'button secondary', onclick: () => updateApp(button) }, 'Update the app');
+  const button = h('button', { type: 'button', class: 'button secondary', onclick: () => updateApp(button) }, 'Update the App');
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'App'),
     h('p', { class: 'reason' }, 'Fetches the newest version and reloads.'),
@@ -503,9 +503,9 @@ function backendSection(repo, onConnected) {
   const problem = h('p', { class: 'warning', hidden: true });
   const connect = h('button', { type: 'button', class: repo.connected() ? 'button secondary' : 'button primary' });
   const renderButton = (busy = false) => {
-    const need = !address.value.trim() ? 'Enter the backend address' : !token.value.trim() ? 'Enter the token' : null;
+    const need = !address.value.trim() ? 'Enter the Backend Address' : !token.value.trim() ? 'Enter the Token' : null;
     connect.disabled = busy || !!need;
-    connect.textContent = busy ? 'Connecting' : need ?? (repo.connected() ? 'Save and sync' : 'Connect');
+    connect.textContent = busy ? 'Connecting' : need ?? (repo.connected() ? 'Save and Sync' : 'Connect');
   };
   address.addEventListener('input', () => renderButton());
   token.addEventListener('input', () => renderButton());
@@ -528,7 +528,7 @@ function backendSection(repo, onConnected) {
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Backend'),
     h('p', { class: 'reason' }, `${syncedPhrase(repo.state.lastSyncedAt)}.`),
-    field('Backend address', address),
+    field('Backend Address', address),
     field('Token', token, 'Stays on this phone.'),
     problem,
     connect);

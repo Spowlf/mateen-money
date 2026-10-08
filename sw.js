@@ -50,6 +50,7 @@ const FILES = [
   'src/engine/terms.js',
   'src/engine/sort.js',
   'src/engine/summary.js',
+  'src/engine/text.js',
   'src/engine/totals.js',
   'src/engine/vendors.js',
   'src/ui/accounts.js',

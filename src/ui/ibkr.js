@@ -94,8 +94,8 @@ export function renderIbkr(root, { repo }) {
             h('span', { class: 'list-amount' }, signedMoney(activityCash(a), a.currency))))))
           : h('p', { class: 'empty-line' }, 'No activity yet.')),
       h('div', { class: 'link-row' },
-        h('button', { type: 'button', class: 'text-button', onclick: (e) => syncIbkr(repo, e.currentTarget) }, 'Sync IBKR now'),
-        h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo, account) }, 'Change account details'))));
+        h('button', { type: 'button', class: 'text-button', onclick: (e) => syncIbkr(repo, e.currentTarget) }, 'Sync IBKR Now'),
+        h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo, account) }, 'Change Account Details'))));
   }
 
   render();

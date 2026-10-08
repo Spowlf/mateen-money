@@ -129,17 +129,19 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 
 - 2026-10-08: Moves between the user's own accounts (`docs/superpowers/specs/2026-10-08-moves-design.md`): the user sees "move", never "transfer" (the table is `transfers`). A move records what was sent and what arrived, each in its account's currency (Received is pre-filled at the latest rates until typed in), carries both balances on ("1 move since") and is never spending or income. An account with holdings ignores moves (Flex already shows the deposit). It's recorded with "Move money" on Accounts and listed under Moves there (sent amount, "→ S$865.20" under it), not on Log or History. A deleted account's moves still count on the other side.
 
+- 2026-10-08: Every control is title case, not just headers, by the user's choice: buttons (disabled ones too), field labels, chips, segments, select options, toggles and disclosure summaries. Messages stay sentence case. Text made at runtime that's also used in sentences (the engine's "what's missing" texts, frequency names, split checks) stays sentence case at the source and goes through `titleCase()` where it lands on a control.
+
 ## Writing style
 
 Applies to every string the user sees, including notification text from the Worker.
 
-- Sentence case everywhere except headers (title case, see Decisions) and the names listed there. No ALL CAPS.
+- Title case for headers and controls: buttons (disabled ones too), field labels, chips, segments, select options, toggles and disclosure summaries ("Move Money", "Add an Account", "Paid With"). Short joining words stay lower case unless first or last (`titleCase()` in `src/engine/text.js`). Sentence case for everything that's a message: hints, toasts, warnings, small print, tags, placeholders, table and total row labels ("Left over", "Market moves"), and screen-reader-only labels. No ALL CAPS.
 - Full sentences end with a period (hints, warnings, toasts that are sentences). Labels, buttons, chips, category names and titles don't.
 - Use " / " for alternatives. No "&", no parentheses in names.
 - Money has a currency prefix and thousands separators and always shows its decimals, prose and forecasts included: £1,000.00, £12.50, S$12.50 (an average rounds to the nearest penny). Chart axis ticks are the one exception (£500), since they mark a scale, not an amount.
 - Dates as "30 Sep 2026". "Today" only for the nearest.
 - Say what to do, not what went wrong: "Enter an amount above zero."
-- Buttons are verbs for what happens ("Save £4.20"); disabled buttons say what's missing ("Enter an amount").
+- Buttons are verbs for what happens ("Save £4.20"); disabled buttons say what's missing ("Enter an Amount").
 - Errors say whether anything changed: "Nothing changed: …".
 - Estimated figures carry a "~" and say how they're counted.
 - Second person, short, one idea per sentence. Plain words ("Phone tap", not "NFC").

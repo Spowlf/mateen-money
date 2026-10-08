@@ -89,10 +89,10 @@ export function openAccountSheet(repo, account = null) {
   const typedMinor = () => (f.balance.trim() ? balanceMinor(f.balance, f.currency) : null);
 
   function missing() {
-    if (!f.name.trim()) return 'Name the account';
-    if (f.balance.trim() && typedMinor() === null) return 'Enter the balance as a number';
-    if (balanceNeeded() && typedMinor() === null) return `Enter the balance in ${f.currency}`;
-    if (!f.date) return 'Pick the date of the balance';
+    if (!f.name.trim()) return 'Name the Account';
+    if (f.balance.trim() && typedMinor() === null) return 'Enter the Balance as a Number';
+    if (balanceNeeded() && typedMinor() === null) return `Enter the Balance in ${f.currency}`;
+    if (!f.date) return 'Pick the Date of the Balance';
     return null;
   }
 
@@ -105,7 +105,7 @@ export function openAccountSheet(repo, account = null) {
     if (parts.cards) parts.cards.hidden = !hasCards();
     const need = missing();
     save.disabled = !!need;
-    save.textContent = need ?? (account ? 'Save changes' : `Add ${f.name.trim()}`);
+    save.textContent = need ?? (account ? 'Save Changes' : `Add ${f.name.trim()}`);
   }
 
   const set = (changes, rerender = false) => { Object.assign(f, changes); if (rerender) render(); else renderSave(); };
@@ -123,7 +123,7 @@ export function openAccountSheet(repo, account = null) {
       : carried?.payments || carried?.income || carried?.settled || carried?.moved ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
         : `${updatedPhrase(latest.date, today())}.`;
     // Cards are toggles, not one choice: an account can have several.
-    const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Payment methods' }, methods.map((m) => {
+    const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Payment Methods' }, methods.map((m) => {
       const chip = h('button', { type: 'button', class: 'chip', 'aria-pressed': String(linked.has(m.id)), onclick: () => {
         if (linked.has(m.id)) linked.delete(m.id); else linked.add(m.id);
         chip.setAttribute('aria-pressed', String(linked.has(m.id)));
@@ -143,10 +143,10 @@ export function openAccountSheet(repo, account = null) {
         hint && h('p', { class: 'field-hint' }, hint),
       ].filter(Boolean)),
       parts.ibkr = h('p', { class: 'field-hint' }, 'IBKR fills in its balance and currency when it next syncs.'),
-      parts.cards = methods.length > 0 ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Payment methods'), cards) : null,
+      parts.cards = methods.length > 0 ? h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Payment Methods'), cards) : null,
       h('div', { class: 'sheet-actions' },
         save,
-        account && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete account')),
+        account && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, 'Delete Account')),
     ].filter(Boolean));
     renderSave();
   }
@@ -211,9 +211,9 @@ export function openBalancesSheet(repo) {
   function renderSave() {
     const n = rows().length;
     save.disabled = !n || invalid.size > 0 || !f.date;
-    save.textContent = invalid.size ? 'Enter each balance as a number'
-      : !f.date ? 'Pick the date'
-        : !n ? 'Enter a balance'
+    save.textContent = invalid.size ? 'Enter Each Balance as a Number'
+      : !f.date ? 'Pick the Date'
+        : !n ? 'Enter a Balance'
           : `Save ${n} ${n === 1 ? 'balance' : 'balances'}`;
   }
 
@@ -250,7 +250,7 @@ export function openBalancesSheet(repo) {
     });
   }
 
-  fill(body, field('Balances on', date), fields, h('p', { class: 'field-hint' }, 'Leave one blank to keep its balance as it is.'),
+  fill(body, field('Balances On', date), fields, h('p', { class: 'field-hint' }, 'Leave one blank to keep its balance as it is.'),
     h('div', { class: 'sheet-actions' }, save));
   const s = sheet('Update Balances', body);
   renderSave();
@@ -265,7 +265,7 @@ export function intoField(S, value, onChange) {
     .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
   if (!accounts.length) return null;
   return h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Into'),
-    chips({ label: 'Into', options: [{ value: null, label: 'No account' }, ...accounts.map((a) => ({ value: a.id, label: a.name }))], value: value ?? null, onChange }),
+    chips({ label: 'Into', options: [{ value: null, label: 'No Account' }, ...accounts.map((a) => ({ value: a.id, label: a.name }))], value: value ?? null, onChange }),
     h('span', { class: 'field-hint' }, 'It’s added to that account’s balance in Net Worth.'));
 }
 
@@ -278,7 +278,7 @@ export function ibkrNotices(repo, onDone) {
   const failed = S.ibkr?.configured && S.ibkr.status && !S.ibkr.status.ok ? S.ibkr.status : null;
   // Set up on the Worker but not synced yet: the first sync is a tap away rather than a night.
   const firstSync = S.ibkr?.configured && !S.ibkr.status;
-  const button = () => h('button', { type: 'button', class: 'text-button', onclick: (e) => syncIbkr(repo, e.currentTarget).then(onDone) }, 'Sync IBKR now');
+  const button = () => h('button', { type: 'button', class: 'text-button', onclick: (e) => syncIbkr(repo, e.currentTarget).then(onDone) }, 'Sync IBKR Now');
   return [
     firstSync && h('div', { class: 'hint stale-warning' }, h('p', {}, 'IBKR is set up and syncs each night.'), button()),
     failed && h('div', { class: 'warning stale-warning' },
@@ -331,21 +331,21 @@ export function renderAccounts(root, { repo }) {
       return fill(root, h('section', { class: 'empty' },
         h('h2', {}, 'No Accounts Yet'),
         h('p', {}, 'Add each account and what’s in it to see your net worth. Your spending figures stay as they are.'),
-        h('button', { type: 'button', class: 'button primary', onclick: () => openAccountSheet(repo) }, 'Add an account')));
+        h('button', { type: 'button', class: 'button primary', onclick: () => openAccountSheet(repo) }, 'Add an Account')));
     }
     const stale = staleLine(nw.stale);
     fill(root, h('div', { class: 'screen' },
       stale && h('div', { class: 'warning stale-warning' },
         h('p', {}, stale),
-        h('button', { type: 'button', class: 'text-button', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
+        h('button', { type: 'button', class: 'text-button', onclick: () => openBalancesSheet(repo) }, 'Update Balances')),
       h('div', { class: 'button-row' },
-        !stale && h('button', { type: 'button', class: 'button secondary', onclick: () => openBalancesSheet(repo) }, 'Update balances'),
+        !stale && h('button', { type: 'button', class: 'button secondary', onclick: () => openBalancesSheet(repo) }, 'Update Balances'),
         moveButton(repo)),
       nw.groups.map((g) => h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate || r.payments || r.income || r.settled || r.moved || r.live?.pricedAt) ? '~' : ''}${gbp(g.pence)}`)),
         h('ul', { class: 'list' }, g.accounts.map((r) => accountRow(r, todayDate))))),
       movesSection(repo, { showAll: showAllMoves, onShowAll: () => { showAllMoves = true; render(); } }),
-      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo) }, 'Add an account'))));
+      h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo) }, 'Add an Account'))));
   }
 
   render();

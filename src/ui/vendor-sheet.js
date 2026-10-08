@@ -20,9 +20,9 @@ export function openVendorSheet(repo, vendor) {
   const save = h('button', { type: 'button', class: 'button primary', onclick: () => submit() });
 
   function renderSave() {
-    const need = !f.name.trim() ? 'Enter a name' : null;
+    const need = !f.name.trim() ? 'Enter a Name' : null;
     save.disabled = !!need;
-    save.textContent = need ?? 'Save changes';
+    save.textContent = need ?? 'Save Changes';
   }
 
   function renderAliases() {
@@ -38,7 +38,7 @@ export function openVendorSheet(repo, vendor) {
     } }, 'Add');
     input.addEventListener('input', () => input.setCustomValidity(''));
     fill(aliasList,
-      h('span', { class: 'field-label' }, 'Also arrives as'),
+      h('span', { class: 'field-label' }, 'Also Arrives As'),
       aliases.length
         ? h('ul', { class: 'list' }, aliases.map((a) => h('li', { class: 'total-row' },
           h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, a.alias)),
@@ -79,13 +79,13 @@ export function openVendorSheet(repo, vendor) {
     field('Name', name),
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Category'),
       chips({ label: 'Category', options: withRemoved(categories, f.categoryId, S.categories), value: f.categoryId, onChange: (v) => { f.categoryId = v; } })),
-    field('Usual currency', currency),
-    methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Usually paid with'),
-      chips({ label: 'Usually paid with', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => { f.methodId = v; } })),
+    field('Usual Currency', currency),
+    methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Usually Paid With'),
+      chips({ label: 'Usually Paid With', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => { f.methodId = v; } })),
     aliasList,
     h('div', { class: 'sheet-actions' },
       save,
-      h('button', { type: 'button', class: 'button danger', onclick: remove }, 'Delete merchant'))));
+      h('button', { type: 'button', class: 'button danger', onclick: remove }, 'Delete Merchant'))));
   renderAliases();
   renderSave();
 }

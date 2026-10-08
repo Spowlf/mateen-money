@@ -80,9 +80,9 @@ export function openPersonSheet(repo, personId) {
     const date = h('input', { class: 'input', type: 'date', value: latest, max: latest, required: true, onchange: () => renderButton() });
     const button = h('button', { type: 'button', class: 'button primary' });
     function renderButton() {
-      const need = !even && !accounts.length ? 'Add an account first' : !even && !picked.get(line.currency) ? 'Pick an account' : !date.value ? 'Pick a date' : null;
+      const need = !even && !accounts.length ? 'Add an Account First' : !even && !picked.get(line.currency) ? 'Pick an Account' : !date.value ? 'Pick a Date' : null;
       button.disabled = !!need;
-      button.textContent = need ?? (even ? 'Close these bills' : `Settle ${amount}`);
+      button.textContent = need ?? (even ? 'Close These Bills' : `Settle ${amount}`);
     }
     button.addEventListener('click', () => settleUp({ personId, currency: line.currency, accountId: even ? null : picked.get(line.currency), date: date.value }, line));
     renderButton();

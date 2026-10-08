@@ -3,7 +3,7 @@
 import { h, chips, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { money, whenPhrase, liveSorted, runAction } from './format.js';
 import { splitBlock, saveLabel } from './split-block.js';
-import { today, formatMoney, toMinor, toDecimalText, tidyName, sortChoices, SYMBOL_CURRENCIES, emptySplit, isSplitOn, splitParts, splitMissing } from '../engine/index.js';
+import { titleCase, today, formatMoney, toMinor, toDecimalText, tidyName, sortChoices, SYMBOL_CURRENCIES, emptySplit, isSplitOn, splitParts, splitMissing } from '../engine/index.js';
 
 export const sortContext = (S) => ({ vendors: S.vendors, aliases: S.aliases, entries: S.entries, categories: S.categories, todayDate: today() });
 
@@ -44,10 +44,10 @@ export function openSortSheet(repo, shown) {
   const splitChoice = () => (isSplitOn(split) ? { splits: splitParts(split, amount(), currency).parts } : {});
   const save = h('button', { type: 'button', class: 'button primary' });
   const renderSave = () => {
-    const need = !income && !categoryId ? 'Pick a category' : !currency ? 'Pick a currency' : !income && !name.value.trim() ? 'Enter a merchant name'
+    const need = !income && !categoryId ? 'Pick a Category' : !currency ? 'Pick a Currency' : !income && !name.value.trim() ? 'Enter a Merchant Name'
       : splitMissing(split, amount(), currency);
     save.disabled = !!need;
-    save.textContent = need ?? (isSplitOn(split) ? saveLabel(split, amount(), currency) : 'Save');
+    save.textContent = need ? titleCase(need) : (isSplitOn(split) ? saveLabel(split, amount(), currency) : 'Save');
   };
   const splitHolder = h('div', {});
   const drawSplit = () => {
@@ -73,14 +73,14 @@ export function openSortSheet(repo, shown) {
       h('button', { type: 'button', class: 'text-button', onclick: () => {
         if (splitMissing(split, amount(), currency)) return toast(`${splitMissing(split, amount(), currency)}.`);
         sortPayment(repo, entry, { vendorId: suggestion.id, ...(entry.needsCurrency && currency ? { currency } : {}), ...noteChoice(), ...splitChoice() }, s.close);
-      } }, `File under ${suggestion.name}`)),
+      } }, `File Under ${suggestion.name}`)),
     entry.needsCurrency === 1 && field('Currency', chips({
       label: 'Currency',
       options: (SYMBOL_CURRENCIES[entry.symbol] ?? [entry.currency]).map((c) => ({ value: c, label: formatMoney(reread(entry, c), c) })),
       value: null,
       onChange: (v) => { currency = v; drawSplit(); renderSave(); },
     })),
-    !income && field('Merchant name', name),
+    !income && field('Merchant Name', name),
     field('Description', note),
     !income && field('Category', chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
     splitHolder,
@@ -93,7 +93,7 @@ export function openSortSheet(repo, shown) {
           s.close();
           toast(`Deleted ${money(entry)} ${income ? 'from' : 'at'} ${entry.merchant}`, { label: 'Undo', run: () => runAction(() => repo.restoreEntry(entry.id)) });
         }),
-      }, income ? 'Delete refund' : 'Delete payment'))));
+      }, income ? 'Delete Refund' : 'Delete Payment'))));
   save.addEventListener('click', () => sortPayment(repo, entry, income ? { currency, ...noteChoice() } : {
     categoryId, vendorName: name.value.trim(), ...(entry.needsCurrency ? { currency } : {}), ...noteChoice(), ...splitChoice(),
   }, s.close));
