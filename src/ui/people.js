@@ -4,7 +4,7 @@
 
 import { h, fill, chips, field, sheet, toast } from './dom.js';
 import { runAction } from './format.js';
-import { today, formatDay, formatMoney, owed, owedPhrase, OWED_TO_ME } from '../engine/index.js';
+import { partsInZone, DEFAULT_TIME_ZONE, formatDay, formatMoney, owed, owedPhrase, OWED_TO_ME } from '../engine/index.js';
 
 const peopleState = (S) => owed({ people: S.people ?? [], splits: S.splits ?? [], settlements: S.settlements ?? [], entries: S.entries });
 
@@ -75,7 +75,9 @@ export function openPersonSheet(repo, personId) {
     const amount = formatMoney(Math.abs(line.netMinor), line.currency);
     const accounts = settleAccounts(S);
     if (!picked.has(line.currency)) picked.set(line.currency, defaultAccount(accounts));
-    const date = h('input', { class: 'input', type: 'date', value: today(), max: today(), required: true, onchange: () => renderButton() });
+    // The Worker takes today in the synced time zone, so the picker stops there too.
+    const latest = partsInZone(Date.now(), repo.setting('timeZone', DEFAULT_TIME_ZONE)).date;
+    const date = h('input', { class: 'input', type: 'date', value: latest, max: latest, required: true, onchange: () => renderButton() });
     const button = h('button', { type: 'button', class: 'button primary' });
     function renderButton() {
       const need = !even && !accounts.length ? 'Add an account first' : !even && !picked.get(line.currency) ? 'Pick an account' : !date.value ? 'Pick a date' : null;
