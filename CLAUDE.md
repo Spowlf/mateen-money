@@ -127,6 +127,8 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 - 2026-10-08: Restore keeps each row's `updatedAt` from the backup, since a balance and the payments and settle-ups on its day are ordered by it. Splits are deleted with their payment at the payment's own `deletedAt` and come back with it, or as sent with the restore (`splitWrites`). A bill someone else paid never teaches its merchant a card.
 - 2026-10-07: History's switch is Payments / Income / Merchants / People, each segment as wide as its label (`segmented({ className: 'fit' })`), so all four fit at 375px; under 360px they're 1px smaller, like the tab labels. People shows "Owes you £12.50" in the income colour and "You owe £8.00" in the spend colour (the way the money will move). A split payment's row shows the share with "of £40.00, split".
 
+- 2026-10-08: Moves between the user's own accounts (`docs/superpowers/specs/2026-10-08-moves-design.md`): the user sees "move", never "transfer" (the table is `transfers`). A move records what was sent and what arrived, each in its account's currency (Received is pre-filled at the latest rates until typed in), carries both balances on ("1 move since") and is never spending or income. An account with holdings ignores moves (Flex already shows the deposit). It's recorded with "Move money" on Accounts and listed under Moves there (sent amount, "→ S$865.20" under it), not on Log or History. A deleted account's moves still count on the other side.
+
 ## Writing style
 
 Applies to every string the user sees, including notification text from the Worker.

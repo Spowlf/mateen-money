@@ -4,6 +4,7 @@
 
 import { h, fill, chips, field, sheet, toast } from './dom.js';
 import { runAction } from './format.js';
+import { moveButton, movesSection } from './transfers.js';
 import {
   today, nowTime, gbp, formatMoney, formatDay, toDecimalText, netWorth, latestBalance, balanceRows, balanceMinor, undoRows,
   updatedPhrase, staleLine, isIbkrName, ACCOUNT_KINDS, COMMON_CURRENCIES,
@@ -27,11 +28,11 @@ export function kindIcon(kind) {
   return svg;
 }
 
-// Each balance carried on with the card payments logged since it was typed.
+// Each balance carried on with the card payments, settle-ups and moves logged since it was typed.
 // IBKR moves with the latest prices instead.
 export const worth = (S) => netWorth({
   accounts: S.accounts, balances: S.balances, rates: S.rates, methods: S.methods, entries: S.entries,
-  holdings: S.holdings, prices: S.prices, settlements: S.settlements ?? [], todayDate: today(),
+  holdings: S.holdings, prices: S.prices, settlements: S.settlements ?? [], transfers: S.transfers ?? [], todayDate: today(),
 });
 export const rowsOf = (S) => worth(S).groups.flatMap((g) => g.accounts);
 export const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -45,15 +46,15 @@ export function pricesAt(ms, todayDate) {
 
 /**
  * "Updated 27 Aug 2026, 14 payments since", "…, 1 payment in since", "…, 2 payments out, 1 in since",
- * "…, 1 settle-up since";
+ * "…, 1 settle-up since", "…, 1 move since";
  * IBKR: "Prices at 14:32" or "Close on 1 Oct 2026".
  */
 export function updatedLine(r, todayDate) {
   if (r.live) return r.live.pricedAt ? pricesAt(r.live.pricedAt, todayDate) : `Close on ${formatDay(r.balance.date)}`;
   const since = r.payments && r.income ? `${plural(r.payments, 'payment')} out, ${r.income} in`
     : r.income ? `${plural(r.income, 'payment')} in` : r.payments && plural(r.payments, 'payment');
-  const moves = [since, r.settled && plural(r.settled, 'settle-up')].filter(Boolean).join(', ');
-  return [updatedPhrase(r.balance.date, todayDate), moves && `${moves} since`].filter(Boolean).join(', ');
+  const logged = [since, r.settled && plural(r.settled, 'settle-up'), r.moved && plural(r.moved, 'move')].filter(Boolean).join(', ');
+  return [updatedPhrase(r.balance.date, todayDate), logged && `${logged} since`].filter(Boolean).join(', ');
 }
 
 // The balance as an input shows it: "2016.76", "-25.00".
@@ -119,7 +120,7 @@ export function openAccountSheet(repo, account = null) {
     const date = h('input', { class: 'input', type: 'date', value: f.date, max: today(), required: true, onchange: () => set({ date: date.value }) });
     const hint = account && latest && latest.currency !== f.currency ? `The last balance was in ${latest.currency}.`
       : !latest ? (f.kind === 'current' ? 'Below zero for an overdraft: -25.00.' : null)
-      : carried?.payments || carried?.income || carried?.settled ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
+      : carried?.payments || carried?.income || carried?.settled || carried?.moved ? `${updatedLine(carried, today())}: ~${formatMoney(carried.amountMinor, latest.currency)} now. Type today’s balance to correct it.`
         : `${updatedPhrase(latest.date, today())}.`;
     // Cards are toggles, not one choice: an account can have several.
     const cards = h('div', { class: 'chips', role: 'group', 'aria-label': 'Payment methods' }, methods.map((m) => {
@@ -301,13 +302,14 @@ export const connectFirst = () => h('section', { class: 'empty' },
 
 export function renderAccounts(root, { repo }) {
   const S = repo.state;
+  let showAllMoves = false;
 
   function accountRow(r, todayDate) {
     const { account, balance } = r;
     const foreign = balance && balance.currency !== 'GBP';
-    const moved = r.payments || r.income || r.settled || r.live?.pricedAt;
-    const own = balance && `${moved ? '~' : ''}${formatMoney(r.amountMinor, balance.currency)}`;
-    const tilde = foreign || moved ? '~' : '';
+    const carried = r.payments || r.income || r.settled || r.moved || r.live?.pricedAt;
+    const own = balance && `${carried ? '~' : ''}${formatMoney(r.amountMinor, balance.currency)}`;
+    const tilde = foreign || carried ? '~' : '';
     const sub = balance ? updatedLine(r, todayDate) : 'No balance yet';
     // IBKR opens its own screen (holdings, gain, activity); any other account its sheet.
     const open = r.live ? () => { location.hash = '#ibkr'; } : () => openAccountSheet(repo, account);
@@ -336,10 +338,13 @@ export function renderAccounts(root, { repo }) {
       stale && h('div', { class: 'warning stale-warning' },
         h('p', {}, stale),
         h('button', { type: 'button', class: 'text-button', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
-      !stale && h('div', {}, h('button', { type: 'button', class: 'button secondary', onclick: () => openBalancesSheet(repo) }, 'Update balances')),
+      h('div', { class: 'button-row' },
+        !stale && h('button', { type: 'button', class: 'button secondary', onclick: () => openBalancesSheet(repo) }, 'Update balances'),
+        moveButton(repo)),
       nw.groups.map((g) => h('section', { class: 'section' },
-        h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate || r.payments || r.income || r.settled || r.live?.pricedAt) ? '~' : ''}${gbp(g.pence)}`)),
+        h('h2', { class: 'subhead' }, h('span', {}, g.name), h('span', { class: 'subhead-amount num' }, `${g.accounts.some((r) => r.forDate || r.payments || r.income || r.settled || r.moved || r.live?.pricedAt) ? '~' : ''}${gbp(g.pence)}`)),
         h('ul', { class: 'list' }, g.accounts.map((r) => accountRow(r, todayDate))))),
+      movesSection(repo, { showAll: showAllMoves, onShowAll: () => { showAllMoves = true; render(); } }),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openAccountSheet(repo) }, 'Add an account'))));
   }
 

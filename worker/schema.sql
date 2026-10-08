@@ -315,3 +315,21 @@ CREATE TABLE IF NOT EXISTS settlements (
   rev INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS settlements_rev ON settlements (rev);
+
+-- Money moved between the user's own accounts ("moves" to the user). What left the From account
+-- and what arrived in the To account, each in that account's currency, so a bank's fee and rate
+-- land exactly. Carries both accounts' balances on in Net Worth; never spending or income.
+CREATE TABLE IF NOT EXISTS transfers (
+  id TEXT PRIMARY KEY,
+  date TEXT NOT NULL,
+  fromAccountId TEXT NOT NULL,
+  fromAmountMinor INTEGER NOT NULL,
+  fromCurrency TEXT NOT NULL,
+  toAccountId TEXT NOT NULL,
+  toAmountMinor INTEGER NOT NULL,
+  toCurrency TEXT NOT NULL,
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER,
+  rev INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS transfers_rev ON transfers (rev);

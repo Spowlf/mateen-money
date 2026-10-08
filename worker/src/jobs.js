@@ -64,11 +64,11 @@ export async function refreshRates(ctx) {
  */
 export async function saveSnapshot(ctx, prices) {
   const { store, today } = ctx;
-  const [accounts, balances, rates, methods, entries, holdings, settlements] = await Promise.all(
-    ['accounts', 'balances', 'rates', 'methods', 'entries', 'holdings', 'settlements'].map((t) => store.live(t)),
+  const [accounts, balances, rates, methods, entries, holdings, settlements, transfers] = await Promise.all(
+    ['accounts', 'balances', 'rates', 'methods', 'entries', 'holdings', 'settlements', 'transfers'].map((t) => store.live(t)),
   );
   if (!accounts.length) return;
-  const nw = netWorth({ accounts, balances, rates, methods, entries, holdings, prices, settlements, todayDate: today });
+  const nw = netWorth({ accounts, balances, rates, methods, entries, holdings, prices, settlements, transfers, todayDate: today });
   if (!nw.groups.some((g) => g.accounts.some((r) => r.pence !== null))) return;
   const old = await store.get('snapshots', today);
   if (old && !old.deletedAt && old.gbpPence === nw.totalPence) return;

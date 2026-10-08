@@ -9,10 +9,10 @@
 // Money is integer minor units (see exponent() in src/engine/money.js). Dates are 'YYYY-MM-DD'.
 
 export const DB_NAME = 'mateen-money';
-export const DB_VERSION = 5;   // 2: budgets; 3: accounts and balances; 4: holdings, activity, snapshots; 5: people, splits, settlements
+export const DB_VERSION = 6;   // 2: budgets; 3: accounts and balances; 4: holdings, activity, snapshots; 5: people, splits, settlements; 6: transfers
 
 /** Tables that sync from the backend. */
-export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots', 'people', 'splits', 'settlements'];
+export const SYNCED = ['entries', 'vendors', 'aliases', 'categories', 'methods', 'recurring', 'trips', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots', 'people', 'splits', 'settlements', 'transfers'];
 
 // store name -> { keyPath, indexes: { name: keyPath } }
 export const STORES = {
@@ -35,6 +35,7 @@ export const STORES = {
   people: { keyPath: 'id', indexes: {} },
   splits: { keyPath: 'id', indexes: {} },
   settlements: { keyPath: 'id', indexes: {} },
+  transfers: { keyPath: 'id', indexes: {} },
   meta: { keyPath: 'key', indexes: {} },      // device only: { key, value } (token, rev, lastSyncedAt, draft)
 };
 
@@ -224,4 +225,9 @@ export const STORES = {
  *   people       { id, name, sort, archived }
  *   splits       { id, entryId, personId, amountMinor, currency, direction: 'owedToMe' | 'iOwe', settlementId }
  *   settlements  { id, personId, date, amountMinor, currency, direction: 'in' | 'out', accountId }
+ */
+
+/**
+ * Moves between the user's own accounts ("moves" to the user; see carriedBalance in src/engine/networth.js):
+ *   transfers    { id, date, fromAccountId, fromAmountMinor, fromCurrency, toAccountId, toAmountMinor, toCurrency }
  */

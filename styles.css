@@ -539,6 +539,8 @@ a.button { text-decoration: none; }
 @media (hover: hover) { .button.secondary:hover { background: var(--accent-soft); color: var(--accent-press); } }
 .button.secondary:disabled { color: var(--ink-2); background: transparent; cursor: default; }
 .button.danger { color: var(--danger); }
+/* Secondary buttons side by side (Update balances, Move money); they wrap on a narrow screen. */
+.button-row { display: flex; flex-wrap: wrap; column-gap: var(--s5); }
 .button.danger:active { background: var(--danger-soft); }
 @media (hover: hover) { .button.danger:hover { background: var(--danger-soft); } }
 .text-button {

@@ -143,7 +143,7 @@ const settle = (extra) => ({ id: 't', personId: 'alex', date: '2026-09-28', amou
 
 test('carried: a settle-up into the account adds, one out of it takes off', () => {
   const got = carriedBalance({ balance: typed, accountId: 'hsbc', settlements: [settle(), settle({ id: 't2', direction: 'out', amountMinor: 500 })] });
-  assert.deepEqual(got, { amountMinor: 50000 + 1250 - 500, payments: 0, income: 0, settled: 2 });
+  assert.deepEqual(got, { amountMinor: 50000 + 1250 - 500, payments: 0, income: 0, settled: 2, moved: 0 });
 });
 
 test('carried: settle-ups before the balance, into another account, deleted or of zero don’t count', () => {
@@ -154,7 +154,7 @@ test('carried: settle-ups before the balance, into another account, deleted or o
     settle({ deletedAt: 3 }),
     settle({ amountMinor: 0, accountId: null }),
   ];
-  assert.deepEqual(carriedBalance({ balance: typed, accountId: 'hsbc', settlements }), { amountMinor: 50000, payments: 0, income: 0, settled: 0 });
+  assert.deepEqual(carriedBalance({ balance: typed, accountId: 'hsbc', settlements }), { amountMinor: 50000, payments: 0, income: 0, settled: 0, moved: 0 });
 });
 
 test('carried: a settle-up in another currency is converted at the latest rate', () => {

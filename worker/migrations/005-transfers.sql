@@ -1,0 +1,4 @@
+-- Moves between accounts: the new transfers table comes from worker/schema.sql, which only adds
+-- tables that aren't there yet. Run once on a database made before it:
+--   npx wrangler d1 execute mateen-money --remote --file worker/schema.sql
+-- Nothing else changes, so this file has no statements of its own.

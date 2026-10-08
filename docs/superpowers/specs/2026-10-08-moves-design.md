@@ -1,6 +1,6 @@
 # Moves Between Accounts — Design
 
-Date: 2026-10-08. Status: design agreed in chat; awaiting the user's review of this spec.
+Date: 2026-10-08. Status: built 2026-10-08 (the user skipped the plan). Changes made while building are marked *Built*.
 
 ## Goal
 
@@ -68,14 +68,14 @@ CREATE INDEX IF NOT EXISTS transfers_rev ON transfers (rev);
 New `src/ui/transfers.js` (added to `FILES` in `sw.js`), used by `src/ui/accounts.js`.
 
 **Accounts screen**
-- A "Move Money" secondary button beside "Update Balances". It needs two live accounts (any kind); otherwise it's disabled and says "Add two accounts".
-- A Moves section under the accounts list, newest first (by date, then `updatedAt`): 3 rows, then "Show N more". Each row: "HSBC → Revolut", the amounts ("£500.00 → S$865.20", or "£500.00" for one currency) and the date ("3 Oct 2026"). Tapping a row opens it in the move sheet. With no moves, the section isn't shown.
+- A "Move money" secondary button beside "Update balances" (*Built:* buttons are sentence case, like "Update balances"). It needs two live accounts (any kind); otherwise it's disabled and says "Add two accounts".
+- A Moves section under the accounts list, newest first (by date, then `updatedAt`): 3 rows, then "Show N more". Each row: "HSBC → Revolut" and the date ("3 Oct 2026"), with the amount sent and, when it differs, "→ S$865.20" under it (*Built:* stacked, as one line squeezed the names at 340px). Tapping a row opens it in the move sheet. With no moves, the section isn't shown.
 - An account row with moves since its balance adds "1 move since" / "2 moves since" to its line, like "2 payments since".
 
 **Move sheet** ("Move Money", or "Edit Move")
 - From: account chips (live accounts). To: account chips, without the From one.
 - Sent: an amount box in From's currency.
-- Received: shown only when the currencies differ, in To's currency, pre-filled with the estimate and marked "~ at the latest rate. Change it to what arrived." Once typed in, it stops following Sent.
+- Received: shown only when the currencies differ, in To's currency, pre-filled with the estimate and marked "An estimate at the latest rate. Change it to what arrived." Once typed in, it stops following Sent.
 - Date: defaults to today.
 - Button: "Move £500.00"; disabled, it says what's missing ("Pick two accounts", "Enter an amount").
 - Saving shows "Moved £500.00 to Revolut" with Undo (which deletes the move). Editing shows "Saved move".

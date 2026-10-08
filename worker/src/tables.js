@@ -47,6 +47,10 @@ export const TABLES = {
   people: table(['name', 'sort', 'archived'], { required: ['name'], defaults: { sort: 0, archived: 0 } }),
   splits: table(['entryId', 'personId', 'amountMinor', 'currency', 'direction', 'settlementId'], { clientWrites: false }),
   settlements: table(['personId', 'date', 'amountMinor', 'currency', 'direction', 'accountId'], { clientWrites: false }),
+  // Money moved between the user's own accounts ("moves" to the user): the amount sent and received, each in its account's currency.
+  transfers: table(['date', 'fromAccountId', 'fromAmountMinor', 'fromCurrency', 'toAccountId', 'toAmountMinor', 'toCurrency'], {
+    required: ['date', 'fromAccountId', 'fromAmountMinor', 'fromCurrency', 'toAccountId', 'toAmountMinor', 'toCurrency'],
+  }),
   snapshots: table(['date', 'gbpPence'], { clientWrites: false }),
 };
 

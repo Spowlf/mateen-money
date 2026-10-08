@@ -8,7 +8,7 @@ import { splitsOf, shareMinor } from './splits.js';
 export const BACKUP_APP = 'mateen-money';
 export const BACKUP_VERSION = 1;
 /** Tables a backup holds, in the order they're restored. */
-export const BACKUP_TABLES = ['categories', 'methods', 'vendors', 'aliases', 'trips', 'recurring', 'entries', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots', 'people', 'splits', 'settlements'];
+export const BACKUP_TABLES = ['categories', 'methods', 'vendors', 'aliases', 'trips', 'recurring', 'entries', 'reviews', 'rates', 'settings', 'budgets', 'accounts', 'balances', 'holdings', 'activity', 'snapshots', 'people', 'splits', 'settlements', 'transfers'];
 
 /** Everything live, as one JSON-ready object. state has one array per table. */
 export function backupData(state, { now }) {

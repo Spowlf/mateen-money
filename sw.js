@@ -53,6 +53,7 @@ const FILES = [
   'src/engine/totals.js',
   'src/engine/vendors.js',
   'src/ui/accounts.js',
+  'src/ui/transfers.js',
   'src/ui/backup.js',
   'src/ui/budget-sheet.js',
   'src/ui/charts.js',

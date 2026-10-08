@@ -59,6 +59,13 @@ function check(name, row, today) {
     if (!Number.isInteger(row.amountMinor)) return 'enter the balance.';
     if (!validCurrency(row.currency)) return 'pick a currency.';
   }
+  if (name === 'transfers') {
+    if (row.fromAccountId === row.toAccountId) return 'pick two different accounts.';
+    const amounts = [row.fromAmountMinor, row.toAmountMinor];
+    if (amounts.some((a) => !Number.isInteger(a) || a <= 0)) return 'enter an amount above zero.';
+    if (!validCurrency(row.fromCurrency) || !validCurrency(row.toCurrency)) return 'pick a currency.';
+    if (!validDate(row.date) || row.date > today) return 'pick a date up to today.';
+  }
   return null;
 }
 
@@ -107,6 +114,13 @@ export async function saveRow(ctx, name, id, body) {
   if (name === 'people' && (row.archived || row.deletedAt) && !(existing?.archived || existing?.deletedAt)) {
     const busy = await personInUse(store, id);
     if (busy) throw refuse(busy, 409);
+  }
+  // A move names two live accounts (a deleted account's old moves can still be deleted).
+  if (name === 'transfers' && !row.deletedAt) {
+    for (const accountId of [row.fromAccountId, row.toAccountId]) {
+      const account = await store.get('accounts', accountId);
+      if (!account || account.deletedAt) throw refuse('that account was deleted.');
+    }
   }
   if (name === 'trips') writes.entries = await tripEntries(store, existing, row);
   return store.write(writes, ctx.now);
