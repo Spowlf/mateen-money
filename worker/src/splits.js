@@ -8,13 +8,16 @@ import { validDate, validCurrency } from './entries.js';
 
 const live = (row) => row && !row.deletedAt;
 
-/** The payment's settled splits, and the message that refuses changing it while they're settled. */
-async function settledLock(store, entryId) {
-  const settled = (await store.all('splits', 'entryId = ? AND deletedAt IS NULL AND settlementId IS NOT NULL', entryId));
+/** The message that refuses changing a payment while any of its splits is settled, or null. */
+async function settledLock(store, splits) {
+  const settled = splits.filter((s) => s.settlementId);
   if (!settled.length) return null;
   const person = await store.get('people', settled[0].personId);
   return `${person?.name ?? 'Someone'} already settled this bill. Undo that settle-up first.`;
 }
+
+/** A payment's live splits, deleted with it at its own time, so they come back with it. */
+const deleteWith = (splits, deletedAt) => splits.filter(live).map((s) => ({ ...s, deletedAt }));
 
 /** Splits as a comparable list: person and amount, in person order. */
 const shape = (rows) => JSON.stringify(rows.map((s) => [s.personId, s.amountMinor]).sort());
@@ -23,43 +26,46 @@ const shape = (rows) => JSON.stringify(rows.map((s) => [s.personId, s.amountMino
  * The split rows to write with a payment being saved (PUT /entries/:id), or [] when its splits
  * don't change. body.splits ([{ id?, personId, amountMinor }], [] to unsplit) replaces the unsettled
  * ones; left out, they're kept, unless the payment's amount, currency, payer or kind changed, which
- * needs them sent again. A payment with a settled split can't change any of those.
+ * needs them sent again. A payment with a settled split can't change any of those. Deleting the
+ * payment deletes its splits with it; bringing it back brings them back, or the ones sent.
  * Throws a refusal ("Nothing changed: …") for anything not allowed.
  */
 export async function splitWrites(ctx, existing, entry, body) {
   const { store, now } = ctx;
-  const before = existing ? await store.all('splits', 'entryId = ? AND deletedAt IS NULL', entry.id) : [];
+  const all = existing ? await store.all('splits', 'entryId = ?', entry.id) : [];
+  // Brought back from a delete: the splits deleted with it are its splits again.
+  const restoring = !!existing?.deletedAt && !entry.deletedAt;
+  const before = all.filter((s) => (restoring ? s.deletedAt === existing.deletedAt : !s.deletedAt));
   const sent = Array.isArray(body.splits) ? body.splits : null;
   if ('splits' in body && body.splits !== null && !sent) throw refuse('send the split as a list.');
+  const changedFields = existing
+    && ['amountMinor', 'currency', 'paidBy', 'kind'].some((f) => (existing[f] ?? null) !== (entry[f] ?? null));
 
   // A settled bill keeps its amount, currency, payer and split until that settle-up is undone.
-  const lock = existing && await settledLock(store, entry.id);
+  const lock = await settledLock(store, before);
   if (lock) {
-    const changed = ['amountMinor', 'currency', 'paidBy', 'kind'].some((f) => (existing[f] ?? null) !== (entry[f] ?? null))
-      || (sent && shape(sent) !== shape(before)) || (entry.deletedAt && !existing.deletedAt);
-    if (changed) throw refuse(lock, 409);
+    if (changedFields || (sent && shape(sent) !== shape(before)) || (entry.deletedAt && !existing.deletedAt)) throw refuse(lock, 409);
     return [];
   }
 
-  // Brought back from a delete: its splits come back with it (followEntry), as they were.
-  if (existing?.deletedAt && !entry.deletedAt && !sent) return [];
+  // Deleted: its splits go with it; still deleted: they stay as they are.
+  if (entry.deletedAt) return !existing || existing.deletedAt ? [] : deleteWith(before, entry.deletedAt);
 
-  const reshaped = existing && before.length
-    && ['amountMinor', 'currency', 'paidBy', 'kind'].some((f) => (existing[f] ?? null) !== (entry[f] ?? null));
+  const reshaped = before.length && changedFields;
   if (!sent) {
     if (entry.paidBy && !before.length) throw refuse('enter your share of what they paid.');
     if (reshaped) throw refuse(existing.currency !== entry.currency ? 'split it again in the new currency.' : 'split it again for the new amount.');
-    return [];
+    return restoring ? before.map((s) => ({ ...s, deletedAt: null })) : [];
   }
 
   if (sent.length && entry.kind === 'income') throw refuse('income can’t be split.');
   if (sent.length && entry.needsCurrency) throw refuse('pick the currency first.');
   const parts = sent.map((p) => ({ id: p?.id ?? null, personId: p?.personId, amountMinor: p?.amountMinor }));
-  for (const p of parts) {
-    const person = typeof p.personId === 'string' && await store.get('people', p.personId);
+  const people = await Promise.all(parts.map((p) => typeof p.personId === 'string' && store.get('people', p.personId)));
+  parts.forEach((p, i) => {
     // Someone removed from the list stays on the bills they were already on.
-    if (!live(person) || (person.archived && !before.some((s) => s.personId === p.personId))) throw refuse('pick people who are still in your list.');
-  }
+    if (!live(people[i]) || (people[i].archived && !before.some((s) => s.personId === p.personId))) throw refuse('pick people who are still in your list.');
+  });
   const problem = validateSplit({ amountMinor: entry.amountMinor, currency: entry.currency, paidBy: entry.paidBy, parts });
   if (problem) throw refuse(`${problem.charAt(0).toLowerCase()}${problem.slice(1)}.`);
 
@@ -74,21 +80,9 @@ export async function splitWrites(ctx, existing, entry, body) {
       entryId: entry.id, personId: p.personId, amountMinor: p.amountMinor, currency: entry.currency, direction, settlementId: null, deletedAt: null,
     };
   });
-  const removed = before.filter((s) => !rows.some((r) => r.id === s.id)).map((s) => ({ ...s, deletedAt: now }));
+  // Splits left out are deleted; ones still deleted from before a restore stay as they are.
+  const removed = restoring ? [] : before.filter((s) => !rows.some((r) => r.id === s.id)).map((s) => ({ ...s, deletedAt: now }));
   return [...rows, ...removed];
-}
-
-/**
- * Splits that go and come back with their payment: deleted with it (same time), restored with it.
- * Called when a payment's deletedAt changes.
- */
-export async function followEntry(ctx, existing, entry) {
-  const { store, now } = ctx;
-  if (!existing) return [];
-  const rows = await store.all('splits', 'entryId = ?', entry.id);
-  if (entry.deletedAt && !existing.deletedAt) return rows.filter(live).map((s) => ({ ...s, deletedAt: now }));
-  if (!entry.deletedAt && existing.deletedAt) return rows.filter((s) => s.deletedAt === existing.deletedAt).map((s) => ({ ...s, deletedAt: null }));
-  return [];
 }
 
 /** DELETE /entries/:id: the payment and its splits, in one write; refused while settled. */
@@ -97,10 +91,10 @@ export async function deleteEntry(ctx, id) {
   const row = await store.get('entries', id);
   if (!row) throw refuse('that no longer exists.', 404);
   if (row.deletedAt) return store.write({ entries: [row] }, now);
-  const lock = await settledLock(store, id);
+  const splits = await store.all('splits', 'entryId = ? AND deletedAt IS NULL', id);
+  const lock = await settledLock(store, splits);
   if (lock) throw refuse(lock, 409);
-  const entry = { ...row, deletedAt: now };
-  return store.write({ entries: [entry], splits: await followEntry(ctx, row, entry) }, now);
+  return store.write({ entries: [{ ...row, deletedAt: now }], splits: deleteWith(splits, now) }, now);
 }
 
 /**
@@ -148,12 +142,8 @@ export async function undoSettlement(ctx, id) {
 /** A person can't be removed while anything with them is open. Returns the refusal message, or null. */
 export async function personInUse(store, personId) {
   const open = await store.all('splits', 'personId = ? AND deletedAt IS NULL AND settlementId IS NULL', personId);
-  for (const s of open) {
-    const entry = await store.get('entries', s.entryId);
-    if (live(entry)) {
-      const person = await store.get('people', personId);
-      return `${person?.name ?? 'They'} still has bills to settle. Settle up first.`;
-    }
-  }
-  return null;
+  const entries = await Promise.all(open.map((s) => store.get('entries', s.entryId)));
+  if (!entries.some(live)) return null;
+  const person = await store.get('people', personId);
+  return `${person?.name ?? 'They'} still has bills to settle. Settle up first.`;
 }

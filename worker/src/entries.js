@@ -10,7 +10,7 @@ import {
 import { TABLES } from './tables.js';
 import { ensureRates } from './rates.js';
 import { refuse } from './http.js';
-import { splitWrites, followEntry } from './splits.js';
+import { splitWrites } from './splits.js';
 
 const ENTRY_DEFAULTS = Object.fromEntries(TABLES.entries.columns.map((c) => [c, TABLES.entries.defaults[c] ?? null]));
 
@@ -100,7 +100,7 @@ export async function saveEntry(ctx, id, body) {
     if (!payer || payer.deletedAt) throw refuse('pick who paid from your list.');
     e.methodId = null;
   }
-  const splits = [...await splitWrites(ctx, existing, e, body), ...await followEntry(ctx, existing, e)];
+  const splits = await splitWrites(ctx, existing, e, body);
   if (e.spreadMonths > 1 && !e.spreadStart) e.spreadStart = defaultSpreadStart(e.date, e);
   if (e.spreadMonths === 1) e.spreadStart = null;
 
@@ -118,8 +118,10 @@ export async function saveEntry(ctx, id, body) {
     // A new payment teaches the vendor its choices. An edit teaches only what was changed,
     // so fixing a note on an old payment never brings back an old category.
     const edit = existing && !existing.deletedAt && existing.vendorId === vendor.id;
+    // A bill someone else paid has no card, so the vendor keeps the one it knows.
+    const taught = e.paidBy ? ['categoryId', 'currency'] : ['categoryId', 'currency', 'methodId'];
     if (e.categoryId) {
-      for (const f of ['categoryId', 'currency', 'methodId']) if (!edit || existing[f] !== e[f]) vendor[f] = e[f];
+      for (const f of taught) if (!edit || existing[f] !== e[f]) vendor[f] = e[f];
     }
     if (!existing) vendor.useCount = (vendor.useCount ?? 0) + 1;
     e.vendorId = vendor.id;

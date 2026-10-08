@@ -110,6 +110,43 @@ test('splits: deleted with their payment and back with Undo', async () => {
   assert.equal(liveSplits(w, 'e3').length, 1);
 });
 
+test('splits: a delete sent by PUT, with the phone’s time, comes back with its splits', async () => {
+  const w = await setup();
+  await w.call('PUT', '/entries/e1', { body: bill({ splits: [{ personId: 'alex', amountMinor: 1500 }] }) });
+  await w.call('PUT', '/entries/e1', { body: bill({ deletedAt: NOW - 5000 }) });
+  assert.deepEqual(liveSplits(w), []);
+  await w.call('PUT', '/entries/e1', { body: bill({ deletedAt: null }) });
+  assert.deepEqual(liveSplits(w), [['alex', 1500, 'owedToMe', 'GBP']]);
+});
+
+test('splits: brought back with a new split, the old rows are reused, never doubled', async () => {
+  const w = await setup();
+  await w.call('PUT', '/entries/e1', { body: bill({ splits: [{ personId: 'alex', amountMinor: 1500 }, { personId: 'sam', amountMinor: 1000 }] }) });
+  const alexId = w.rows('splits', "personId = 'alex'")[0].id;
+  await w.call('DELETE', '/entries/e1');
+  const res = await w.call('PUT', '/entries/e1', { body: bill({ deletedAt: null, splits: [{ personId: 'alex', amountMinor: 500 }] }) });
+  assert.equal(res.status, 200);
+  assert.deepEqual(liveSplits(w), [['alex', 500, 'owedToMe', 'GBP']]);
+  assert.equal(w.rows('splits', "personId = 'alex'").length, 1);
+  assert.equal(w.rows('splits', "personId = 'alex'")[0].id, alexId);
+  // The same ids sent back: one row each, with the new amounts.
+  await w.call('DELETE', '/entries/e1');
+  await w.call('PUT', '/entries/e1', { body: bill({ deletedAt: null, splits: [{ id: alexId, personId: 'alex', amountMinor: 700 }] }) });
+  assert.deepEqual(liveSplits(w), [['alex', 700, 'owedToMe', 'GBP']]);
+  assert.equal(res.body.changes.splits.filter((s) => s.id === alexId).length, 1);
+});
+
+test('splits: a friend paid; the merchant keeps the card it knows', async () => {
+  const w = await setup();
+  await w.call('PUT', '/entries/e1', { body: bill({ methodId: 'card' }) });
+  const vendorId = w.rows('entries')[0].vendorId;
+  await w.call('PUT', '/entries/e2', { body: bill({ paidBy: 'alex', splits: [{ personId: 'alex', amountMinor: 1000 }] }) });
+  assert.equal(w.rows('vendors', 'id = ?', vendorId)[0].methodId, 'card');
+  // Nor when an old payment is changed to a friend paying.
+  await w.call('PUT', '/entries/e1', { body: bill({ methodId: 'card', paidBy: 'sam', splits: [{ personId: 'sam', amountMinor: 1000 }] }) });
+  assert.equal(w.rows('vendors', 'id = ?', vendorId)[0].methodId, 'card');
+});
+
 test('settle: nets one person in one currency, stamps their splits, one write', async () => {
   const w = await setup();
   await w.call('PUT', '/entries/e1', { body: bill({ splits: [{ personId: 'alex', amountMinor: 1500 }] }) });
