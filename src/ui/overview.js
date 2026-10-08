@@ -133,11 +133,21 @@ export function renderOverview(root, { repo }) {
   function categoryTableFolded(rows, caption) {
     const folded = foldCategories(rows);
     if (folded === rows) return categoryTable(rows, { caption });
-    return h('div', { class: 'all-categories' },
-      categoryTable(folded, { caption }),
-      h('details', { class: 'table-view' },
-        h('summary', {}, 'Show All Categories'),
-        categoryTable(rows, { caption: `${caption}, every category` })));
+    // The full table replaces the folded one, so no category shows twice.
+    const short = categoryTable(folded, { caption });
+    const full = categoryTable(rows, { caption: `${caption}, every category` });
+    full.hidden = true;
+    const toggle = h('button', {
+      type: 'button', class: 'text-button', 'aria-expanded': 'false',
+      onclick: () => {
+        const showAll = full.hidden;
+        full.hidden = !showAll;
+        short.hidden = showAll;
+        toggle.setAttribute('aria-expanded', String(showAll));
+        toggle.textContent = showAll ? 'Show Fewer' : 'Show All Categories';
+      },
+    }, 'Show All Categories');
+    return h('div', { class: 'all-categories' }, short, full, h('div', {}, toggle));
   }
 
   const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
