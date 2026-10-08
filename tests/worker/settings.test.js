@@ -138,6 +138,19 @@ test('restore: a recurring occurrence already stored under another id doesn\'t b
   assert.deepEqual(w.rows('entries', 'deletedAt IS NULL').map((e) => [e.id, e.recurringId]), [['copy', 'r1']]);
 });
 
+test('restore: rows keep the time they were last changed, so a balance and its day stay in order', async () => {
+  const w = makeWorker();
+  await w.call('POST', '/batch', { body: {
+    accounts: [{ id: 'hsbc', name: 'HSBC', kind: 'current', currency: 'GBP' }],
+    balances: [{ id: 'hsbc:2026-10-01', accountId: 'hsbc', date: '2026-10-01', amountMinor: 10000, currency: 'GBP' }],
+  } });
+  const backup = await backupOf(w);
+  const typedAt = backup.tables.balances[0].updatedAt;
+  w.now = NOW + 86_400_000;
+  assert.equal((await w.call('POST', '/restore', { body: backup })).status, 200);
+  assert.equal(w.rows('balances', 'deletedAt IS NULL')[0].updatedAt, typedAt);
+});
+
 test('restore: a damaged backup changes nothing at all', async () => {
   const w = makeWorker();
   await w.call('PUT', '/entries/keep', { body: manualEntry() });

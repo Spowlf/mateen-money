@@ -74,7 +74,9 @@ export function createStore(db) {
       let count = 0;
       for (const name of SYNCED) {
         for (const row of tables[name] ?? []) {
-          statements.push(upsert(name, { ...TABLES[name].defaults, ...row, updatedAt: now }));
+          // Each row keeps the time it was last changed: a balance and the payments on its day are
+          // ordered by it, so a restore mustn't move them.
+          statements.push(upsert(name, { ...TABLES[name].defaults, ...row, updatedAt: Number.isInteger(row.updatedAt) ? row.updatedAt : now }));
           count++;
         }
       }
