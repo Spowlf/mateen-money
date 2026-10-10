@@ -18,6 +18,18 @@ import { OfflineError, ApiError } from './errors.js';
 // iOS Safari only shows :active (pressed) styles once the page listens for touches.
 document.addEventListener('touchstart', () => {}, { passive: true });
 
+// The page never scrolls (the screens scroll inside #scroller), but iOS can leave the window
+// scrolled by the status bar's height after the keyboard closes in a home screen app. Taps then
+// land that far below the finger (pressing 5 pressed 8), so put the window back at the top.
+// Not while typing: iOS scrolls the window then to keep the box above the keyboard.
+function unscrollWindow() {
+  if (document.activeElement?.matches('input, textarea, select')) return;
+  if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+}
+document.addEventListener('focusout', () => setTimeout(unscrollWindow, 50));
+window.visualViewport?.addEventListener('resize', unscrollWindow);
+window.addEventListener('scroll', unscrollWindow, { passive: true });
+
 const SCREENS = {
   log: { title: 'Log', render: renderLog },
   overview: { title: 'Overview', render: renderOverview },
