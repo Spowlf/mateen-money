@@ -131,6 +131,7 @@ A personal spending tracker for one student, in GBP. Installable web app (PWA) o
 
 - 2026-10-08: Every control is title case, not just headers, by the user's choice: buttons (disabled ones too), field labels, chips, segments, select options, toggles and disclosure summaries. Messages stay sentence case. Text made at runtime that's also used in sentences (the engine's "what's missing" texts, frequency names, split checks) stays sentence case at the source and goes through `titleCase()` where it lands on a control.
 - 2026-10-10: In the Split block, Who Paid is a native select ("Add Person" its last option) and Split With a select-like box naming who's ticked, folding out a list of tick boxes with "Add Person" (the user's choice over chips, which took many rows with a few people). Whether the list is folded out is kept on the form's split (`listOpen`), since Log redraws the block on each tick.
+- 2026-10-10: No zoom anywhere, by the user's choice: the viewport is `maximum-scale=1, user-scalable=no` on top of `touch-action: manipulation` on every element, since iOS still zoomed on a double tap with the CSS alone. It also stops iOS zooming into a focused box under 16px (`.select-small`). Pinch zoom goes with it.
 
 ## Writing style
 

@@ -108,7 +108,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { -webkit-user-select: none; user-select: none; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
-/* A quick second tap is a tap, never a zoom, anywhere on the page (pinch zoom still works).
+/* A quick second tap is a tap, never a zoom, anywhere on the page. The viewport's
+   user-scalable=no is the sure stop on iOS; this keeps taps quick there too.
    On every element, not just html: a scrolling screen starts a new touch-action chain. */
 * { touch-action: manipulation; }
 /* With a see-through status bar over the page this strip kept its white text readable and
