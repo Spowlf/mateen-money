@@ -173,7 +173,7 @@ export function renderLog(root, { repo }) {
     if (noteInput.value !== form.note) noteInput.value = form.note;
     vendorChips.hidden = income;
     if (income) return fill(vendorChips);
-    fill(vendorChips, vendorChoices(S.vendors, S.entries, form.vendorId ? '' : form.vendorName).map((v) => h('button', {
+    fill(vendorChips, vendorChoices(S.vendors, S.entries, form.vendorName).map((v) => h('button', {
       type: 'button', class: 'chip', 'aria-pressed': String(v.id === form.vendorId), onclick: () => pickVendor(v),
     }, v.name)));
   }
