@@ -151,7 +151,8 @@ export function withShares(entries, splits = []) {
 // paid. share: by amount, the user's share when someone else paid.
 
 // open: "Split this bill" was tapped, so the block stays open before anyone is picked.
-export const emptySplit = () => ({ paidBy: null, with: [], mode: 'even', amounts: {}, share: '', open: false });
+// listOpen: the Split With list is folded out.
+export const emptySplit = () => ({ paidBy: null, with: [], mode: 'even', amounts: {}, share: '', open: false, listOpen: false });
 
 /** True when the Split block says the bill is shared with anyone (or someone else paid). */
 export const isSplitOn = (split) => !!split && (!!split.paidBy || split.with.length > 0);

@@ -2,10 +2,11 @@
 // Sort Payment. Its state is the form's `split` (see the Split block in src/engine/splits.js).
 // People are whoever's in the list (Settings › People); "Add person" saves a new one straight away.
 
-import { h, fill, chips, segmented, field } from './dom.js';
+import { h, fill, segmented, field } from './dom.js';
 import { runAction } from './format.js';
 import { formatMoney, splitParts, splitMissing, isSplitOn, emptySplit } from '../engine/index.js';
 
+const ADD = '+add';
 const MODES = [{ value: 'even', label: 'Evenly' }, { value: 'amount', label: 'By Amount' }];
 
 /** People who can be picked: live and not removed, in their order. */
@@ -91,18 +92,30 @@ export function splitBlock({ repo, get, onChange, locked = null, waiting = null,
           h('button', { type: 'button', class: 'text-button', onclick: () => change({ open: true }) }, 'Split This Bill'))));
     }
     const people = livePeople(S);
-    const payerOptions = [{ value: '', label: 'You' }, ...people.map((p) => ({ value: p.id, label: p.name }))];
-    // Several can share a bill: toggles, not one choice.
-    const withChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Split With' },
-      people.filter((p) => p.id !== split.paidBy).map((p) => {
-        const pressed = split.with.includes(p.id);
-        return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(pressed),
-          onclick: () => change({ with: pressed ? split.with.filter((x) => x !== p.id) : [...split.with, p.id] }) }, p.name);
-      }),
-      h('button', { type: 'button', class: 'chip', onclick: () => { adding = 'with'; render(); } }, 'Add Person'));
-    const payer = chips({ label: 'Who Paid', options: payerOptions, value: split.paidBy ?? '',
-      onChange: (v) => change({ paidBy: v || null, with: split.with.filter((x) => x !== v) }) });
-    payer.append(h('button', { type: 'button', class: 'chip', onclick: () => { adding = 'payer'; render(); } }, 'Add Person'));
+    // Who paid is one choice: a native select, with "Add Person" as its last option.
+    const payer = h('select', { class: 'select', onchange: () => {
+      if (payer.value === ADD) { adding = 'payer'; render(); return; }
+      const v = payer.value;
+      change({ paidBy: v || null, with: split.with.filter((x) => x !== v) });
+    } },
+      h('option', { value: '', selected: !split.paidBy }, 'You'),
+      people.map((p) => h('option', { value: p.id, selected: p.id === split.paidBy }, p.name)),
+      h('option', { value: ADD }, 'Add Person'));
+    // Several can share a bill, so Split With folds out a list of tick boxes. Whether it's folded out
+    // is kept on the split (`listOpen`), since the form redraws the block on each tick.
+    const picked = people.filter((p) => p.id !== split.paidBy && split.with.includes(p.id));
+    const withList = h('details', { class: 'multi-select', open: !!split.listOpen,
+      ontoggle: () => { if (withList.open !== !!get().split.listOpen) onChange({ ...get().split, listOpen: withList.open }, { quiet: true }); } },
+      h('summary', { class: 'select', 'aria-label': `Split With: ${picked.map((p) => p.name).join(', ') || 'nobody yet'}` },
+        picked.length ? picked.map((p) => p.name).join(', ') : h('span', { class: 'multi-empty' }, 'Pick People')),
+      h('div', { class: 'multi-options' },
+        people.filter((p) => p.id !== split.paidBy).map((p) => {
+          const on = split.with.includes(p.id);
+          return h('label', { class: 'toggle' },
+            h('input', { type: 'checkbox', checked: on,
+              onchange: () => change({ with: on ? split.with.filter((x) => x !== p.id) : [...split.with, p.id] }) }), p.name);
+        }),
+        h('button', { type: 'button', class: 'text-button', onclick: () => { adding = 'with'; render(); } }, 'Add Person')));
     const others = split.with.filter((id) => id !== split.paidBy);
     const amounts = split.mode !== 'amount' ? null
       : split.paidBy
@@ -115,7 +128,7 @@ export function splitBlock({ repo, get, onChange, locked = null, waiting = null,
     fill(el,
       askPayer && field('Who Paid', payer),
       askPayer && adding === 'payer' && nameBox(),
-      field(split.paidBy ? 'Also Shared With' : 'Split With', withChips),
+      field(split.paidBy ? 'Also Shared With' : 'Split With', withList),
       adding === 'with' && nameBox(),
       segmented({ label: 'How it’s split', options: MODES, value: split.mode, onChange: (v) => change({ mode: v }) }),
       amounts,
