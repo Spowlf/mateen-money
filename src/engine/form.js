@@ -54,7 +54,8 @@ export function nextForm(form, { id, time }) {
 
 /**
  * Vendors to offer as chips: most recently used first, then most used, then by name.
- * Typing filters them, names that start with the text first.
+ * Typing filters them, names that start with the text first. One letter
+ * matches only names that start with it, since it's in most names.
  */
 export function vendorChoices(vendors, entries, query = '', n = 6) {
   const last = new Map();
@@ -68,6 +69,7 @@ export function vendorChoices(vendors, entries, query = '', n = 6) {
     if (!q) return 0;
     const name = v.name.toLowerCase();
     if (name.startsWith(q)) return 0;
+    if (q.length === 1) return -1;
     if (name.split(/\s+/).some((w) => w.startsWith(q))) return 1;
     if (name.includes(q) || normaliseMerchant(v.name).includes(normaliseMerchant(q) || q)) return 2;
     return -1;

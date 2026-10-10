@@ -70,6 +70,12 @@ test('recent vendors: typing filters, names that start with it first', () => {
   assert.deepEqual(vendorChoices(vendors, [], 'gone'), []);
 });
 
+test('recent vendors: one letter shows only names that start with it', () => {
+  assert.deepEqual(vendorChoices(vendors, [], 'a').map((v) => v.name), []);
+  assert.deepEqual(vendorChoices(vendors, [], 'h').map((v) => v.name), []);
+  assert.deepEqual(vendorChoices(vendors, [], 'S').map((v) => v.name), ['Sainsburys']);
+});
+
 test('tidy names: a payment\'s merchant becomes a readable vendor name', () => {
   assert.equal(tidyName('PRET A MANGER #1234'), 'Pret A Manger');
   assert.equal(tidyName('SQ *CORNER CAFE LONDON'), 'Corner Cafe');
