@@ -4,7 +4,7 @@
 
 import {
   priceEntry, resolveCurrency, parseAmountText, toMinor, toDecimalText, formatMoney, gbp,
-  matchVendor, normaliseMerchant, findDuplicate, DUPLICATE_WINDOW_MS, tripFor,
+  exactVendor, normaliseMerchant, findDuplicate, DUPLICATE_WINDOW_MS, tripFor,
   defaultSpreadStart, partsFromIso, partsInZone, INCOME_TYPES,
 } from '../../src/engine/index.js';
 import { TABLES } from './tables.js';
@@ -113,7 +113,7 @@ export async function saveEntry(ctx, id, body) {
   const merchant = e.merchant?.trim() || null;
   e.merchant = merchant;
   if (e.kind === 'spend' && merchant && !e.deletedAt) {
-    const found = (e.vendorId && vendors.find((v) => v.id === e.vendorId)) || matchVendor(merchant, vendors, aliases).exact;
+    const found = (e.vendorId && vendors.find((v) => v.id === e.vendorId)) || exactVendor(merchant, vendors, aliases);
     const vendor = { ...(found ?? newVendor(merchant)) };
     // A new payment teaches the vendor its choices. An edit teaches only what was changed,
     // so fixing a note on an old payment never brings back an old category.
@@ -170,7 +170,7 @@ export async function sortEntry(ctx, id, body) {
     vendor = { ...vendor };
   } else if (body.categoryId) {
     const name = body.vendorName?.trim() || e.merchant || 'Unknown';
-    vendor = matchVendor(name, vendors, aliases).exact ?? newVendor(name, { currency: e.currency, methodId: e.methodId });
+    vendor = exactVendor(name, vendors, aliases) ?? newVendor(name, { currency: e.currency, methodId: e.methodId });
     vendor = { ...vendor };
   }
 
@@ -259,7 +259,7 @@ export async function ingestApplePay(ctx, body) {
   };
 
   // A known vendor (exact name or alias) is applied; a similar one is only suggested in the app.
-  const vendor = refund ? null : matchVendor(merchant, vendors, aliases).exact;
+  const vendor = refund ? null : exactVendor(merchant, vendors, aliases);
   if (vendor) {
     e.vendorId = vendor.id;
     e.categoryId = vendor.categoryId;

@@ -7,7 +7,7 @@ import { createApi } from './api.js';
 import { createDraftStore, submitDraft } from './drafts.js';
 
 /**
- * db is the storage adapter: { getAll, putMany, clear, getMeta, setMeta, deleteMeta }
+ * db is the storage adapter: { readAll, putMany, clear, getMeta, setMeta, deleteMeta }
  * (IndexedDB in the app, see idb.js; a Map in tests).
  */
 export function createRepo({ db, fetch, now = () => Date.now() }) {
@@ -58,13 +58,15 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
       return () => listeners.delete(fn);
     },
 
+    /** Reads the local copy in one go (one IndexedDB transaction, not one per table). */
     async load() {
-      for (const name of SYNCED) state[name] = await db.getAll(name);
-      state.connection = (await db.getMeta('connection')) ?? null;
-      state.rev = (await db.getMeta('rev')) ?? 0;
-      state.lastSyncedAt = (await db.getMeta('lastSyncedAt')) ?? null;
-      state.lastBackupAt = (await db.getMeta('lastBackupAt')) ?? null;
-      const prices = await db.getMeta('prices');
+      const { tables, meta } = await db.readAll(SYNCED, ['connection', 'rev', 'lastSyncedAt', 'lastBackupAt', 'prices']);
+      for (const name of SYNCED) state[name] = tables[name] ?? [];
+      state.connection = meta.connection ?? null;
+      state.rev = meta.rev ?? 0;
+      state.lastSyncedAt = meta.lastSyncedAt ?? null;
+      state.lastBackupAt = meta.lastBackupAt ?? null;
+      const { prices } = meta;
       state.prices = prices?.prices ?? [];
       state.ibkr = prices?.ibkr ?? null;
     },

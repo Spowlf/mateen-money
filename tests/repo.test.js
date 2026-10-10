@@ -16,7 +16,10 @@ function memoryDb(stores = new Map(), meta = new Map()) {
   return {
     stores,
     meta,
-    getAll: async (name) => [...table(name).values()].map((r) => structuredClone(r)),
+    readAll: async (names, keys) => ({
+      tables: Object.fromEntries(names.map((n) => [n, [...table(n).values()].map((r) => structuredClone(r))])),
+      meta: Object.fromEntries(keys.map((k) => [k, structuredClone(meta.get(k))])),
+    }),
     putMany: async (name, rows) => { for (const r of rows) table(name).set(r.id, structuredClone(r)); },
     clear: async (names) => { for (const n of names) table(n).clear(); },
     getMeta: async (key) => structuredClone(meta.get(key)),

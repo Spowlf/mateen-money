@@ -19,6 +19,63 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="src/app.js"></script>
+  <!-- Every module app.js imports, fetched at once rather than level by level as imports are found (a test checks this). -->
+  <link rel="modulepreload" href="src/db/api.js">
+  <link rel="modulepreload" href="src/db/drafts.js">
+  <link rel="modulepreload" href="src/db/idb.js">
+  <link rel="modulepreload" href="src/db/repo.js">
+  <link rel="modulepreload" href="src/db/schema.js">
+  <link rel="modulepreload" href="src/engine/allowance.js">
+  <link rel="modulepreload" href="src/engine/budgets.js">
+  <link rel="modulepreload" href="src/engine/currency.js">
+  <link rel="modulepreload" href="src/engine/dates.js">
+  <link rel="modulepreload" href="src/engine/defaults.js">
+  <link rel="modulepreload" href="src/engine/draft.js">
+  <link rel="modulepreload" href="src/engine/export.js">
+  <link rel="modulepreload" href="src/engine/forecast.js">
+  <link rel="modulepreload" href="src/engine/form.js">
+  <link rel="modulepreload" href="src/engine/habits.js">
+  <link rel="modulepreload" href="src/engine/headline.js">
+  <link rel="modulepreload" href="src/engine/history.js">
+  <link rel="modulepreload" href="src/engine/holdings.js">
+  <link rel="modulepreload" href="src/engine/index.js">
+  <link rel="modulepreload" href="src/engine/money.js">
+  <link rel="modulepreload" href="src/engine/networth.js">
+  <link rel="modulepreload" href="src/engine/overview.js">
+  <link rel="modulepreload" href="src/engine/plan.js">
+  <link rel="modulepreload" href="src/engine/recurring.js">
+  <link rel="modulepreload" href="src/engine/review.js">
+  <link rel="modulepreload" href="src/engine/settings.js">
+  <link rel="modulepreload" href="src/engine/sort.js">
+  <link rel="modulepreload" href="src/engine/splits.js">
+  <link rel="modulepreload" href="src/engine/summary.js">
+  <link rel="modulepreload" href="src/engine/terms.js">
+  <link rel="modulepreload" href="src/engine/text.js">
+  <link rel="modulepreload" href="src/engine/totals.js">
+  <link rel="modulepreload" href="src/engine/vendors.js">
+  <link rel="modulepreload" href="src/errors.js">
+  <link rel="modulepreload" href="src/ui/accounts.js">
+  <link rel="modulepreload" href="src/ui/backup.js">
+  <link rel="modulepreload" href="src/ui/budget-sheet.js">
+  <link rel="modulepreload" href="src/ui/charts.js">
+  <link rel="modulepreload" href="src/ui/dom.js">
+  <link rel="modulepreload" href="src/ui/entry-sheet.js">
+  <link rel="modulepreload" href="src/ui/format.js">
+  <link rel="modulepreload" href="src/ui/headline.js">
+  <link rel="modulepreload" href="src/ui/history.js">
+  <link rel="modulepreload" href="src/ui/ibkr.js">
+  <link rel="modulepreload" href="src/ui/log.js">
+  <link rel="modulepreload" href="src/ui/networth.js">
+  <link rel="modulepreload" href="src/ui/overview.js">
+  <link rel="modulepreload" href="src/ui/people.js">
+  <link rel="modulepreload" href="src/ui/plan.js">
+  <link rel="modulepreload" href="src/ui/pull.js">
+  <link rel="modulepreload" href="src/ui/review.js">
+  <link rel="modulepreload" href="src/ui/settings.js">
+  <link rel="modulepreload" href="src/ui/sort-sheet.js">
+  <link rel="modulepreload" href="src/ui/split-block.js">
+  <link rel="modulepreload" href="src/ui/transfers.js">
+  <link rel="modulepreload" href="src/ui/vendor-sheet.js">
 </head>
 <body>
   <!-- Only this scrolls; the page itself never does, so iOS can't float the tab bar off the bottom. -->

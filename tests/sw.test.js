@@ -32,6 +32,13 @@ test('precache: every file under src/ and the shell is listed', () => {
   assert.deepEqual(missing, [], 'add these to FILES in sw.js');
 });
 
+test('index.html preloads every module app.js imports, and nothing else', () => {
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  const preloaded = [...html.matchAll(/<link rel="modulepreload" href="([^"]+)">/g)].map((m) => m[1]).sort();
+  const modules = walk('src').filter((f) => f.endsWith('.js') && f !== 'src/app.js').sort();
+  assert.deepEqual(preloaded, modules, 'add a <link rel="modulepreload"> to index.html for each module');
+});
+
 test('precache: every listed file exists', () => {
   const gone = listed().filter((f) => f !== './' && !existsSync(join(ROOT, f)));
   assert.deepEqual(gone, []);

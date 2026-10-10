@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normaliseMerchant, similarity, matchVendor, findDuplicate } from '../../src/engine/vendors.js';
+import { normaliseMerchant, similarity, matchVendor, exactVendor, findDuplicate } from '../../src/engine/vendors.js';
 
 test('normaliseMerchant strips store numbers, towns, processors and punctuation', () => {
   assert.equal(normaliseMerchant('PRET A MANGER #1234 LONDON'), 'pret a manger');
@@ -57,4 +57,18 @@ test('duplicate detection: not a duplicate after 2 minutes, at another amount or
   assert.equal(findDuplicate({ amountMinor: 421, currency: 'GBP', merchant: 'PRET A MANGER #12', at: T }, existing), null);
   assert.equal(findDuplicate({ amountMinor: 420, currency: 'GBP', merchant: 'Costa', at: T }, existing), null);
   assert.equal(findDuplicate({ amountMinor: 420, currency: 'GBP', merchant: 'PRET A MANGER #12', at: T }, [{ ...existing[0], deletedAt: 5 }]), null);
+});
+
+test('exactVendor: the vendor matchVendor applies, without a suggestion', () => {
+  assert.equal(exactVendor('PRET #1234 LONDON', VENDORS, ALIASES)?.id, 'v-pret');
+  assert.equal(exactVendor("SAINSBURY'S S/MKTS 0123", VENDORS, ALIASES)?.id, 'v-sains');
+  assert.equal(exactVendor('PRET A MANGER', VENDORS, ALIASES), null);
+  assert.equal(exactVendor('Tesco', VENDORS, ALIASES), null);
+  assert.equal(exactVendor('', VENDORS, ALIASES), null);
+});
+
+test('normaliseMerchant gives the same answer the second time (it keeps results)', () => {
+  assert.equal(normaliseMerchant('SQ *CORNER CAFE'), normaliseMerchant('SQ *CORNER CAFE'));
+  assert.equal(normaliseMerchant(null), '');
+  assert.equal(normaliseMerchant(undefined), '');
 });

@@ -6,7 +6,7 @@ import { money, liveSorted, runAction, withRemoved } from './format.js';
 import { intoField } from './accounts.js';
 import { splitBlock } from './split-block.js';
 import {
-  gbp, formatMoney, formatDay, toMinor, toDecimalText, matchVendor, INCOME_TYPES, COMMON_CURRENCIES,
+  gbp, formatMoney, formatDay, toMinor, toDecimalText, exactVendor, INCOME_TYPES, COMMON_CURRENCIES,
   splitFromEntry, splitParts, splitMissing, splitsOf, emptySplit, titleCase,
 } from '../engine/index.js';
 
@@ -187,7 +187,7 @@ export function openEntrySheet(repo, shown) {
     let vendorId = income ? null : entry.vendorId;
     if (text !== initialVendorText.trim()) {
       merchant = text || null;
-      vendorId = income ? null : matchVendor(text, S.vendors, S.aliases).exact?.id ?? null;
+      vendorId = income ? null : exactVendor(text, S.vendors, S.aliases)?.id ?? null;
     }
     const spreadMonths = income && f.incomeType === 'allowance' && f.spread ? 12 : 1;
     const out = {

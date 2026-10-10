@@ -7,12 +7,22 @@ const PROCESSOR_PREFIX = /^(sq|sumup|zettle|izettle|iz|paypal|pp|crv|sp|tst|dd|c
 const NOISE = new Set(['ltd', 'limited', 'plc', 'llp', 'inc', 'co', 'uk', 'gb', 'gbr', 'the', 'store', 'stores', 'shop',
   'www', 'com', 'net', 'org', 'pte', 'sg', 'sgp', 'london', 'cambridge', 'singapore']);
 
+// Every vendor name is normalised again on each keystroke and each To sort row, so results are
+// kept. Cleared when it grows large, which only a long session of new names can do.
+const normalised = new Map();
+const NORMALISED_MAX = 5000;
+
 /** "PRET A MANGER #1234 LONDON" → "pret a manger". */
 export function normaliseMerchant(name) {
-  let s = String(name ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '');
+  const key = String(name ?? '');
+  const hit = normalised.get(key);
+  if (hit !== undefined) return hit;
+  let s = key.normalize('NFKD').replace(/[̀-ͯ]/g, '');
   s = s.replace(PROCESSOR_PREFIX, '').toLowerCase().replace(/&/g, ' and ').replace(/['’]/g, '');
   const words = s.split(/[^a-z0-9]+/).filter((w) => w && !/\d/.test(w) && !NOISE.has(w));
-  return words.join(' ');
+  if (normalised.size >= NORMALISED_MAX) normalised.clear();
+  normalised.set(key, words.join(' '));
+  return normalised.get(key);
 }
 
 const bigrams = (s) => {
@@ -50,6 +60,19 @@ export function similarity(a, b) {
 
 export const SUGGEST_THRESHOLD = 0.6;
 
+/** The live vendor whose normalised name or alias equals the merchant's, or null. */
+export function exactVendor(merchant, vendors, aliases = []) {
+  const norm = normaliseMerchant(merchant);
+  if (!norm) return null;
+  for (const v of vendors) if (!v.deletedAt && normaliseMerchant(v.name) === norm) return v;
+  for (const a of aliases) {
+    if (a.deletedAt || a.aliasNorm !== norm) continue;
+    const v = vendors.find((x) => x.id === a.vendorId && !x.deletedAt);
+    if (v) return v;
+  }
+  return null;
+}
+
 /**
  * Finds the vendor for an incoming merchant name.
  * - exact: its normalised name equals a vendor's name or one of its aliases. Safe to apply.
@@ -57,14 +80,11 @@ export const SUGGEST_THRESHOLD = 0.6;
  * aliases are { aliasNorm, vendorId }.
  */
 export function matchVendor(merchant, vendors, aliases = []) {
-  const norm = normaliseMerchant(merchant);
+  if (!normaliseMerchant(merchant)) return { exact: null, suggestion: null };
+  const exact = exactVendor(merchant, vendors, aliases);
+  if (exact) return { exact, suggestion: null };
   const live = vendors.filter((v) => !v.deletedAt);
-  if (!norm) return { exact: null, suggestion: null };
   const byId = new Map(live.map((v) => [v.id, v]));
-  for (const v of live) if (normaliseMerchant(v.name) === norm) return { exact: v, suggestion: null };
-  for (const a of aliases) {
-    if (!a.deletedAt && a.aliasNorm === norm && byId.has(a.vendorId)) return { exact: byId.get(a.vendorId), suggestion: null };
-  }
   let best = null;
   let bestScore = 0;
   const consider = (vendor, name) => {

@@ -10,7 +10,7 @@ import { splitBlock, saveLabel } from './split-block.js';
 import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
   emptyForm, emptySplit, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
-  matchVendor, tripFor, toSortEntries, toSortNudge, sortChoices, suggestCategories,
+  exactVendor, tripFor, toSortEntries, toSortNudge, sortChoices, suggestCategories,
   COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, titleCase,
 } from '../engine/index.js';
 
@@ -144,7 +144,7 @@ export function renderLog(root, { repo }) {
   }
 
   function onVendorTyped(value) {
-    const { exact } = matchVendor(value, S.vendors, S.aliases);
+    const exact = exactVendor(value, S.vendors, S.aliases);
     if (form.kind === 'spend' && exact && exact.id !== form.vendorId) {
       form = { ...applyVendor(form, exact), vendorName: value };
       set({}, { details: true });
@@ -165,6 +165,16 @@ export function renderLog(root, { repo }) {
     amountNum.classList.toggle('placeholder', !form.amount);
   }
 
+  // The merchant chips and the category question scan every payment and vendor, so they're
+  // redrawn only when what they show changed, not on each keypad press.
+  const vendorMemo = {};
+  const quickMemo = {};
+  function unchanged(memo, inputs) {
+    const same = memo.inputs?.length === inputs.length && inputs.every((x, i) => x === memo.inputs[i]);
+    memo.inputs = inputs;
+    return same;
+  }
+
   function renderVendor() {
     const income = form.kind === 'income';
     vendorLabel.textContent = income ? 'From' : 'Merchant';
@@ -172,6 +182,7 @@ export function renderLog(root, { repo }) {
     if (vendorInput.value !== form.vendorName) vendorInput.value = form.vendorName;
     if (noteInput.value !== form.note) noteInput.value = form.note;
     vendorChips.hidden = income;
+    if (unchanged(vendorMemo, [income, form.vendorName, form.vendorId, S.vendors, S.entries])) return;
     if (income) return fill(vendorChips);
     fill(vendorChips, vendorChoices(S.vendors, S.entries, form.vendorName).map((v) => h('button', {
       type: 'button', class: 'chip', 'aria-pressed': String(v.id === form.vendorId), onclick: () => pickVendor(v),
@@ -180,6 +191,8 @@ export function renderLog(root, { repo }) {
 
   // The question that has to be answered before saving, asked right under the vendor.
   function renderQuick() {
+    if (unchanged(quickMemo, [form.kind, form.incomeType, form.vendorName, form.vendorId, form.categoryId,
+      S.vendors, S.aliases, S.entries, S.categories, today()])) return;
     if (form.kind === 'income') {
       quick.hidden = false;
       return fill(quick, h('span', { class: 'field-label' }, 'Type of Income'), chips({

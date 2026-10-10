@@ -38,7 +38,19 @@ async function run(names, mode, work) {
 }
 
 export const idb = {
-  getAll: (name) => run([name], 'readonly', (tx) => tx.objectStore(name).getAll()),
+  /** Every row of names and the meta values of keys, in one transaction: { tables: { name: rows }, meta: { key: value } }. */
+  readAll: (names, keys) => run([...names, 'meta'], 'readonly', (tx) => {
+    const tables = Object.fromEntries(names.map((n) => [n, tx.objectStore(n).getAll()]));
+    const meta = Object.fromEntries(keys.map((k) => [k, tx.objectStore('meta').get(k)]));
+    return {
+      get result() {
+        return {
+          tables: Object.fromEntries(Object.entries(tables).map(([n, req]) => [n, req.result])),
+          meta: Object.fromEntries(Object.entries(meta).map(([k, req]) => [k, req.result?.value])),
+        };
+      },
+    };
+  }),
   putMany: (name, rows) => run([name], 'readwrite', (tx) => { const s = tx.objectStore(name); for (const r of rows) s.put(r); }),
   clear: (names) => run(names, 'readwrite', (tx) => { for (const n of names) tx.objectStore(n).clear(); }),
   getMeta: async (key) => (await run(['meta'], 'readonly', (tx) => tx.objectStore('meta').get(key)))?.value,
