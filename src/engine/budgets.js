@@ -84,6 +84,15 @@ export function budgetDetail(b) {
   return `${gbp(b.spentPence)} spent${due}`;
 }
 
+/**
+ * Under the Log headline: "£412.30 spent of your £650.00 budget." With costs still due they're
+ * named too, so the line adds up to what's left.
+ */
+export function budgetSpentLine(b, { estimated = false } = {}) {
+  const due = b.costsDue ? `, and ${gbp(b.costsDue)} still due` : '';
+  return `${estimated ? '~' : ''}${gbp(b.spentPence)} spent of your ${gbp(b.budgetPence)} budget${due}.`;
+}
+
 /** The warning on Log and in the review, or null when the budget is on track. */
 export function budgetWarningLine(b) {
   if (!b || b.status === 'ok') return null;

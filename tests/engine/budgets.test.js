@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MONTH_BUDGET, budgetFor, budgetChange, budgetStatus, budgetStatusText, budgetDetail, budgetWarningLine, paceOverPence, budgetPence,
+  MONTH_BUDGET, budgetFor, budgetChange, budgetStatus, budgetStatusText, budgetDetail, budgetSpentLine, budgetWarningLine, paceOverPence, budgetPence,
 } from '../../src/engine/budgets.js';
 import { reviewCard } from '../../src/engine/review.js';
 import { spend, income, CATEGORIES } from './fixtures.js';
@@ -80,6 +80,16 @@ test('budget status: recurring costs count, still due ones as used', () => {
   assert.equal(b.leftPence, 5000 - 1500 - 1199);
   assert.equal(b.forecastPence, 1500 + 1199);
   assert.equal(budgetDetail(b), '£15.00 spent and £11.99 still due');
+  assert.equal(budgetSpentLine(b), '£15.00 spent of your £50.00 budget, and £11.99 still due.');
+});
+
+test('budget spent line: what was spent against the budget, under the Log headline', () => {
+  const budgets = [row('2026-10', 50000)];
+  const b = budgetStatus({ entries: [spend('2026-10-02', 41230)], budgets, month: '2026-10', todayDate: '2026-10-10' });
+  assert.equal(budgetSpentLine(b), '£412.30 spent of your £500.00 budget.');
+  assert.equal(budgetSpentLine(b, { estimated: true }), '~£412.30 spent of your £500.00 budget.');
+  const over = budgetStatus({ entries: [spend('2026-10-02', 52050)], budgets, month: '2026-10', todayDate: '2026-10-10' });
+  assert.equal(budgetSpentLine(over), '£520.50 spent of your £500.00 budget.');
 });
 
 test('budget status: trips count; the toggle only takes them out of the pace', () => {

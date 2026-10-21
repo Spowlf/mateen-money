@@ -6,7 +6,7 @@
 import { h, fill } from './dom.js';
 import {
   today, monthKey, monthHeadline, headlineFigure, headlineReason, incomeCheckLine, safeToSpend, safeToSpendLine, gbp,
-  budgetStatus, budgetWarningLine,
+  budgetStatus, budgetSpentLine, budgetWarningLine,
 } from '../engine/index.js';
 import { spending } from './format.js';
 
@@ -39,6 +39,7 @@ export function renderHeadline(el, repo) {
   fill(el, h('div', { class: `headline${fig.negative ? ' negative' : ''}` },
     h('p', { class: 'headline-figure', 'aria-label': `${figure} ${unit}` },
       h('span', { class: `num${changed ? ' changed' : ''}` }, figure), h('span', { class: 'unit' }, unit)),
+    budget && h('p', { class: 'reason' }, budgetSpentLine(budget, { estimated: fig.estimated })),
     safe && safe.over === undefined && h('p', { class: 'headline-safe' }, safeToSpendLine(safe, month, { estimated: fig.estimated, basis: fig.basis })),
     !budget && safe?.over !== undefined && h('p', { class: 'headline-safe over' }, safeToSpendLine(safe, month, { estimated: fig.estimated })),
     !budget && h('p', { class: 'reason' }, headlineReason(hl)),
