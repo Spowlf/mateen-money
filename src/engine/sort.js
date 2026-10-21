@@ -4,7 +4,6 @@ import { addDays } from './dates.js';
 import { matchVendor, similarity, SUGGEST_THRESHOLD } from './vendors.js';
 import { isLive } from './totals.js';
 
-export const TO_SORT_NUDGE = 10;
 const RECENT_DAYS = 90;
 
 /**
@@ -92,9 +91,4 @@ export function sortChoices(entry, { vendors = [], aliases = [], entries = [], c
     vendor,
     categories: suggestCategories(entry.merchant, { vendors, aliases, entries, categories, todayDate, n: vendor ? 1 : 2 }),
   };
-}
-
-/** "10 to sort. It takes about a minute." once more than 10 are waiting. */
-export function toSortNudge(count) {
-  return count > TO_SORT_NUDGE ? `${count} to sort. It takes about a minute.` : null;
 }

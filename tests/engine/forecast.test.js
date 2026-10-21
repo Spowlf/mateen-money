@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { monthHeadline, headlineFigure } from '../../src/engine/headline.js';
 import {
-  safeToSpend, safeToSpendLine, dailyRates, monthForecast, forecastLine, forecastRow, forecastReason,
+  safeToSpend, safeToSpendLine, dailyRates, monthForecast, forecastLine, forecastRow,
 } from '../../src/engine/forecast.js';
 import { spend, income } from './fixtures.js';
 
@@ -158,7 +158,6 @@ test('forecast: spent + still due + pace × days after today', () => {
   assert.equal(forecastLine(f, 85000), 'At this pace: £945.00 by 31 October, £95.00 over budget.');
   assert.deepEqual(forecastRow(f, 85000), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£95.00 over budget', over: true });
   assert.deepEqual(forecastRow(f, 100000), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 under budget', over: false });
-  assert.equal(forecastReason(f), 'Counts £300.00 spent, £15.00 of recurring costs still due and about £30.00 a day for the 21 days left.');
 });
 
 test('forecast: more than you have', () => {
@@ -182,16 +181,14 @@ test('forecast: the last day adds no pace', () => {
   const f = monthForecast({ entries: [income('2026-10-01', 50000), spend('2026-10-05', 31000)], todayDate: '2026-10-31' });
   assert.equal(f.daysAfter, 0);
   assert.equal(f.forecast, 31000);
-  assert.equal(forecastReason(f), 'Counts £310.00 spent. Today is the last day of the month.');
 });
 
-test('forecast: the first week blends the pace without explaining it', () => {
+test('forecast: the first week blends the pace', () => {
   const f = monthForecast({ entries: [...history, income('2026-10-01', 50000), spend('2026-10-01', 700)], todayDate: '2026-10-01' });
   assert.equal(f.blended, true);
-  assert.doesNotMatch(forecastReason(f), /blends/);
 });
 
-test('forecast: the reason adds up to the figure, to the penny', () => {
+test('forecast: the parts add up to the figure, to the penny', () => {
   // £475.87 on the 1st: a daily rate with a fraction of a penny.
   const f = monthForecast({ entries: [income('2026-10-01', 160000), spend('2026-10-01', 47587)], todayDate: '2026-10-01' });
   assert.ok(Number.isInteger(f.dailyPence));

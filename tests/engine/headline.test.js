@@ -83,12 +83,13 @@ test('headline: entries still waiting for a rate are counted, not guessed', () =
   const h = monthHeadline({ entries: [spend('2026-10-02', 0, 'other', { gbpPence: null })], month: '2026-10', todayDate: '2026-10-05' });
   assert.equal(h.unpriced, 1);
   assert.equal(h.spent, 0);
+  assert.equal(h.estimated, true);
 });
 
 test('headline: income still waiting for a rate is flagged, only in the months it counts in', () => {
   const euros = income('2026-10-02', 0, { currency: 'EUR', gbpPence: null, gbpStatus: 'estimated' });
   const h = monthHeadline({ entries: [euros], month: '2026-10', todayDate: '2026-10-05' });
-  assert.deepEqual([h.unpricedIncome, h.unpriced, h.incomeReceived], [1, 0, 0]);
+  assert.deepEqual([h.unpricedIncome, h.unpriced, h.incomeReceived, h.estimated], [1, 0, 0, true]);
   assert.equal(monthHeadline({ entries: [euros], month: '2026-11', todayDate: '2026-11-05' }).unpricedIncome, 0);
   const spread = income('2026-09-28', 0, { incomeType: 'allowance', spreadMonths: 12, spreadStart: '2026-10', gbpPence: null });
   assert.equal(monthHeadline({ entries: [spread], month: '2027-03', todayDate: '2027-03-05' }).unpricedIncome, 1);
@@ -124,7 +125,6 @@ test('headline with a budget: the budget is the figure; income speaks up only wh
   const budget = { budgetPence: 65000, spentPence: 43018, costsDue: 2799, leftPence: 65000 - 43018 - 2799 };
   assert.deepEqual(headlineFigure(hl, budget), { basis: 'budget', left: 19183, negative: false, daysLeft: 13, estimated: false });
   assert.deepEqual(headlineFigure(hl, null), { basis: 'income', left: 14183, negative: false, daysLeft: 13, estimated: false });
-  assert.equal(headlineReason(hl, budget), '£650.00 budget: £430.18 spent and £27.99 still due.');
   assert.equal(incomeCheckLine(hl, budget), 'Only £141.83 of this month’s income is left after spending and what’s still due.');
   assert.equal(incomeCheckLine({ ...hl, incomeReceived: 80000, left: 80000 - 45817 }, budget), null);
   assert.equal(incomeCheckLine({ ...hl, incomeReceived: 40000, left: 40000 - 45817 }, budget), 'Spending and what’s still due come to £58.17 more than this month’s income.');

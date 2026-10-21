@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { periodTotals, categoryRows, yearRange, yearToDate, termOf, suggestTrip, tripTotals, retrip, change } from '../../src/engine/totals.js';
-import { topCategories, sortChoices, suggestCategories, hintedCategory, toSortNudge } from '../../src/engine/sort.js';
+import { topCategories, sortChoices, suggestCategories, hintedCategory } from '../../src/engine/sort.js';
 import { CATEGORIES, spend, income } from './fixtures.js';
 
 const OCT = { from: '2026-10-01', to: '2026-10-31' };
@@ -147,9 +147,4 @@ test('merchant hints read whole words', () => {
   assert.equal(hintedCategory('Co-op Food'), 'groceries');
   assert.equal(hintedCategory('Waterstones'), 'leisure');
   assert.equal(hintedCategory('Busy Bee Cleaning'), null);
-});
-
-test('To sort nudge above 10', () => {
-  assert.equal(toSortNudge(10), null);
-  assert.equal(toSortNudge(11), '11 to sort. It takes about a minute.');
 });

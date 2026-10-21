@@ -109,7 +109,6 @@ export function openRecurringSheet(repo, item = {}) {
       existing && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.active, onchange: (e) => set({ active: e.target.checked }) }),
         h('span', {}, 'Add It Automatically')),
-      existing && !f.active && h('p', { class: 'field-hint' }, 'Paused.'),
       h('div', { class: 'sheet-actions' },
         save,
         existing && h('button', { type: 'button', class: 'button danger', onclick: () => remove() }, income ? 'Delete Income' : 'Delete Cost')),
@@ -215,9 +214,8 @@ export function renderPlan(root, { repo }) {
     fill(root, h('div', { class: 'screen' },
       h('section', { class: 'plan-summary', 'aria-label': 'Each month' },
         h('ul', { class: 'list totals' },
-          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in'), h('span', { class: 'list-amount income' }, `${tilde}${gbp(p.monthlyIncome)}`)),
-          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount spend' }, `${tilde}${gbp(p.monthlyCosts)}`))),
-        h('p', { class: 'reason' }, 'In an average month.')),
+          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Coming in a month'), h('span', { class: 'list-amount income' }, `${tilde}${gbp(p.monthlyIncome)}`)),
+          h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out a month'), h('span', { class: 'list-amount spend' }, `${tilde}${gbp(p.monthlyCosts)}`)))),
       section('Costs', p.costs, 'No recurring costs.', 'Add a Recurring Cost', 'spend'),
       section('Income', p.income, 'No recurring income.', 'Add Recurring Income', 'income', p.spread.map(spreadRow))));
   }

@@ -68,7 +68,8 @@ export function monthHeadline({ entries, recurring = [], rates = [], month, toda
     costsDue,
     left,
     negative: left < 0,
-    estimated,
+    // A payment still waiting for its rate is left out, so the figure carries a "~" until it's priced.
+    estimated: estimated || unpriced > 0 || unpricedIncome > 0,
     unpriced,
     unpricedIncome,
     dueItems,
@@ -85,13 +86,12 @@ export function headlineFigure(hl, budget = null) {
   return { basis: budget ? 'budget' : 'income', left, negative: left < 0, daysLeft: hl.daysLeft, estimated: hl.estimated };
 }
 
-/** The line under the headline figure: how it's made up, or what to log while nothing has come in. */
-export function headlineReason(hl, budget = null) {
+/**
+ * The line under the headline figure without a budget: how it's made up, or what to log while
+ * nothing has come in. With a budget there's none (Overview's Budget section has the breakdown).
+ */
+export function headlineReason(hl) {
   const income = hl.incomeReceived + hl.incomeDue;
-  if (budget) {
-    const due = budget.costsDue ? ` and ${gbp(budget.costsDue)} still due` : '';
-    return `${gbp(budget.budgetPence)} budget: ${gbp(budget.spentPence)} spent${due}.`;
-  }
   if (!income && !hl.spent && !hl.costsDue) return 'Log your income and spending to see what’s left.';
   if (!income) {
     const out = [hl.spent && `${gbp(hl.spent)} spent`, hl.costsDue && `${gbp(hl.costsDue)} still due`].filter(Boolean).join(' and ');

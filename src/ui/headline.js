@@ -41,10 +41,7 @@ export function renderHeadline(el, repo) {
       h('span', { class: `num${changed ? ' changed' : ''}` }, figure), h('span', { class: 'unit' }, unit)),
     safe && safe.over === undefined && h('p', { class: 'headline-safe' }, safeToSpendLine(safe, month, { estimated: fig.estimated, basis: fig.basis })),
     !budget && safe?.over !== undefined && h('p', { class: 'headline-safe over' }, safeToSpendLine(safe, month, { estimated: fig.estimated })),
-    h('p', { class: 'reason' }, headlineReason(hl, budget)),
+    !budget && h('p', { class: 'reason' }, headlineReason(hl)),
     pace && h('p', { class: 'warning' }, pace),
-    incomeCheck && h('p', { class: 'warning' }, incomeCheck),
-    hl.unpriced > 0 && h('p', { class: 'warning' },
-      hl.unpriced === 1 ? '1 payment is waiting for its exchange rate.' : `${hl.unpriced} payments are waiting for their exchange rate.`),
-    hl.unpricedIncome > 0 && h('p', { class: 'warning' }, 'Some income is waiting for its exchange rate.')));
+    incomeCheck && h('p', { class: 'warning' }, incomeCheck)));
 }

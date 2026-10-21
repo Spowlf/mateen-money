@@ -33,9 +33,7 @@ export function renderReview(el, { repo, showToSort }) {
   const go = (step) => { place.step = step; renderReview(el, { repo, showToSort }); };
   const next = () => go(steps[index + 1]);
 
-  const head = h('div', { class: 'review-head' },
-    h('h2', { class: 'subhead' }, 'Weekly Review'),
-    card.streak > 0 && h('span', { class: 'tag' }, weeks(card.streak)));
+  const head = h('div', { class: 'review-head' }, h('h2', { class: 'subhead' }, 'Weekly Review'));
 
   if (!place.open) {
     fill(el, h('div', { class: 'review' }, head,
@@ -54,8 +52,8 @@ export function renderReview(el, { repo, showToSort }) {
     ];
   } else if (place.step === 'week') {
     body = [
+      // How it compares with usual was said on the folded card, just before.
       h('p', { class: 'review-figure' }, h('span', { class: 'num' }, gbp(s.totalPence)), h('span', { class: 'unit' }, 'spent that week')),
-      compare && h('p', { class: 'reason' }, `${compare.charAt(0).toUpperCase()}${compare.slice(1)}, averaged over ${s.usualWeeks === 1 ? 'the week' : `the ${s.usualWeeks} weeks`} before.`),
       s.rows.length > 0 && categoryTable(s.rows, { caption: `Spending by category, week of ${formatDayShort(card.weekStart)}` }),
       s.largest.length > 0 && h('h3', { class: 'review-sub' }, 'Largest Purchases'),
       s.largest.length > 0 && h('ul', { class: 'list' }, s.largest.map((e) => h('li', { class: 'total-row' },
@@ -74,20 +72,15 @@ export function renderReview(el, { repo, showToSort }) {
     };
     body = [
       card.unusual.length
-        ? h('div', { class: 'review-list' },
-          h('p', {}, card.unusual.length === 1 ? 'One category ran well above usual:' : 'These ran well above usual:'),
-          card.unusual.map((u) => h('p', { class: 'warning' }, unusualLine(u))))
+        ? h('div', { class: 'review-list' }, card.unusual.map((u) => h('p', { class: 'warning' }, unusualLine(u))))
         : h('p', {}, 'Nothing ran well above usual that week.'),
       budgetWarningLine(card.budget) && h('p', { class: 'warning' }, budgetWarningLine(card.budget)),
       card.habits.length > 0 && h('div', { class: 'review-list' },
         h('h3', { class: 'review-sub' }, 'Frequent Buys'),
-        h('p', { class: 'reason' }, 'Small, frequent buys are often the easiest to cut.'),
         card.habits.map((x) => h('p', {}, habitLine(x)))),
       h('div', { class: 'review-actions' }, h('button', { type: 'button', class: 'button secondary', onclick: done }, 'Done')),
     ];
   }
 
-  fill(el, h('div', { class: 'review' }, head,
-    h('p', { class: 'field-hint' }, `Step ${index + 1} of ${steps.length}: ${{ sort: 'sort what’s waiting', week: 'the week', unusual: 'anything unusual' }[place.step]}`),
-    body));
+  fill(el, h('div', { class: 'review' }, head, body));
 }

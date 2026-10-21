@@ -10,7 +10,7 @@ import { openTripSheet } from './settings.js';
 import { showTripPayments } from './history.js';
 import {
   today, monthKey, gbp, formatDay, formatDayShort, overview, shiftPeriod, termNow, termLabel, inTermSpan, clampTerm, yearTerms, daysBetween,
-  forecastRow, forecastReason, budgetStatus, budgetStatusText, budgetDetail,
+  forecastRow, budgetStatus, budgetStatusText, budgetDetail,
 } from '../engine/index.js';
 
 // Kept between visits to the tab, so switching away and back doesn't lose the place.
@@ -88,23 +88,23 @@ export function renderOverview(root, { repo }) {
         t.net < 0 ? 'danger' : '', `standout${t.net < 0 ? ' state-over' : ''}`));
   }
 
-  // The month in progress: where spending ends up at this pace, as a row like the totals, then how it's counted.
-  function forecastSection(f, budget) {
+  // The month in progress without a budget: where spending ends up at this pace, as a row like the
+  // totals. With a budget, its section says the pace instead, so it's never said twice.
+  function forecastSection(f) {
     // Nothing to go on yet: no spending this month or in the weeks before it.
     if (!f.spent && !f.dailyPence) {
       return h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'At This Pace'),
         h('p', { class: 'empty-line' }, 'Log a few payments to see your pace.'));
     }
-    const r = forecastRow(f, budget?.budgetPence ?? 0);
+    const r = forecastRow(f);
     return h('section', { class: 'section' },
       h('h2', { class: 'subhead' }, 'At This Pace'),
       h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
         h('span', { class: 'list-main' },
           h('span', { class: 'list-title' }, r.title),
           h('span', { class: `list-sub${r.over ? ' danger' : ''}` }, r.spare)),
-        h('span', { class: `list-amount${r.over ? ' danger' : ''}` }, r.amount))),
-      h('p', { class: 'reason' }, forecastReason(f)));
+        h('span', { class: `list-amount${r.over ? ' danger' : ''}` }, r.amount))));
   }
 
   // The monthly budget: this month with its forecast (tap to change it), other months budget against actual.
@@ -180,8 +180,7 @@ export function renderOverview(root, { repo }) {
         ? h('ul', { class: 'list' }, trips.map((t) => h('li', {}, h('button', { type: 'button', class: 'list-row trip-row', onclick: () => openTrip(t) },
           h('span', { class: 'list-main' },
             h('span', { class: 'list-title' }, t.trip.name),
-            h('span', { class: 'list-sub' }, `${dateSpan(t.trip.start, t.trip.end)}, ${t.count ? countPhrase(t.count) : 'nothing yet'}`),
-            t.rows.length > 0 && h('span', { class: 'list-sub' }, t.rows.slice(0, 3).map((r) => `${r.name} ${gbp(r.pence)}`).join(', '))),
+            h('span', { class: 'list-sub' }, `${dateSpan(t.trip.start, t.trip.end)}, ${t.count ? countPhrase(t.count) : 'nothing yet'}`)),
           h('span', { class: 'list-amount spend' }, `${t.estimated ? '~' : ''}${gbp(t.pence)}`)))))
         : h('p', { class: 'empty-line' }, 'No trips yet.'),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openTripSheet(repo, null) }, 'Add a Trip')));
@@ -211,12 +210,11 @@ export function renderOverview(root, { repo }) {
       h('section', { class: 'section', 'aria-label': 'Totals' },
         totalsCard(data),
         term && h('p', { class: 'reason' }, `${term.name} Term runs ${dateSpan(term.start, term.end)}.`),
-        excludeTrips() && liveTrips().length > 0 && h('p', { class: 'reason' }, 'Trips are left out.'),
         // Under the totals it changes, so the figures come first.
         liveTrips().length > 0 && h('label', { class: 'toggle' },
           h('input', { type: 'checkbox', checked: excludeTrips(), onchange: (e) => runAction(() => repo.setSetting('excludeTrips', e.target.checked)).then(render) }),
           h('span', {}, 'Leave Trips Out of These Totals'))),
-      data.forecast && forecastSection(data.forecast, budget),
+      data.forecast && !budget && forecastSection(data.forecast),
       budgetSection(data, budget),
       h('section', { class: 'section' },
         h('h2', { class: 'subhead' }, 'Spending by Category'),

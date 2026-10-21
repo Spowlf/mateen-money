@@ -10,7 +10,7 @@ import { splitBlock, saveLabel } from './split-block.js';
 import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
   emptyForm, emptySplit, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
-  exactVendor, tripFor, toSortEntries, toSortNudge, sortChoices, suggestCategories,
+  exactVendor, tripFor, toSortEntries, sortChoices, suggestCategories,
   COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, titleCase,
 } from '../engine/index.js';
 
@@ -71,10 +71,8 @@ export function renderLog(root, { repo }) {
     el.toSort.hidden = !items.length;
     if (!items.length) return fill(el.toSort);
     const shown = showAllToSort ? items : items.slice(0, TO_SORT_SHOWN);
-    const nudge = toSortNudge(items.length);
     fill(el.toSort,
       h('h2', { class: 'subhead' }, 'To Sort', h('span', { class: 'tag' }, items.length)),
-      nudge && h('p', { class: 'hint' }, nudge),
       h('ul', { class: 'list' }, shown.map(sortRow)),
       items.length > shown.length && h('div', {},
         h('button', { type: 'button', class: 'text-button', onclick: () => { showAllToSort = true; renderToSort(); } }, `Show ${items.length - shown.length} More`)));

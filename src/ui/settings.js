@@ -516,7 +516,6 @@ function appSection() {
   const button = h('button', { type: 'button', class: 'button secondary', onclick: () => updateApp(button) }, 'Update the App');
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'App'),
-    h('p', { class: 'reason' }, 'Fetches the newest version and reloads.'),
     button);
 }
 

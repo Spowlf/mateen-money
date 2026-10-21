@@ -26,7 +26,7 @@ Right after paying, phone in one hand. Apple Pay payments log themselves; everyt
 ## Keeping To sort short
 
 - Each item offers one tap: its most likely vendor (by alias similarity), the 4 most-used categories, and "Other" for the full list.
-- The count shows on the Log tab. Over 10 items: "10 to sort. It takes about a minute." at the top of Log.
+- The count shows on the Log tab and beside the To Sort heading.
 
 ## Headline figure
 
@@ -55,7 +55,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
   1. Sort any remaining items.
   2. See the week: total vs usual, category breakdown, the 3 largest purchases.
   3. Anything unusual: categories more than 50% above their 8-week average.
-  Then "Done". Completed reviews are recorded; a small count shows weeks reviewed in a row.
+  Then "Done". Completed reviews are recorded; the "Done" toast says how many weeks in a row.
 
 ## Currency
 
@@ -78,7 +78,7 @@ At the top of Log and Overview: "£X left this month", red if negative.
 ## Income and recurring
 
 - Income entries: allowance, existing cash, friends / family, refunds, other. Same currency handling.
-- Recurring costs and income: amount, currency, frequency, next date. Added automatically on the date by a scheduled Worker, shown as "added automatically", editable.
+- Recurring costs and income: amount, currency, frequency, next date. Added automatically on the date by a scheduled Worker, its edit sheet saying "Added automatically from your plan.", editable.
 
 ## Trips
 

@@ -115,9 +115,8 @@ export function renderHistory(root, { repo }) {
       h('span', { class: 'row-icon' }, categoryIcon(rowIcon)),
       h('span', { class: 'list-main' },
         h('span', { class: 'list-title' }, title,
-          waiting && h('span', { class: 'tag tag-warn' }, 'To Sort'),
-          e.source === 'recurring' && h('span', { class: 'tag' }, 'Added automatically'),
-          e.gbpStatus === 'statement' && h('span', { class: 'tag' }, 'From statement')),
+          // Where it came from is in its sheet; only To Sort needs flagging here.
+          waiting && h('span', { class: 'tag tag-warn' }, 'To Sort')),
         sub && h('span', { class: 'list-sub' }, sub),
         // A split bill's amount is the user's share; the whole bill is said here.
         e.split && h('span', { class: 'list-sub' }, `of ${formatMoney(e.fullAmountMinor, e.currency)}, split`),
