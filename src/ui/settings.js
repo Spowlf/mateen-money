@@ -487,7 +487,19 @@ async function updateApp(button) {
   button.disabled = true;
   button.textContent = 'Checking for Updates';
   const reg = await sw.ready;
-  reg.update().catch(() => {});
+  // A new service worker fetches every file afresh as it installs and takes over at once, so wait
+  // for it: the old one may still be handed the old files by the CDN.
+  await reg.update().catch(() => {});
+  const next = reg.installing ?? reg.waiting;
+  if (next) {
+    await new Promise((resolve) => {
+      const done = () => ['activated', 'redundant'].includes(next.state) && resolve();
+      next.addEventListener('statechange', done);
+      done();
+      setTimeout(resolve, 20000);
+    });
+    if (next.state === 'activated') return location.reload();
+  }
   const reply = await new Promise((resolve) => {
     const channel = new MessageChannel();
     channel.port1.onmessage = (e) => resolve(e.data);
