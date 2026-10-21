@@ -202,6 +202,9 @@ main {
 .headline.negative .num { color: var(--danger); }
 .headline-safe, .headline-change { font-weight: 600; }
 .headline-safe.over { color: var(--danger); }
+/* Net Worth's change: small print, so today's and the month's change fit on one line. */
+.headline-change { font-size: var(--t-s); }
+.headline-change span { white-space: nowrap; }
 .budget-status { font-size: var(--t-s); }
 .budget-status.over { color: var(--danger); }
 .budget-status.heading { color: var(--warn); }

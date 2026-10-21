@@ -17,13 +17,13 @@ let range = '6m';
 export function renderNetWorth(root, { repo }) {
   const S = repo.state;
 
-  /** "+£120.00 today, −£40.00 since 1 Oct" (a day missed: "since 28 Sep"). */
+  /** The parts of the change line: ["+£120.00 today", "−£40.00 since 1 Oct"] (a day missed: "since 28 Sep"). */
   function changeLine(day, month, todayDate) {
     const parts = [];
     if (day) parts.push(`${signedMoney(day.pence)} ${day.from === addDays(todayDate, -1) ? 'today' : `since ${formatDayShort(day.from)}`}`);
     // On the 1st, since the 1st is today's change.
     if (month && month.from !== todayDate && month.from !== day?.from) parts.push(`${signedMoney(month.pence)} since ${formatDayShort(month.from)}`);
-    return parts.join(', ');
+    return parts;
   }
 
   function thisMonth(month, foreign) {
@@ -84,7 +84,8 @@ export function renderNetWorth(root, { repo }) {
         h('div', { class: 'headline-figure' },
           h('span', { class: 'num' }, `${nw.estimated ? '~' : ''}${gbp(nw.totalPence)}`),
           h('span', { class: 'unit' }, 'in total')),
-        changes && h('p', { class: 'headline-change' }, changes),
+        // Each part stays whole, so a line too long for the card breaks after the comma.
+        changes.length > 0 && h('p', { class: 'headline-change' }, changes.map((c, i) => [i ? ', ' : '', h('span', {}, c)])),
         notes.map((n) => h('p', { class: 'reason' }, n))),
       ibkrNotices(repo, render),
       // Accounts: where balances are updated, so a balance gone stale is flagged on the way in.
