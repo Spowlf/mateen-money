@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  evenSplit, shareMinor, shareGbpPence, isSplit, validateSplit, owed, owedPhrase, settlementMinor, OWED_TO_ME, I_OWE,
+  evenSplit, shareMinor, shareGbpPence, validateSplit, owed, owedPhrase, settlementMinor, OWED_TO_ME, I_OWE,
 } from '../../src/engine/splits.js';
 import { carriedBalance, netWorth } from '../../src/engine/networth.js';
 import { findDuplicate } from '../../src/engine/vendors.js';
@@ -32,7 +32,6 @@ test('share: unsplit is the whole payment', () => {
   const e = pay(4000);
   assert.equal(shareMinor(e, []), 4000);
   assert.equal(shareGbpPence(e, []), 4000);
-  assert.equal(isSplit(e, []), false);
 });
 
 test('share: you paid, the others’ parts come off', () => {
@@ -40,7 +39,6 @@ test('share: you paid, the others’ parts come off', () => {
   const splits = [split('alex', 1500), split('sam', 1500), split('sam', 999, { entryId: 'other' }), split('alex', 777, { deletedAt: 5 })];
   assert.equal(shareMinor(e, splits), 1000);
   assert.equal(shareGbpPence(e, splits), 1000);
-  assert.equal(isSplit(e, splits), true);
 });
 
 test('share: paying entirely for someone else leaves you nothing', () => {

@@ -32,12 +32,19 @@ import { refreshPrices, storedPrices } from './prices.js';
 
 const TEXT_ROUTES = new Set(['applepay', 'summary']);
 
+// Databases known to be seeded, so a warm Worker skips that query. The database is in another
+// region from most requests, so each query costs a round trip.
+const seeded = new WeakSet();
+
 /** The request's store and clock. "today" is in the synced time zone setting (London until it's set). */
 async function context(env, deps) {
   const now = deps.now ?? Date.now();
   const store = createStore(env.DB);
-  await ensureSeeded(store, now);
-  const setting = await store.get('settings', 'timeZone');
+  // Read together: before seeding there's no time zone row, and the fallback is the seeded default.
+  const [, setting] = await Promise.all([
+    seeded.has(env.DB) || ensureSeeded(store, now).then(() => seeded.add(env.DB)),
+    store.get('settings', 'timeZone'),
+  ]);
   const timeZone = setting && !setting.deletedAt && validTimeZone(setting.value) ? setting.value : DEFAULT_TIME_ZONE;
   return {
     store,

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodTotals, categoryRows, yearRange, yearToDate, termOf, suggestTrip, tripTotals, retrip, change } from '../../src/engine/totals.js';
+import { periodTotals, categoryRows, yearRange, suggestTrip, tripTotals, retrip, change } from '../../src/engine/totals.js';
 import { topCategories, sortChoices, suggestCategories, hintedCategory } from '../../src/engine/sort.js';
 import { CATEGORIES, spend, income } from './fixtures.js';
 
@@ -98,13 +98,6 @@ test('years: calendar and academic', () => {
   assert.deepEqual(yearRange('2026-10-01', 'academic'), { from: '2026-10-01', to: '2027-09-30', label: '2026–27' });
   assert.deepEqual(yearRange('2026-09-30', 'academic').from, '2025-10-01');
   assert.deepEqual(yearRange('2026-10-01'), { from: '2026-01-01', to: '2026-12-31', label: '2026' });
-  assert.equal(yearToDate('2026-10-15', 'academic').to, '2026-10-15');
-});
-
-test('terms: blank dates match nothing', () => {
-  const terms = [{ id: 'm', name: 'Michaelmas', start: '2026-10-06', end: '2026-12-04' }, { id: 'l', name: 'Lent', start: '', end: '' }];
-  assert.equal(termOf('2026-11-01', terms)?.name, 'Michaelmas');
-  assert.equal(termOf('2027-02-01', terms), null);
 });
 
 test('change vs last month', () => {

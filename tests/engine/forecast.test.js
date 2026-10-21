@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { monthHeadline, headlineFigure } from '../../src/engine/headline.js';
 import {
-  safeToSpend, safeToSpendLine, dailyRates, monthForecast, forecastLine, forecastRow,
+  safeToSpend, safeToSpendLine, dailyRates, monthForecast, forecastRow,
 } from '../../src/engine/forecast.js';
 import { spend, income } from './fixtures.js';
 
@@ -152,10 +152,8 @@ test('forecast: spent + still due + pace × days after today', () => {
   assert.equal(f.dailyPence, 3000);
   assert.equal(f.forecast, 30000 + 1500 + 3000 * 21);
   assert.equal(f.spare, 100000 - f.forecast);
-  assert.equal(forecastLine(f), 'At this pace: £945.00 by 31 October, £55.00 to spare.');
   assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 to spare', over: false });
   // With a budget the pace is compared with it, not with the income.
-  assert.equal(forecastLine(f, 85000), 'At this pace: £945.00 by 31 October, £95.00 over budget.');
   assert.deepEqual(forecastRow(f, 85000), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£95.00 over budget', over: true });
   assert.deepEqual(forecastRow(f, 100000), { title: 'Spending by 31 Oct', amount: '£945.00', spare: '£55.00 under budget', over: false });
 });
@@ -163,7 +161,6 @@ test('forecast: spent + still due + pace × days after today', () => {
 test('forecast: more than you have', () => {
   const f = monthForecast({ entries: [income('2026-10-01', 40000), spend('2026-10-05', 30000)], todayDate: '2026-10-10' });
   assert.equal(f.forecast, 30000 + 3000 * 21);
-  assert.equal(forecastLine(f), 'At this pace: £930.00 by 31 October, £530.00 more than you have.');
   assert.deepEqual(forecastRow(f), { title: 'Spending by 31 Oct', amount: '£930.00', spare: '£530.00 more than you have', over: true });
 });
 

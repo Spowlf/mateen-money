@@ -53,9 +53,6 @@ export function shareGbpPence(entry, splits) {
   return Math.round((entry.gbpPence * share) / entry.amountMinor);
 }
 
-/** True when a payment is split (with anyone, either way). */
-export const isSplit = (entry, splits) => splitsOf(splits, entry.id).length > 0;
-
 /**
  * What's wrong with a split, in the words the Save button shows, or null. parts are the other
  * people's parts: [{ personId, amountMinor }]. With paidBy (a person paid), there's one part, to

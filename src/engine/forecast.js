@@ -134,13 +134,6 @@ function forecastCompare(f, budgetPence) {
   return { text: f.spare < 0 ? `${tilde}${gbp(-f.spare)} more than you have` : `${tilde}${gbp(f.spare)} to spare`, over: f.spare < 0 };
 }
 
-/** "At this pace: £1,240.00 by 31 October, £40.00 over budget." */
-export function forecastLine(f, budgetPence = 0) {
-  const tilde = f.estimated ? '~' : '';
-  const [, , d] = parse(f.end);
-  return `At this pace: ${tilde}${gbp(f.forecast)} by ${d} ${formatMonth(f.month).split(' ')[0]}, ${forecastCompare(f, budgetPence).text}.`;
-}
-
 /**
  * The forecast as a row of the Overview totals: what the figure is, the figure, and how it compares
  * (with the budget when there is one).

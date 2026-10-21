@@ -7,7 +7,7 @@
 //   value = close NAV + Σ units × (live price − close price), converted to the account's currency.
 
 import { exponent } from './money.js';
-import { rateFor, convertToGbp } from './currency.js';
+import { rateFor } from './currency.js';
 import { partsInZone, weekday, addDays } from './dates.js';
 import { isLive } from './totals.js';
 
@@ -306,13 +306,6 @@ export function liveInvestment({ account, balance, holdings, prices, rates }) {
     pricedAt,
     holdings: rows,
   };
-}
-
-/** GBP value of a base-currency amount at the latest rate (convertToGbp with no fee). */
-export function gbpOf(minor, currency, rates) {
-  if (currency === 'GBP') return minor;
-  const r = rateFor(rates, currency, '9999-12-31', '0000-01-01');
-  return r ? convertToGbp({ amountMinor: minor, currency, perGbp: r.perGbp }).gbpPence : null;
 }
 
 // --- The IBKR screen ---------------------------------------------------------------------------

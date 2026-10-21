@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  toMicro, mulMicro, convertMinor, quoteSymbol, marketOpen, readYahooChart, readFlex, xmlElements, flexDate, liveInvestment, gbpOf,
+  toMicro, mulMicro, convertMinor, quoteSymbol, marketOpen, readYahooChart, readFlex, xmlElements, flexDate, liveInvestment,
 } from '../../src/engine/holdings.js';
 
 const FLEX = readFileSync(new URL('../fixtures/flex.xml', import.meta.url), 'utf8');
@@ -39,7 +39,6 @@ test('convert: one currency to another through GBP at the latest rate', () => {
   assert.equal(convertMinor(10000, 'GBP', 'SGD', RATES), 17250);
   assert.equal(convertMinor(10000, 'SGD', 'SGD', RATES), 10000);
   assert.equal(convertMinor(10000, 'EUR', 'SGD', RATES), null);
-  assert.equal(gbpOf(17250, 'SGD', RATES), 10000);
 });
 
 test('quotes: IBKR’s exchange picks the ticker the price is fetched for', () => {

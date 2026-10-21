@@ -69,18 +69,7 @@ export function yearRange(date, mode = 'calendar') {
   return { from: `${y}-01-01`, to: `${y}-12-31`, label: String(y) };
 }
 
-/** The year so far: from the year's start to today (or the year's end if it's over). */
-export function yearToDate(todayDate, mode = 'calendar') {
-  const year = yearRange(todayDate, mode);
-  return { ...year, to: todayDate < year.to ? todayDate : year.to };
-}
-
 export const monthRange = (key) => ({ from: monthStart(key), to: monthEnd(key) });
-
-/** Terms are { id, name, start, end }. Returns the term containing date, or null. */
-export function termOf(date, terms = []) {
-  return terms.find((t) => !t.deletedAt && t.start && t.end && date >= t.start && date <= t.end) ?? null;
-}
 
 /** The trip whose dates contain date. If trips overlap, the one that started latest. */
 export function suggestTrip(date, trips = []) {

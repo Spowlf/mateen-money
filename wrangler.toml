@@ -5,6 +5,12 @@ name = "mateen-money"
 main = "worker/src/index.js"
 compatibility_date = "2026-09-01"
 
+# Run beside the database (D1, created in APAC), not near the phone: a request makes several
+# queries in turn, so one long trip from the phone beats one per query. Smart placement can't do
+# it, since it only picks places the Worker already runs, and every request comes from the UK.
+[placement]
+region = "aws:ap-southeast-1"
+
 [vars]
 ALLOWED_ORIGIN = "https://spowlf.github.io"
 
