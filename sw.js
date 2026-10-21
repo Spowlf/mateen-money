@@ -1,13 +1,14 @@
 // Service worker: precache every file at install, then stale-while-revalidate for same-origin GETs,
 // and tell open pages when a file really changed ("Updated, tap to reload").
-// Refreshes ask the server ('no-cache'), since GitHub Pages lets browsers keep files for 10 minutes.
+// Refreshes ask the server ('no-cache'), since GitHub Pages lets browsers keep files for 10 minutes,
+// with a query that's new each time, since its CDN ignores 'no-cache' and keeps old files as long.
 // The app also sends { type: 'check' } when it comes back to the screen, because a home screen app
 // resumed from the background fetches nothing, so it would otherwise never see an update.
 // "Update the app" in Settings sends the same check with a port, and reloads once it's answered.
 // The API is on another origin, so it's never cached here; offline data comes from IndexedDB.
 // When you add a front-end file, add it to FILES (a test checks this).
 
-const CACHE = 'mateen-money-v11';
+const CACHE = 'mateen-money-v12';
 const FILES = [
   './',
   'index.html',
@@ -77,10 +78,22 @@ const FILES = [
   'src/ui/vendor-sheet.js',
 ];
 
+/** The URL with a query no cache has seen, so the CDN passes the request on to GitHub Pages. */
+function fresh(url) {
+  const u = new URL(url, self.location);
+  u.searchParams.set('fresh', Date.now());
+  return u.href;
+}
+
 self.addEventListener('install', (event) => {
-  // cache: 'reload' skips the browser's HTTP cache so a new install gets fresh files.
+  // cache: 'reload' skips the browser's HTTP cache so a new install gets fresh files; each is
+  // stored under its own name, without the query.
   event.waitUntil(caches.open(CACHE)
-    .then((cache) => cache.addAll(FILES.map((f) => new Request(f, { cache: 'reload' }))))
+    .then((cache) => Promise.all(FILES.map(async (f) => {
+      const res = await fetch(new Request(fresh(f), { cache: 'reload' }));
+      if (!res.ok) throw new Error(`Couldn't fetch ${f}`);
+      await cache.put(new URL(f, self.location).href, res);
+    })))
     .then(() => self.skipWaiting()));
 });
 
@@ -107,7 +120,7 @@ async function announce() {
 /** Fetches a file from the server and stores it. Resolves true if it differs from the cached copy. */
 async function refresh(cache, url) {
   const cached = await cache.match(url, { ignoreSearch: true });
-  const res = await fetch(new Request(url, { cache: 'no-cache' }));
+  const res = await fetch(new Request(fresh(url), { cache: 'no-cache' }));
   if (!res.ok) return { res, changed: false };
   const changed = !!cached && !(await sameBody(cached, res.clone()));
   await cache.put(url, res.clone());
@@ -130,12 +143,12 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(req, { ignoreSearch: true });
-    const fresh = refresh(cache, req.url).then(async ({ res, changed }) => {
+    const latest = refresh(cache, req.url).then(async ({ res, changed }) => {
       if (changed) await announce();
       return res;
     }).catch(() => null);
-    if (cached) { event.waitUntil(fresh); return cached; }
-    const res = await fresh;
+    if (cached) { event.waitUntil(latest); return cached; }
+    const res = await latest;
     if (res) return res;
     if (req.mode === 'navigate') return (await cache.match('index.html')) || Response.error();
     return Response.error();
