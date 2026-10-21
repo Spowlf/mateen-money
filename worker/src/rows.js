@@ -9,6 +9,7 @@ import { refuse } from './http.js';
 import { validDate, validCurrency } from './entries.js';
 import { ensureRates } from './rates.js';
 import { personInUse } from './splits.js';
+import { dueWrites } from './jobs.js';
 
 const blank = (v) => v === undefined || v === null || (typeof v === 'string' && !v.trim());
 const METHOD_KINDS = new Set(['card', 'cash', 'transfer']);
@@ -74,8 +75,9 @@ function tidy(name, row) {
   for (const f of ['name', 'label', 'alias', 'walletCard']) if (typeof row[f] === 'string') row[f] = row[f].trim();
   if (name === 'methods' && row.walletCard === '') row.walletCard = null;
   if (name === 'recurring') {
+    // Income goes into an account; a cost's account comes from its card.
     if (row.kind === 'income') row.categoryId = null;
-    else { row.incomeType = null; row.spreadMonths = 1; }
+    else { row.incomeType = null; row.spreadMonths = 1; row.accountId = null; }
   }
 }
 
@@ -123,6 +125,11 @@ export async function saveRow(ctx, name, id, body) {
     }
   }
   if (name === 'trips') writes.entries = await tripEntries(store, existing, row);
+  // A plan dated today or earlier is added now, not on the next run, so it counts straight away.
+  if (name === 'recurring') {
+    const due = await dueWrites(ctx, [row]);
+    if (due) return store.write(due, ctx.now, { insertOnly: ['entries'] });
+  }
   return store.write(writes, ctx.now);
 }
 

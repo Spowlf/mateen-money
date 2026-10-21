@@ -14,11 +14,22 @@ const feeOf = (methods, id) => methods.find((m) => m.id === id)?.feeBps ?? 0;
  * An occurrence already stored is skipped by the database (unique recurringId + occurrenceDate).
  */
 export async function addRecurring(ctx) {
+  const writes = await dueWrites(ctx, await ctx.store.live('recurring'));
+  if (writes) await ctx.store.write(writes, ctx.now, { insertOnly: ['entries'] });
+}
+
+/**
+ * The writes that add items' occurrences due up to today (write them with insertOnly entries),
+ * or null when none is due. Saving a plan dated today or earlier uses it too, so the entry
+ * lands with the plan instead of on the next run.
+ */
+export async function dueWrites(ctx, items) {
   const { store, today } = ctx;
-  const [items, methods, trips, rates] = await Promise.all(['recurring', 'methods', 'trips', 'rates'].map((t) => store.live(t)));
+  const [methods, trips, rates] = await Promise.all(['methods', 'trips', 'rates'].map((t) => store.live(t)));
   const entries = [];
   const moved = [];
   for (const item of items) {
+    if (item.deletedAt) continue;
     const { dates, nextDate } = dueOccurrences(item, today);
     if (!dates.length) continue;
     for (const date of dates) {
@@ -27,10 +38,10 @@ export async function addRecurring(ctx) {
     }
     moved.push({ ...item, nextDate });
   }
-  if (!entries.length) return;
+  if (!entries.length) return null;
   const got = await ensureRates({ fetch: ctx.fetch, rates, needs: entries, today });
   const priced = entries.map((e) => priceEntry(e, { rates: got.rates, feeBps: feeOf(methods, e.methodId), todayDate: today }));
-  await store.write({ entries: priced, recurring: moved, rates: got.fresh }, ctx.now, { insertOnly: ['entries'] });
+  return { entries: priced, recurring: moved, rates: got.fresh };
 }
 
 /**

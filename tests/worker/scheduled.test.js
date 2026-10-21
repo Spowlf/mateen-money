@@ -47,11 +47,32 @@ test('recurring: missed days are caught up, each occurrence once', async () => {
 test('recurring: paused, deleted and future items add nothing', async () => {
   const w = makeWorker();
   await w.call('PUT', '/recurring/r1', { body: { ...phone, active: 0 } });
-  await w.call('PUT', '/recurring/r2', { body: phone });
+  await w.call('PUT', '/recurring/r2', { body: { ...phone, nextDate: '2026-10-02' } });
   await w.call('DELETE', '/recurring/r2');
-  await w.call('PUT', '/recurring/r3', { body: { ...phone, nextDate: '2026-10-02' } });
+  await w.call('PUT', '/recurring/r3', { body: { ...phone, nextDate: '2026-10-03' } });
+  w.now = NOW + DAY;
   await w.scheduled();
   assert.equal(w.rows('entries').length, 0);
+});
+
+test('recurring: saving a plan dated today or earlier logs it with the save, not on the next run', async () => {
+  const w = makeWorker();
+  const res = await w.call('PUT', '/recurring/r1', { body: { ...phone, frequency: 'weekly', nextDate: '2026-09-24' } });
+  assert.deepEqual(res.body.changes.entries.map((e) => e.date).sort(), ['2026-09-24', '2026-10-01']);
+  assert.equal(res.body.changes.recurring[0].nextDate, '2026-10-08');
+  await w.scheduled();
+  assert.equal(w.rows('entries').length, 2);
+});
+
+test('recurring: planned income goes into its account; a cost has none', async () => {
+  const w = makeWorker();
+  await w.call('PUT', '/recurring/r1', {
+    body: { kind: 'income', label: 'Allowance', amountMinor: 1200000, currency: 'GBP', frequency: 'yearly', nextDate: '2026-09-28', incomeType: 'allowance', spreadMonths: 12, accountId: 'a1' },
+  });
+  await w.call('PUT', '/recurring/r2', { body: { ...phone, accountId: 'a1' } });
+  const byId = Object.fromEntries(w.rows('entries').map((e) => [e.recurringId, e.accountId]));
+  assert.deepEqual(byId, { r1: 'a1', r2: null });
+  assert.equal(w.rows('recurring').find((r) => r.id === 'r2').accountId, null);
 });
 
 test('recurring: the yearly allowance is added as income spread over Oct–Sep', async () => {

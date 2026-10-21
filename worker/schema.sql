@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS recurring (
   methodId TEXT,
   spreadMonths INTEGER NOT NULL DEFAULT 1,
   active INTEGER NOT NULL DEFAULT 1,
+  accountId TEXT, -- income only: the Net Worth account it goes into (migrations/006)
   updatedAt INTEGER NOT NULL,
   deletedAt INTEGER,
   rev INTEGER NOT NULL

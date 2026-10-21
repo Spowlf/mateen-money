@@ -31,7 +31,7 @@ export const TABLES = {
   }),
   recurring: table([
     'kind', 'label', 'amountMinor', 'currency', 'frequency', 'nextDate', 'anchorDay', 'categoryId', 'vendorId',
-    'incomeType', 'methodId', 'spreadMonths', 'active',
+    'incomeType', 'methodId', 'spreadMonths', 'active', 'accountId',
   ], { required: ['kind', 'label', 'amountMinor', 'currency', 'frequency', 'nextDate'], defaults: { spreadMonths: 1, active: 1 } }),
   trips: table(['name', 'start', 'end'], { required: ['name', 'start', 'end'] }),
   reviews: table(['weekStart', 'completedAt'], { required: ['weekStart', 'completedAt'] }),

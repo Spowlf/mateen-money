@@ -3,12 +3,13 @@
 
 import { h, fill, chips, segmented, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { liveSorted, runAction, withRemoved } from './format.js';
+import { intoField } from './accounts.js';
 import {
   today, gbp, formatMoney, formatDay, toMinor, toDecimalText, planSummary, catchUpDates,
   FREQUENCIES, INCOME_TYPES, COMMON_CURRENCIES, titleCase,
 } from '../engine/index.js';
 
-const FIELDS = ['kind', 'label', 'amountMinor', 'currency', 'frequency', 'nextDate', 'anchorDay', 'categoryId', 'incomeType', 'methodId', 'spreadMonths', 'active'];
+const FIELDS = ['kind', 'label', 'amountMinor', 'currency', 'frequency', 'nextDate', 'anchorDay', 'categoryId', 'incomeType', 'methodId', 'spreadMonths', 'active', 'accountId'];
 const frequencyName = (id) => FREQUENCIES.find((f) => f.id === id)?.name ?? id;
 
 /**
@@ -28,6 +29,7 @@ export function openRecurringSheet(repo, item = {}) {
     categoryId: item.categoryId ?? null,
     incomeType: item.incomeType ?? null,
     methodId: item.methodId ?? null,
+    accountId: item.accountId ?? null,
     spread: (item.spreadMonths ?? 1) > 1,
     active: item.active !== 0,
   };
@@ -56,8 +58,8 @@ export function openRecurringSheet(repo, item = {}) {
     catchUp.hidden = !dates.length;
     if (dates.length) {
       catchUp.textContent = dates.length === 1
-        ? 'The date has passed, so it’s added on the next run, within 6 hours.'
-        : `The date has passed, so the next run adds ${dates.length}, one for each date from ${formatDay(dates[0])} to ${formatDay(dates.at(-1))}.`;
+        ? 'The date has passed, so it’s logged as soon as you save.'
+        : `The date has passed, so saving logs ${dates.length}, one for each date from ${formatDay(dates[0])} to ${formatDay(dates.at(-1))}.`;
     }
   }
 
@@ -98,8 +100,10 @@ export function openRecurringSheet(repo, item = {}) {
       income && f.incomeType === 'allowance' && f.frequency === 'yearly' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
         h('span', {}, 'Spread Over October to September')),
-      methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, income ? 'Paid Into' : 'Paid With'),
-        chips({ label: income ? 'Paid Into' : 'Paid With', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
+      income
+        ? intoField(S, f.accountId, (v) => set({ accountId: v }))
+        : methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid With'),
+          chips({ label: 'Paid With', options: withRemoved(methods, f.methodId, S.methods), value: f.methodId, onChange: (v) => set({ methodId: v }) })),
       existing && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.active, onchange: (e) => set({ active: e.target.checked }) }),
         h('span', {}, 'Add It Automatically')),
@@ -126,7 +130,9 @@ export function openRecurringSheet(repo, item = {}) {
       anchorDay: existing && existing.nextDate === f.nextDate ? existing.anchorDay : null,
       categoryId: income ? null : f.categoryId,
       incomeType: income ? f.incomeType : null,
-      methodId: f.methodId,
+      // Income has no card: it goes into an account, as on Log.
+      methodId: income ? null : f.methodId,
+      accountId: income ? f.accountId : null,
       spreadMonths: income && f.incomeType === 'allowance' && f.frequency === 'yearly' && f.spread ? 12 : 1,
       active: f.active ? 1 : 0,
     };
@@ -135,8 +141,15 @@ export function openRecurringSheet(repo, item = {}) {
     const result = await runAction(() => repo.saveRow('recurring', id, fields));
     if (!result) return renderSave();
     s.close();
-    if (existing) toast('Saved changes', { label: 'Undo', run: () => runAction(() => repo.saveRow('recurring', id, before)) });
-    else toast(`Added ${fields.label}`, { label: 'Undo', run: () => runAction(() => repo.deleteRow('recurring', id)) });
+    // A past date was logged with the save; Undo takes those entries back off too.
+    const logged = (result.changes?.entries ?? []).map((e) => e.id);
+    const undo = async () => {
+      for (const entryId of logged) await repo.deleteEntry(entryId);
+      return existing ? repo.saveRow('recurring', id, before) : repo.deleteRow('recurring', id);
+    };
+    const done = existing ? 'Saved changes' : `Added ${fields.label}`;
+    toast(logged.length ? `${done}. ${logged.length === 1 ? 'It’s logged for the date that passed.' : `${logged.length} are logged for the dates that passed.`}` : done,
+      { label: 'Undo', run: () => runAction(undo) });
   }
 
   async function remove() {

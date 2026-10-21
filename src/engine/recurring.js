@@ -59,6 +59,7 @@ export function recurringEntry(item, date) {
     categoryId: item.kind === 'spend' ? item.categoryId ?? null : null,
     incomeType: item.kind === 'income' ? item.incomeType ?? 'other' : null,
     methodId: item.methodId ?? null,
+    accountId: item.kind === 'income' ? item.accountId ?? null : null,
     note: null,
     tripId: null,
     tripManual: 0,
