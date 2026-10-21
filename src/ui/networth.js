@@ -8,18 +8,11 @@ import { h, fill, segmented, icon } from './dom.js';
 import { worthChart, shareTable } from './charts.js';
 import { worth, plural, ibkrNotices, connectFirst, openAccountSheet } from './accounts.js';
 import {
-  today, gbp, formatDay, formatDayShort, addDays, staleLine, signedMoney, dayChange, monthChange, worthSeries, WORTH_RANGES,
+  today, gbp, formatDayShort, addDays, staleLine, signedMoney, dayChange, monthChange, worthSeries, WORTH_RANGES,
 } from '../engine/index.js';
 
 // Kept between visits to the tab, like Overview's period.
 let range = '6m';
-
-/** What carried balances count: "Card payments, income and moves logged since a balance was typed are counted in it." */
-function carriedNote(carried) {
-  const kinds = ['Card payments', carried.some((r) => r.income) && 'income', carried.some((r) => r.settled) && 'settle-ups', carried.some((r) => r.moved) && 'moves'].filter(Boolean);
-  if (kinds.length === 1) return 'Card payments logged since a balance was typed are taken off it.';
-  return `${kinds.slice(0, -1).join(', ')} and ${kinds.at(-1)} logged since a balance was typed are counted in it.`;
-}
 
 export function renderNetWorth(root, { repo }) {
   const S = repo.state;
@@ -77,10 +70,9 @@ export function renderNetWorth(root, { repo }) {
       holdings: S.holdings, prices: S.prices, activity: S.activity, settlements: S.settlements ?? [], transfers: S.transfers ?? [], todayDate,
     });
     const changes = changeLine(day, month, todayDate);
+    // Only what's missing from the total (the rates, carried balances and share prices aren't
+    // explained here, by the user's choice).
     const notes = [
-      nw.rateDate && `Converted to pounds at the rates for ${formatDay(nw.rateDate)}.`,
-      nw.carried.length && carriedNote(nw.carried),
-      nw.groups.some((g) => g.accounts.some((r) => r.live?.pricedAt)) && 'Shares at prices up to 15 minutes old.',
       nw.noRate.length && `Leaves out ${nw.noRate.map((r) => r.account.name).join(', ')} until ${nw.noRate.length === 1 ? 'its exchange rate arrives' : 'their exchange rates arrive'}.`,
       nw.noBalance.length && `Leaves out ${nw.noBalance.map((r) => r.account.name).join(', ')}: add ${nw.noBalance.length === 1 ? 'its balance' : 'their balances'}.`,
     ].filter(Boolean);
