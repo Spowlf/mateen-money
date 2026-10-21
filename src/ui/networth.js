@@ -27,15 +27,16 @@ export function renderNetWorth(root, { repo }) {
   }
 
   function thisMonth(month, foreign) {
-    const row = (label, sub, pence) => h('li', { class: 'total-row' },
-      h('span', { class: 'list-main' }, h('span', { class: 'list-title' }, label), h('span', { class: 'list-sub' }, sub)),
+    // Title case, like By Type's rows just above (the user's choice), and no subtitles.
+    const row = (label, pence) => h('li', { class: 'total-row' },
+      h('span', { class: 'list-title' }, label),
       h('span', { class: 'list-amount' }, signedMoney(pence)));
     return h('section', { class: 'section' },
       h('h2', { class: 'subhead' }, 'This Month'),
       h('ul', { class: 'list totals' },
-        month.investments && row('Market moves', 'IBKR’s prices, dividends and fees', month.marketPence),
-        foreign && row('Currency moves', 'The pound against your other currencies', month.currencyPence),
-        row('Money in and out', month.investments ? 'Bank balances, and money moved into IBKR' : 'Bank balances', month.balancesPence)));
+        month.investments && row('Market Moves', month.marketPence),
+        foreign && row('Currency Moves', month.currencyPence),
+        row('Money In and Out', month.balancesPence)));
   }
 
   function overTime(totalPence, todayDate) {
