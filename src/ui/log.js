@@ -9,7 +9,7 @@ import { intoField } from './accounts.js';
 import { splitBlock, saveLabel } from './split-block.js';
 import {
   today, nowTime, formatMoney, toMinor, toDecimalText, exponent, prefix,
-  emptyForm, emptySplit, missing, pressKey, applyVendor, nextForm, vendorChoices, tidyName, summaryLine,
+  emptyForm, emptySplit, missing, pressKey, applyVendor, nextForm, vendorChoices, summaryLine,
   exactVendor, tripFor, toSortEntries, sortChoices, suggestCategories,
   COMMON_CURRENCIES, SYMBOL_CURRENCIES, INCOME_TYPES, titleCase,
 } from '../engine/index.js';
@@ -54,7 +54,8 @@ export function renderLog(root, { repo }) {
       const { vendor, categories } = sortChoices(entry, sortContext(S));
       quick = h('div', { class: 'chips', role: 'group', 'aria-label': `Sort ${entry.merchant}` },
         vendor && h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { vendorId: vendor.id }) }, vendor.name),
-        categories.map((c) => h('button', { type: 'button', class: 'chip', onclick: () => sort(entry, { categoryId: c.id, vendorName: tidyName(entry.merchant) }) }, categoryIcon(c.id), c.name)),
+        // A new merchant is named the first time: the category tap opens the sheet with its name to check.
+        categories.map((c) => h('button', { type: 'button', class: 'chip', onclick: () => openSortSheet(repo, entry, { categoryId: c.id }) }, categoryIcon(c.id), c.name)),
         h('button', { type: 'button', class: 'chip', onclick: () => openSortSheet(repo, entry) }, 'More'));
     }
     return h('li', { class: 'sort-item' },

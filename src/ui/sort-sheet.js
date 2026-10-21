@@ -34,14 +34,15 @@ async function file(repo, entry, choice, done) {
   });
 }
 
-export function openSortSheet(repo, shown) {
+/** { categoryId } comes from a category tap on a new merchant: picked, with its name ready to change. */
+export function openSortSheet(repo, shown, { categoryId: picked = null } = {}) {
   const S = repo.state;
   // History hands over the payment as spending sees it; sort the saved one.
   const entry = S.entries.find((e) => e.id === shown.id) ?? shown;
   // A refund waits only for its currency: income has no merchant or category to file.
   const income = entry.kind === 'income';
   const { vendor: suggestion } = income ? {} : sortChoices(entry, sortContext(S));
-  let categoryId = null;
+  let categoryId = picked;
   let currency = entry.needsCurrency ? null : entry.currency;
   const name = h('input', { class: 'input', type: 'text', value: tidyName(entry.merchant), autocomplete: 'off', autocapitalize: 'words' });
   const note = h('input', { class: 'input', type: 'text', value: entry.note ?? '', autocomplete: 'off' });
@@ -71,6 +72,8 @@ export function openSortSheet(repo, shown) {
     splitHolder.replaceChildren(block.el);
   };
   name.addEventListener('input', renderSave);
+  // Return on the keyboard saves, since Save is below it while the name is being typed.
+  name.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !save.disabled) { e.preventDefault(); save.click(); } });
   const categories = liveSorted(S.categories).filter((c) => !c.archived);
   const facts = h('dl', { class: 'facts' },
     h('dt', {}, 'Amount'), h('dd', {}, money(entry)),
@@ -92,7 +95,7 @@ export function openSortSheet(repo, shown) {
     })),
     !income && field('Merchant Name', name),
     field('Description', note),
-    !income && field('Category', chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: null, onChange: (v) => { categoryId = v; renderSave(); } })),
+    !income && field('Category', chips({ label: 'Category', options: withCategoryIcons(categories.map((c) => ({ value: c.id, label: c.name }))), value: picked, onChange: (v) => { categoryId = v; renderSave(); } })),
     splitHolder,
     h('div', { class: 'sheet-actions' },
       save,
@@ -109,4 +112,5 @@ export function openSortSheet(repo, shown) {
   }, s.close));
   drawSplit();
   renderSave();
+  if (picked) { name.focus(); name.select(); }
 }
