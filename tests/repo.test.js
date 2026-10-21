@@ -237,6 +237,20 @@ test('repo: a sync that answers after a save never puts back the older copy', as
   assert.equal(repo.state.entries[0].note, 'Second');
 });
 
+test('repo: a sync with nothing new redraws nothing, unless the day changed', async () => {
+  const w = makeWorker();
+  const repo = await connected(w, memoryDb());
+  let told = 0;
+  repo.subscribe(() => { told += 1; });
+  await repo.sync();
+  assert.equal(told, 0);
+  w.now += 24 * 60 * 60 * 1000;
+  await repo.sync();
+  assert.equal(told, 1);
+  await repo.sync();
+  assert.equal(told, 1);
+});
+
 test('repo: prices are fetched outside sync and kept for opening offline', async () => {
   const w = makeWorker();
   const db = memoryDb();

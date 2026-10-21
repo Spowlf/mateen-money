@@ -88,18 +88,23 @@ export function renderLog(root, { repo }) {
   // Spending on a trip's days is suggested for it until a trip is picked by hand. Income never is.
   const withTrip = (f) => ({ ...f, tripId: tripFor(f, S.trips) });
 
-  function set(changes, { details = false } = {}) {
+  // The form exists once the draft is read from storage, which can take a moment on opening the
+  // app. A tap or key before then waits for it rather than being lost.
+  let ready = null;
+  const whenReady = (fn) => (...args) => (form ? fn(...args) : ready.then(() => fn(...args)));
+
+  const set = whenReady((changes, { details = false } = {}) => {
     form = { ...form, ...changes };
     repo.draft.save(form).catch(() => {});
     renderForm({ details });
-  }
+  });
 
   const kind = segmented({
     label: 'Spent or received',
     options: [{ value: 'spend', label: 'Spent' }, { value: 'income', label: 'Received' }],
     value: 'spend',
     className: 'kind-switch',
-    onChange: (v) => set(withTrip({ ...form, kind: v, categoryId: null, incomeType: null, vendorId: null, spreadMonths: 1, spreadStart: null, tripManual: false }), { details: true }),
+    onChange: whenReady((v) => set(withTrip({ ...form, kind: v, categoryId: null, incomeType: null, vendorId: null, spreadMonths: 1, spreadStart: null, tripManual: false }), { details: true })),
   });
   const currencyButton = h('button', { type: 'button', class: 'currency', 'aria-label': 'Change currency', onclick: () => openCurrencySheet() });
   const amountNum = h('span', { class: 'num' });
@@ -137,11 +142,11 @@ export function renderLog(root, { repo }) {
     if (open) details.scrollIntoView({ behavior: scrollBehaviour(), block: 'start' });
   }
 
-  function press(k) {
+  const press = whenReady((k) => {
     set({ amount: pressKey(form.amount, k, form.currency) });
-  }
+  });
 
-  function onVendorTyped(value) {
+  const onVendorTyped = whenReady((value) => {
     const exact = exactVendor(value, S.vendors, S.aliases);
     if (form.kind === 'spend' && exact && exact.id !== form.vendorId) {
       form = { ...applyVendor(form, exact), vendorName: value };
@@ -149,7 +154,7 @@ export function renderLog(root, { repo }) {
     } else {
       set({ vendorName: value, vendorId: exact && form.kind === 'spend' ? exact.id : null });
     }
-  }
+  });
 
   function pickVendor(vendor) {
     form = applyVendor(form, vendor);
@@ -261,6 +266,7 @@ export function renderLog(root, { repo }) {
   }
 
   function renderForm({ details: withDetails = false } = {}) {
+    if (!form) return;
     kind.set(form.kind);
     // Colours the amount as money out or money in.
     el.entry.dataset.kind = form.kind;
@@ -288,7 +294,7 @@ export function renderLog(root, { repo }) {
   }
 
   async function save() {
-    if (busy || missing(form)) return;
+    if (busy || !form || missing(form)) return;
     busy = true;
     renderSave();
     const saving = form;
@@ -344,7 +350,7 @@ export function renderLog(root, { repo }) {
 
   renderHeadlinePanel();
   renderToSort();
-  start();
+  ready = start();
 
   return {
     /** New data arrived (a sync or a save): update everything except what's being typed. */

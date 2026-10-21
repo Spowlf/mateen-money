@@ -5,6 +5,7 @@
 import { SYNCED } from './schema.js';
 import { createApi } from './api.js';
 import { createDraftStore, submitDraft } from './drafts.js';
+import { today } from '../engine/dates.js';
 
 /**
  * db is the storage adapter: { readAll, putMany, clear, getMeta, setMeta, deleteMeta }
@@ -22,14 +23,19 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
 
   const api = createApi({ fetch, connection: () => state.connection });
   const listeners = new Set();
-  const changed = () => { for (const fn of listeners) fn(); };
+  let toldOn = null;   // the day listeners were last told, so a new day redraws "today" figures
+  const changed = () => {
+    toldOn = today(new Date(now()));
+    for (const fn of listeners) fn();
+  };
 
   /**
-   * Stores rows the backend sent, in IndexedDB and in state. A row older than the copy already
-   * here is skipped: a sync that set off before a save can answer after it. { all } keeps every
-   * row (a full sync on connecting, which may be a backend that started again).
+   * Stores rows the backend sent, in IndexedDB and in state, and returns how many. A row older
+   * than the copy already here is skipped: a sync that set off before a save can answer after it.
+   * { all } keeps every row (a full sync on connecting, which may be a backend that started again).
    */
   async function apply(changes = {}, { all = false } = {}) {
+    let stored = 0;
     for (const [name, sent] of Object.entries(changes)) {
       if (!sent?.length || !state[name]) continue;
       const byId = new Map(state[name].map((r) => [r.id, r]));
@@ -38,7 +44,9 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
       await db.putMany(name, rows);
       for (const r of rows) byId.set(r.id, r);
       state[name] = [...byId.values()];
+      stored += rows.length;
     }
+    return stored;
   }
 
   async function applyWrite(result) {
@@ -73,15 +81,18 @@ export function createRepo({ db, fetch, now = () => Date.now() }) {
 
     connected: () => !!(state.connection?.apiBase && state.connection?.token),
 
-    /** Pulls everything changed since the last sync. */
+    /**
+     * Pulls everything changed since the last sync. Listeners are told only when rows arrived or
+     * the day changed, so the sync on coming back to the app doesn't redraw an unchanged screen.
+     */
     async sync() {
       const data = await api.get(`/sync?since=${state.rev}`);
-      await apply(data.changes);
+      const stored = await apply(data.changes);
       state.rev = data.rev;
       state.lastSyncedAt = now();
       await db.setMeta('rev', state.rev);
       await db.setMeta('lastSyncedAt', state.lastSyncedAt);
-      changed();
+      if (stored || toldOn !== today(new Date(now()))) changed();
       return data;
     },
 
