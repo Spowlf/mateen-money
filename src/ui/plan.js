@@ -4,6 +4,8 @@
 import { h, fill, chips, segmented, field, sheet, toast, withCategoryIcons } from './dom.js';
 import { liveSorted, runAction, withRemoved } from './format.js';
 import { intoField } from './accounts.js';
+import { openEntrySheet } from './entry-sheet.js';
+import { spreadEnd } from './format.js';
 import {
   today, gbp, formatMoney, formatDay, toMinor, toDecimalText, planSummary, catchUpDates,
   FREQUENCIES, INCOME_TYPES, COMMON_CURRENCIES, titleCase,
@@ -177,10 +179,20 @@ export function renderPlan(root, { repo }) {
       h('span', { class: `list-amount ${item.kind === 'income' ? 'income' : 'spend'}` }, formatMoney(item.amountMinor, item.currency))));
   }
 
-  function section(title, items, empty, addLabel, kind) {
+  // Logged income spread over months (the allowance): "Logged 21 Oct, £1,153.06 this month, to June".
+  function spreadRow({ entry, monthPence }) {
+    const sub = `Logged ${formatDay(entry.date)}, ${gbp(monthPence)} this month, to ${spreadEnd(entry.spreadMonths)}`;
+    return h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openEntrySheet(repo, entry) },
+      h('span', { class: 'list-main' },
+        h('span', { class: 'list-title' }, entry.merchant || INCOME_TYPES.find((t) => t.id === entry.incomeType)?.name || 'Income'),
+        h('span', { class: 'list-sub' }, sub)),
+      h('span', { class: 'list-amount income' }, formatMoney(entry.amountMinor, entry.currency))));
+  }
+
+  function section(title, items, empty, addLabel, kind, extra = []) {
     return h('section', { class: 'section' },
       h('h2', { class: 'subhead' }, title),
-      items.length ? h('ul', { class: 'list' }, items.map(row)) : h('p', { class: 'empty-line' }, empty),
+      items.length || extra.length ? h('ul', { class: 'list' }, extra, items.map(row)) : h('p', { class: 'empty-line' }, empty),
       h('div', {}, h('button', { type: 'button', class: 'text-button', onclick: () => openRecurringSheet(repo, { kind }) }, addLabel)));
   }
 
@@ -191,8 +203,8 @@ export function renderPlan(root, { repo }) {
         h('p', {}, 'Add your backend in Settings.'),
         h('button', { type: 'button', class: 'button primary', onclick: () => { location.hash = '#settings'; } }, 'Open Settings')));
     }
-    const p = planSummary(S.recurring, { rates: S.rates });
-    if (!p.costs.length && !p.income.length) {
+    const p = planSummary(S.recurring, { rates: S.rates, entries: S.entries, todayDate: today() });
+    if (!p.costs.length && !p.income.length && !p.spread.length) {
       return fill(root, h('section', { class: 'empty' },
         h('h2', {}, 'Nothing Planned Yet'),
         h('p', {}, 'Each item is logged for you on its date.'),
@@ -207,7 +219,7 @@ export function renderPlan(root, { repo }) {
           h('li', { class: 'total-row' }, h('span', { class: 'list-title' }, 'Going out'), h('span', { class: 'list-amount spend' }, `${tilde}${gbp(p.monthlyCosts)}`))),
         h('p', { class: 'reason' }, 'In an average month.')),
       section('Costs', p.costs, 'No recurring costs.', 'Add a Recurring Cost', 'spend'),
-      section('Income', p.income, 'No recurring income.', 'Add Recurring Income', 'income')));
+      section('Income', p.income, 'No recurring income.', 'Add Recurring Income', 'income', p.spread.map(spreadRow))));
   }
 
   render();

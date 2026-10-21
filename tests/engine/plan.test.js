@@ -32,6 +32,17 @@ test('plan: a foreign-currency item makes the totals estimated', () => {
   assert.equal(planSummary([item({ currency: 'SGD' })], { rates }).estimated, true);
 });
 
+test('plan: logged income spread over months counts this month\'s share while it lasts', () => {
+  const allowance = { id: 'a', kind: 'income', incomeType: 'allowance', date: '2026-10-21', gbpPence: 1037758, spreadStart: '2026-10', spreadMonths: 9, deletedAt: null };
+  const once = { id: 'b', kind: 'income', date: '2026-10-10', gbpPence: 5000, spreadMonths: 1, deletedAt: null };
+  const p = planSummary([item({ kind: 'income', amountMinor: 1000 })], { entries: [allowance, once], todayDate: '2026-10-21' });
+  assert.deepEqual(p.spread.map((x) => [x.entry.id, x.monthPence]), [['a', 115306]]);
+  assert.equal(p.monthlyIncome, 1000 + 115306);
+  // Its last month takes the remainder; after June it's over.
+  assert.equal(planSummary([], { entries: [allowance], todayDate: '2027-06-01' }).spread[0].monthPence, 115310);
+  assert.deepEqual(planSummary([], { entries: [allowance], todayDate: '2027-07-01' }).spread, []);
+});
+
 test('plan: a start date in the past lists what the next run will catch up', () => {
   assert.deepEqual(catchUpDates(item({ frequency: 'weekly', nextDate: '2026-09-17' }), '2026-10-01'), ['2026-09-17', '2026-09-24', '2026-10-01']);
   assert.deepEqual(catchUpDates(item({ nextDate: '2026-10-02' }), '2026-10-01'), []);

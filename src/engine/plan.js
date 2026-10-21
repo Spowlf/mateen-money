@@ -3,6 +3,8 @@
 import { occurrencesUpTo } from './recurring.js';
 import { estimateGbp } from './currency.js';
 import { isLive } from './totals.js';
+import { monthShare } from './allowance.js';
+import { monthKey } from './dates.js';
 
 // How many times each frequency happens in a year. Termly is every 4 months.
 const PER_YEAR = { weekly: 52, monthly: 12, termly: 3, yearly: 1 };
@@ -19,18 +21,24 @@ const byNext = (a, b) => (a.nextDate < b.nextDate ? -1 : a.nextDate > b.nextDate
  * Live recurring items split into costs and income, soonest first, paused ones last.
  * Totals are per average month and count active items only. estimated is true when a
  * foreign-currency item is in a total.
+ * Income already logged but spread over months (the allowance) is coming in too while it lasts:
+ * spread lists the ones covering this month, and this month's share is in monthlyIncome.
  */
-export function planSummary(recurring, { rates = [] } = {}) {
+export function planSummary(recurring, { rates = [], entries = [], todayDate = null } = {}) {
   const live = recurring.filter(isLive);
   const active = (i) => i.active !== 0 && i.active !== false;
   const sorted = (kind) => [...live.filter((i) => i.kind === kind && active(i)).sort(byNext),
     ...live.filter((i) => i.kind === kind && !active(i)).sort(byNext)];
   const total = (kind) => live.filter((i) => i.kind === kind && active(i)).reduce((s, i) => s + monthlyEquivalent(i, rates), 0);
+  const month = todayDate && monthKey(todayDate);
+  const spread = month ? entries.filter((e) => isLive(e) && e.kind === 'income' && (e.spreadMonths ?? 1) > 1)
+    .map((e) => ({ entry: e, monthPence: monthShare(e, month) })).filter((x) => x.monthPence > 0) : [];
   return {
     costs: sorted('spend'),
     income: sorted('income'),
+    spread,
     monthlyCosts: total('spend'),
-    monthlyIncome: total('income'),
+    monthlyIncome: total('income') + spread.reduce((s, x) => s + x.monthPence, 0),
     estimated: live.some((i) => active(i) && i.currency !== 'GBP'),
   };
 }
