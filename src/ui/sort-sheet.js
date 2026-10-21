@@ -12,8 +12,18 @@ export function reread(entry, currency) {
   return toMinor(toDecimalText(entry.amountMinor, entry.currency), currency);
 }
 
+// Payments being filed now. A second tap before the first answers is dropped, since two at once
+// would each make the same new merchant.
+const filing = new Set();
+
 /** Files entry under a vendor or category ({ vendorId?, categoryId?, vendorName?, currency? }). */
 export async function sortPayment(repo, entry, choice, done) {
+  if (filing.has(entry.id)) return;
+  filing.add(entry.id);
+  try { await file(repo, entry, choice, done); } finally { filing.delete(entry.id); }
+}
+
+async function file(repo, entry, choice, done) {
   await runAction(async () => {
     const result = await repo.sortEntry(entry.id, choice);
     const sorted = result.changes.entries?.find((e) => e.id === entry.id);

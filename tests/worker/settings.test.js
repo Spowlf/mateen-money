@@ -77,6 +77,35 @@ test('vendors: renaming to one of its own aliases drops that alias, so renaming 
   assert.deepEqual(live(), ['pret']);
 });
 
+test('vendors: saving one under another merchant\'s name or alias merges them into one', async () => {
+  const w = makeWorker();
+  const pret = (await w.call('PUT', '/entries/e1', { body: manualEntry({ merchant: 'Pret' }) })).body.changes.vendors[0];
+  await w.call('PUT', '/aliases/a1', { body: { vendorId: pret.id, alias: 'PRET A MANGER' } });
+  const cafe = (await w.call('PUT', '/entries/e2', { body: manualEntry({ merchant: 'Corner Cafe', categoryId: 'snacks', methodId: null }) })).body.changes.vendors[0];
+  await w.call('PUT', '/aliases/a2', { body: { vendorId: cafe.id, alias: 'CORNER CAFE #12' } });
+  await w.call('PUT', `/vendors/${cafe.id}`, { body: { name: 'Pret A Manger' } });
+  assert.deepEqual(w.rows('vendors', 'deletedAt IS NULL').map((v) => [v.id, v.name, v.categoryId, v.useCount]),
+    [[cafe.id, 'Pret A Manger', 'snacks', 2]]);
+  assert.deepEqual(w.rows('entries').map((e) => e.vendorId), [cafe.id, cafe.id]);
+  // The alias that is now the name goes; both old names still find the one merchant.
+  assert.deepEqual(w.rows('aliases', 'deletedAt IS NULL').map((a) => [a.vendorId, a.aliasNorm]).sort(),
+    [[cafe.id, 'corner cafe'], [cafe.id, 'pret']]);
+  const note = await w.call('POST', '/applepay', { body: applePay({ merchant: 'PRET', timestamp: '2026-10-01T16:00:00+01:00' }) });
+  assert.equal(note.body, '£4.20 at Pret A Manger, Snacks');
+});
+
+test('vendors: two merchants with the same name merge when either is saved, filling what it lacks', async () => {
+  const w = makeWorker();
+  const pret = (await w.call('PUT', '/entries/e1', { body: manualEntry({ merchant: 'Pret' }) })).body.changes.vendors[0];
+  const twin = (await w.call('PUT', '/entries/e2', { body: manualEntry({ merchant: 'Boots' }) })).body.changes.vendors[0];
+  // Two taps at once can make the same merchant twice.
+  w.env.DB.raw.prepare("UPDATE vendors SET name = 'Pret', categoryId = NULL WHERE id = ?").run(twin.id);
+  await w.call('PUT', `/vendors/${twin.id}`, { body: { name: 'Pret' } });
+  assert.deepEqual(w.rows('vendors', 'deletedAt IS NULL').map((v) => [v.id, v.categoryId]), [[twin.id, 'food']]);
+  assert.deepEqual(w.rows('entries').map((e) => e.vendorId), [twin.id, twin.id]);
+  assert.equal(w.rows('vendors', 'id = ?', pret.id)[0].deletedAt, NOW);
+});
+
 test('vendors: deleting one lets go of its aliases, and undo brings them back', async () => {
   const w = makeWorker();
   const v = (await w.call('PUT', '/entries/e1', { body: manualEntry() })).body.changes.vendors[0];

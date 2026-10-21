@@ -58,6 +58,11 @@ export function openVendorSheet(repo, vendor) {
     const result = await runAction(() => repo.saveRow('vendors', vendor.id, { ...f, name: f.name.trim() }));
     if (!result) return renderSave();
     s.close();
+    // A merchant with the same name was merged into this one (rows.js mergeTwins); that has no undo.
+    if (result.changes.vendors?.some((v) => v.id !== vendor.id && v.deletedAt)) {
+      toast(`Merged into one ${f.name.trim()}.`);
+      return;
+    }
     // Undoing a rename also drops the alias each rename left behind, so the names are as they were.
     toast('Saved changes', { label: 'Undo', run: () => runAction(async () => {
       await repo.saveRow('vendors', vendor.id, before);

@@ -101,6 +101,7 @@ export async function saveRow(ctx, name, id, body) {
   if (name === 'vendors') {
     row.userEdited = 1;
     writes.aliases = await vendorAliases(store, existing, row, ctx.now);
+    if (existing && !row.deletedAt) await mergeTwins(store, row, writes, ctx.now);
   }
   if (name === 'aliases') {
     row.aliasNorm = normaliseMerchant(row.alias);
@@ -164,6 +165,39 @@ async function vendorAliases(store, before, after, now) {
   const taken = await store.all('aliases', 'deletedAt IS NULL AND aliasNorm = ?', oldNorm);
   if (!taken.length) out.push({ id: crypto.randomUUID(), vendorId: after.id, alias: before.name, aliasNorm: oldNorm, deletedAt: null });
   return out;
+}
+
+/**
+ * One merchant per name: another live vendor whose name (or one of whose aliases) is this
+ * vendor's name is folded into it. Its payments, plans and aliases move over, its choices fill
+ * any this vendor lacks, and it is deleted.
+ */
+async function mergeTwins(store, row, writes, now) {
+  const norm = normaliseMerchant(row.name);
+  if (!norm) return;
+  const aliases = await store.live('aliases');
+  const twins = (await store.live('vendors')).filter((v) => v.id !== row.id && (normaliseMerchant(v.name) === norm
+    || aliases.some((a) => a.vendorId === v.id && a.aliasNorm === norm)));
+  if (!twins.length) return;
+  writes.entries = [];
+  writes.recurring = [];
+  for (const twin of twins) {
+    for (const f of ['categoryId', 'currency', 'methodId']) row[f] ??= twin[f];
+    row.useCount = (row.useCount ?? 0) + (twin.useCount ?? 0);
+    writes.vendors.push({ ...twin, deletedAt: now });
+    // Its name becomes an alias, so payments still arriving under it are filed here.
+    const twinNorm = normaliseMerchant(twin.name);
+    if (twinNorm && twinNorm !== norm && !aliases.some((a) => a.aliasNorm === twinNorm) && !writes.aliases.some((a) => a.aliasNorm === twinNorm)) {
+      writes.aliases.push({ id: crypto.randomUUID(), vendorId: row.id, alias: twin.name, aliasNorm: twinNorm, deletedAt: null });
+    }
+    for (const a of aliases) {
+      // An alias that is now this vendor's own name has nothing left to do.
+      if (a.vendorId === twin.id) writes.aliases.push(a.aliasNorm === norm ? { ...a, deletedAt: now } : { ...a, vendorId: row.id });
+    }
+    // Deleted payments move too, so undoing their delete brings them back under this vendor.
+    for (const e of await store.all('entries', 'vendorId = ?', twin.id)) writes.entries.push({ ...e, vendorId: row.id });
+    for (const r of await store.all('recurring', 'vendorId = ?', twin.id)) writes.recurring.push({ ...r, vendorId: row.id });
+  }
 }
 
 /** Tables saved through saveBatch, so a balance and its new account land together. */
