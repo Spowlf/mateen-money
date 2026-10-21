@@ -272,8 +272,23 @@ function methodsSection(repo) {
 export function openTripSheet(repo, trip) {
   const f = { name: trip?.name ?? '', start: trip?.start ?? today(), end: trip?.end ?? '' };
   const name = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'words', value: f.name, placeholder: 'Singapore', oninput: () => { f.name = name.value; renderSave(); } });
-  const start = h('input', { class: 'input', type: 'date', value: f.start, onchange: () => { f.start = start.value; renderSave(); } });
-  const end = h('input', { class: 'input', type: 'date', value: f.end, onchange: () => { f.end = end.value; renderSave(); } });
+  // The last day can't come before the first: it moves up with it, and a blank one opens on the
+  // first day, since iOS opens a blank date picker on today and Done keeps that.
+  const start = h('input', {
+    class: 'input', type: 'date', value: f.start,
+    onchange: () => {
+      f.start = start.value;
+      end.min = f.start;
+      if (f.start && f.end && f.end < f.start) end.value = f.end = f.start;
+      renderSave();
+    },
+  });
+  const fillEnd = () => { if (!f.end && f.start) { end.value = f.end = f.start; renderSave(); } };
+  const end = h('input', {
+    class: 'input', type: 'date', value: f.end, min: f.start,
+    onfocus: fillEnd, onpointerdown: fillEnd,
+    onchange: () => { f.end = end.value; renderSave(); },
+  });
   const save = h('button', { type: 'button', class: 'button primary' });
   const renderSave = () => {
     const need = !f.name.trim() ? 'Name the Trip' : !f.start ? 'Pick the First Day' : !f.end ? 'Pick the Last Day' : f.end < f.start ? 'End It on or After the First Day' : null;
