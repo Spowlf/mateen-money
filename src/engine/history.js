@@ -1,6 +1,6 @@
 // History: every payment and income, searched, filtered and grouped by day.
 
-import { formatDay } from './dates.js';
+import { formatDay, formatDayShort, formatMonth, monthKey, addMonthsKey, monthsBetween, weekStart, addDays, daysBetween } from './dates.js';
 import { toDecimalText } from './money.js';
 import { normaliseMerchant } from './vendors.js';
 import { INCOME_TYPES } from './defaults.js';
@@ -31,9 +31,9 @@ function haystack(e, { vendors, categories, methods, trips }) {
 /**
  * Live entries matching the search and filters, newest first.
  * query matches names, notes, categories and amounts ("4.20" finds £4.20; "4" finds £4.xx and £40).
- * filters: { kind: 'spend' | 'income', categoryId: id | 'to-sort' | 'income', incomeType, tripId, methodId }, each null for any.
+ * filters: { kind: 'spend' | 'income', categoryId: id | 'to-sort' | 'income', incomeType, tripId, methodId, vendorId }, each null for any.
  */
-export function searchEntries(entries, { query = '', kind = null, categoryId = null, incomeType = null, tripId = null, methodId = null } = {},
+export function searchEntries(entries, { query = '', kind = null, categoryId = null, incomeType = null, tripId = null, methodId = null, vendorId = null } = {},
   { vendors = [], categories = [], methods = [], trips = [] } = {}) {
   const lookup = {
     vendors: new Map(vendors.map((v) => [v.id, v])),
@@ -53,6 +53,7 @@ export function searchEntries(entries, { query = '', kind = null, categoryId = n
     if (categoryId && categoryId !== TO_SORT && categoryId !== INCOME && (e.kind !== 'spend' || e.categoryId !== categoryId)) return false;
     if (tripId && e.tripId !== tripId) return false;
     if (methodId && e.methodId !== methodId) return false;
+    if (vendorId && e.vendorId !== vendorId) return false;
     if (!words.length) return true;
     if (amountQuery) {
       const own = toDecimalText(e.amountMinor, e.currency);
@@ -82,4 +83,47 @@ export function groupByDay(entries, todayDate) {
     else current.spent += e.gbpPence ?? 0;
   }
   return groups;
+}
+
+export const MERCHANT_STEPS = 12;
+
+/**
+ * What was spent at one vendor: { count, pence, last, estimated, step, steps }. steps run from its
+ * first payment to today, oldest first, MERCHANT_STEPS at most, empty ones at 0: weeks (Monday to
+ * Sunday) while that fits, months after. [{ from, label: '5 Oct' | 'Oct', short, title, spent }];
+ * short is what fits under a narrow column.
+ */
+export function vendorSpending(entries, vendorId, todayDate) {
+  const own = entries.filter((e) => isLive(e) && e.kind === 'spend' && e.vendorId === vendorId);
+  let first = todayDate;
+  let last = null;
+  for (const e of own) {
+    if (e.date < first) first = e.date;
+    if (!last || e.date > last) last = e.date;
+  }
+  const weeks = daysBetween(weekStart(first), weekStart(todayDate)) / 7 + 1;
+  const steps = [];
+  if (weeks <= MERCHANT_STEPS) {
+    for (let d = weekStart(first); d <= todayDate; d = addDays(d, 7)) {
+      const [, , day] = d.split('-');
+      steps.push({ from: d, to: addDays(d, 6), label: formatDayShort(d), short: String(Number(day)), title: `Week of ${formatDay(d)}` });
+    }
+  } else {
+    const now = monthKey(todayDate);
+    for (let k = addMonthsKey(now, -Math.min(monthsBetween(monthKey(first), now), MERCHANT_STEPS - 1)); k <= now; k = addMonthsKey(k, 1)) {
+      const title = formatMonth(k);
+      steps.push({ from: `${k}-01`, to: `${k}-31`, label: title.slice(0, 3), short: title[0], title });
+    }
+  }
+  for (const step of steps) {
+    step.spent = own.reduce((sum, e) => (e.date >= step.from && e.date <= step.to ? sum + (e.gbpPence ?? 0) : sum), 0);
+  }
+  return {
+    count: own.length,
+    pence: own.reduce((sum, e) => sum + (e.gbpPence ?? 0), 0),
+    last,
+    estimated: own.some((e) => e.gbpStatus === 'estimated'),
+    step: weeks <= MERCHANT_STEPS ? 'Week' : 'Month',
+    steps,
+  };
 }

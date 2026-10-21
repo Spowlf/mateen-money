@@ -2,22 +2,23 @@
 // and People, who owes whom from split bills.
 // Tapping a row opens its sheet. Nothing is edited in place.
 
-import { h, fill, segmented, categoryIcon } from './dom.js';
+import { h, fill, segmented, categoryIcon, sheet } from './dom.js';
 import { money, liveSorted, spending } from './format.js';
 import { openEntrySheet } from './entry-sheet.js';
 import { openSortSheet } from './sort-sheet.js';
 import { openVendorSheet } from './vendor-sheet.js';
 import { renderPeople } from './people.js';
-import { today, gbp, formatDay, formatMoney, searchEntries, groupByDay, toSortEntries, TO_SORT, INCOME_TYPES } from '../engine/index.js';
+import { incomeSpendingChart } from './charts.js';
+import { today, titleCase, gbp, formatDay, formatMoney, searchEntries, groupByDay, vendorSpending, toSortEntries, TO_SORT, INCOME_TYPES } from '../engine/index.js';
 
 const PAGE = 100;
 
 // Kept between visits to the tab, so switching away and back keeps the search.
-let view = { kind: 'payments', query: '', categoryId: null, incomeType: null, tripId: null, methodId: null, vendorQuery: '' };
+let view = { kind: 'payments', query: '', categoryId: null, incomeType: null, tripId: null, methodId: null, vendorId: null, vendorQuery: '' };
 
 /** Opens History on one trip's payments (from a trip on Overview). */
 export function showTripPayments(tripId) {
-  view = { ...view, kind: 'payments', query: '', categoryId: null, incomeType: null, methodId: null, tripId };
+  view = { ...view, kind: 'payments', query: '', categoryId: null, incomeType: null, methodId: null, vendorId: null, tripId };
   location.hash = '#history';
 }
 
@@ -36,8 +37,8 @@ export function renderHistory(root, { repo }) {
   // Each tab keeps its own filters; only the search is shared.
   const filters = () => (isIncome()
     ? { query: view.query, kind: 'income', incomeType: view.incomeType }
-    : { query: view.query, kind: 'spend', categoryId: view.categoryId, tripId: view.tripId, methodId: view.methodId });
-  const filtering = () => view.query.trim() || (isIncome() ? view.incomeType : view.categoryId || view.tripId || view.methodId);
+    : { query: view.query, kind: 'spend', categoryId: view.categoryId, tripId: view.tripId, methodId: view.methodId, vendorId: view.vendorId });
+  const filtering = () => view.query.trim() || (isIncome() ? view.incomeType : view.categoryId || view.tripId || view.methodId || view.vendorId);
 
   function select(label, value, options, onChange) {
     const control = h('select', { class: 'select select-small', 'aria-label': label, onchange: () => onChange(control.value || null) },
@@ -55,11 +56,12 @@ export function renderHistory(root, { repo }) {
     }));
   }
 
-  // A trip deleted since it was picked can't be shown in the filter, so it stops filtering.
+  // A trip or merchant deleted since it was picked can't be shown in the filter, so it stops filtering.
   function dropGoneTrip() {
-    if (!view.tripId || S.trips.some((t) => !t.deletedAt && t.id === view.tripId)) return false;
-    view.tripId = null;
-    return true;
+    let gone = false;
+    if (view.tripId && !S.trips.some((t) => !t.deletedAt && t.id === view.tripId)) { view.tripId = null; gone = true; }
+    if (view.vendorId && !S.vendors.some((v) => !v.deletedAt && v.id === view.vendorId)) { view.vendorId = null; gone = true; }
+    return gone;
   }
 
   function renderControls() {
@@ -91,7 +93,9 @@ export function renderHistory(root, { repo }) {
       // The picked category's icon sits in the pill beside its name.
       view.categoryId ? h('span', { class: 'select-icon' }, categoryIcon(view.categoryId === TO_SORT ? 'to-sort' : view.categoryId), categorySelect) : categorySelect,
       methods.length > 1 && select('Paid With', view.methodId, [{ value: null, label: 'Any Payment Method' }, ...methods.map((m) => ({ value: m.id, label: m.name }))], change('methodId')),
-      (trips.length > 0 || view.tripId) && select('Trip', view.tripId, [{ value: null, label: 'Any Trip' }, ...trips.map((t) => ({ value: t.id, label: t.name }))], change('tripId'))));
+      (trips.length > 0 || view.tripId) && select('Trip', view.tripId, [{ value: null, label: 'Any Trip' }, ...trips.map((t) => ({ value: t.id, label: t.name }))], change('tripId')),
+      // Shown once a merchant's payments are opened from Merchants, so it can be changed or cleared.
+      view.vendorId && select('Merchant', view.vendorId, [{ value: null, label: 'Any Merchant' }, ...liveSorted(S.vendors, 'name').map((v) => ({ value: v.id, label: v.name }))], change('vendorId'))));
   }
 
   const toSortIds = () => new Set(toSortEntries(S.entries).map((e) => e.id));
@@ -154,7 +158,7 @@ export function renderHistory(root, { repo }) {
   }
 
   function clear() {
-    view = { ...view, query: '', categoryId: null, incomeType: null, tripId: null, methodId: null };
+    view = { ...view, query: '', categoryId: null, incomeType: null, tripId: null, methodId: null, vendorId: null };
     shown = PAGE;
     renderControls();
     renderBody();
@@ -177,13 +181,42 @@ export function renderHistory(root, { repo }) {
     }
     if (!vendors.length) return fill(el.body, h('p', { class: 'empty-line' }, 'No merchant has that name.'));
     fill(el.body, h('ul', { class: 'list' }, vendors.map((v) => h('li', {},
-      h('button', { type: 'button', class: 'list-row', onclick: () => openVendorSheet(repo, v) },
+      h('button', { type: 'button', class: 'list-row', onclick: () => openMerchant(v) },
         h('span', { class: 'list-main' },
           h('span', { class: 'list-title' }, v.name, !v.categoryId && h('span', { class: 'tag tag-warn' }, 'No category')),
           h('span', { class: 'list-sub' }, [
             name(S.categories, v.categoryId),
             counts.get(v.id) ? `${counts.get(v.id) === 1 ? '1 payment' : `${counts.get(v.id)} payments`}, last ${formatDay(last.get(v.id))}` : 'No payments',
           ].filter(Boolean).join(', '))))))));
+  }
+
+  const countPhrase = (n) => (n === 1 ? '1 payment' : `${n} payments`);
+
+  // What was spent at a merchant, month by month; its payments and its details are one tap further.
+  function openMerchant(v) {
+    const m = vendorSpending(spending(S), v.id, today());
+    const tilde = m.estimated ? '~' : '';
+    const width = Math.max(Math.min(root.clientWidth || 390, 640) - 48, 260);
+    const s = sheet(v.name,
+      h('div', { class: 'sheet-form' },
+        h('p', { class: 'reason' }, m.count ? `${countPhrase(m.count)}, the last on ${formatDay(m.last)}.` : 'No payments yet.'),
+        m.count > 0 && h('ul', { class: 'list totals' }, h('li', { class: 'total-row' },
+          h('span', { class: 'list-main' },
+            h('span', { class: 'list-title' }, 'Spent'),
+            m.count > 1 && h('span', { class: 'list-sub' }, `About ${tilde}${gbp(Math.round(m.pence / m.count))} a payment`)),
+          h('span', { class: 'list-amount spend' }, `${tilde}${gbp(m.pence)}`))),
+        m.count > 0 && m.steps.length > 1 && incomeSpendingChart(m.steps, { width, name: v.name, step: m.step, income: false }),
+        h('div', { class: 'sheet-actions' },
+          m.count > 0 && h('button', { type: 'button', class: 'button primary', onclick: () => {
+            s.close();
+            view = { ...view, kind: 'payments', query: '', categoryId: null, tripId: null, methodId: null, vendorId: v.id };
+            shown = PAGE;
+            renderSwitch();
+            renderControls();
+            renderBody();
+            window.scrollTo(0, 0);
+          } }, titleCase(`See the ${countPhrase(m.count)}`)),
+          h('button', { type: 'button', class: m.count > 0 ? 'button secondary' : 'button primary', onclick: () => { s.close(); openVendorSheet(repo, v); } }, 'Edit Merchant'))));
   }
 
   function renderBody() {

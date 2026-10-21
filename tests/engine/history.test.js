@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { searchEntries, groupByDay, TO_SORT, INCOME } from '../../src/engine/history.js';
+import { searchEntries, groupByDay, vendorSpending, TO_SORT, INCOME } from '../../src/engine/history.js';
 import { CATEGORIES, spend, income } from './fixtures.js';
 
 const vendors = [{ id: 'v1', name: 'Pret' }, { id: 'v2', name: 'Sainsbury’s' }];
@@ -66,4 +66,33 @@ test('history: groups by day with each day\'s spending and income, "Today" only 
     ['30 Sep 2026', 3150 + 420, 0, ['b', 'a']],
     ['28 Sep 2026', 0, 1200000, ['e']],
   ]);
+});
+
+test('history: filters by merchant', () => {
+  assert.deepEqual(ids(searchEntries(entries, { vendorId: 'v1' }, context)), ['a']);
+  assert.deepEqual(ids(searchEntries(entries, { vendorId: 'v2', query: 'pret' }, context)), []);
+});
+
+test('history: a merchant\'s spending, week by week from its first payment, then month by month', () => {
+  const at = [
+    spend('2026-10-01', 300, 'food', { id: 'm1', vendorId: 'v1', gbpStatus: 'estimated' }),
+    spend('2026-10-03', 250, 'food', { id: 'm2', vendorId: 'v1' }),
+    spend('2026-10-19', 420, 'food', { id: 'm3', vendorId: 'v1' }),
+    spend('2026-10-04', 999, 'food', { id: 'other', vendorId: 'v2' }),
+    spend('2026-10-05', 100, 'food', { id: 'gone', vendorId: 'v1', deletedAt: 5 }),
+    income('2026-10-05', 420, { id: 'refund', vendorId: 'v1', incomeType: 'refund' }),
+  ];
+  const s = vendorSpending(at, 'v1', '2026-10-21');
+  assert.deepEqual([s.count, s.pence, s.last, s.estimated, s.step], [3, 970, '2026-10-19', true, 'Week']);
+  assert.deepEqual(s.steps.map((w) => [w.label, w.short, w.title, w.spent]), [
+    ['28 Sep', '28', 'Week of 28 Sep 2026', 550],
+    ['5 Oct', '5', 'Week of 5 Oct 2026', 0],
+    ['12 Oct', '12', 'Week of 12 Oct 2026', 0],
+    ['19 Oct', '19', 'Week of 19 Oct 2026', 420],
+  ]);
+  // Past 12 weeks it goes by month, a year at most.
+  const months = vendorSpending([...at, spend('2026-06-30', 100, 'food', { vendorId: 'v1' })], 'v1', '2026-10-21');
+  assert.deepEqual(months.steps.map((m) => [m.label, m.spent]), [['Jun', 100], ['Jul', 0], ['Aug', 0], ['Sep', 0], ['Oct', 970]]);
+  assert.equal(vendorSpending([spend('2024-01-01', 100, 'food', { vendorId: 'v1' })], 'v1', '2026-10-21').steps.length, 12);
+  assert.deepEqual(vendorSpending([], 'v1', '2026-10-21').steps.map((w) => w.label), ['19 Oct']);
 });
