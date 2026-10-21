@@ -2,7 +2,7 @@
 // Saving and deleting both offer Undo; Undo puts back exactly what was there.
 
 import { h, chips, segmented, field, sheet, toast, withCategoryIcons } from './dom.js';
-import { money, liveSorted, runAction, withRemoved } from './format.js';
+import { money, liveSorted, runAction, withRemoved, spreadEnd } from './format.js';
 import { intoField } from './accounts.js';
 import { splitBlock } from './split-block.js';
 import {
@@ -159,7 +159,7 @@ export function openEntrySheet(repo, shown) {
           chips({ label: 'Category', options: withCategoryIcons(withRemoved(categories, f.categoryId, S.categories)), value: f.categoryId, onChange: (v) => set({ categoryId: v }) })),
       income && f.incomeType === 'allowance' && h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: f.spread, onchange: (e) => set({ spread: e.target.checked }) }),
-        h('span', {}, 'Spread Over October to September')),
+        h('span', {}, `Spread Over October to ${spreadEnd(spreadLength())}`)),
       h('div', { class: 'row-2' }, field('Date', date), field('Time', time)),
       // Someone else paid: none of your cards was used.
       !income && !f.split.paidBy && methods.length > 0 && h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Paid With'),
@@ -180,6 +180,11 @@ export function openEntrySheet(repo, shown) {
     renderSave();
   }
 
+  // An allowance keeps its own spread (2026–27's is 9 months, to June); a new one covers the year.
+  function spreadLength() {
+    return entry.spreadMonths > 1 ? entry.spreadMonths : 12;
+  }
+
   function toBody() {
     const income = f.kind === 'income';
     const text = f.vendorText.trim();
@@ -189,7 +194,7 @@ export function openEntrySheet(repo, shown) {
       merchant = text || null;
       vendorId = income ? null : exactVendor(text, S.vendors, S.aliases)?.id ?? null;
     }
-    const spreadMonths = income && f.incomeType === 'allowance' && f.spread ? 12 : 1;
+    const spreadMonths = income && f.incomeType === 'allowance' && f.spread ? spreadLength() : 1;
     const out = {
       ...entryBody(entry),
       kind: f.kind,

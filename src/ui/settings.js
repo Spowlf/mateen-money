@@ -3,7 +3,7 @@
 // Rarely touched, so it's a screen of its own rather than a tab. Every edit happens in a sheet.
 
 import { h, fill, chips, field, sheet, toast, icon } from './dom.js';
-import { liveSorted, runAction } from './format.js';
+import { liveSorted, runAction, spreadEnd } from './format.js';
 import { openRecurringSheet } from './plan.js';
 import { exportBackup, exportCsv, importBackup } from './backup.js';
 import { openBudgetSheet } from './budget-sheet.js';
@@ -393,11 +393,11 @@ function allowanceSection(repo) {
   const logged = S.entries.filter((e) => !e.deletedAt && e.kind === 'income' && e.incomeType === 'allowance'
     && (e.spreadStart ? e.spreadStart >= year.from.slice(0, 7) && e.spreadStart <= year.to.slice(0, 7) : e.date >= year.from && e.date <= year.to));
   const loggedPence = logged.reduce((s, e) => s + (e.gbpPence ?? 0), 0);
-  const spread = logged.some((e) => e.spreadMonths > 1);
+  const months = Math.max(1, ...logged.map((e) => e.spreadMonths ?? 1));
   return h('section', { class: 'section' },
     h('h2', { class: 'subhead' }, 'Allowance'),
     h('p', { class: 'reason' }, logged.length
-      ? `${year.label}: ${gbp(loggedPence)} logged${spread ? `, about ${gbp(Math.floor(loggedPence / 12))} a month from October to September` : ''}.`
+      ? `${year.label}: ${gbp(loggedPence)} logged${months > 1 ? `, about ${gbp(Math.floor(loggedPence / months))} a month from October to ${spreadEnd(months)}` : ''}.`
       : `No allowance logged for ${year.label} yet.`),
     items.length > 0 && h('ul', { class: 'list' }, items.map((r) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => openRecurringSheet(repo, r) },
       h('span', { class: 'list-main' },

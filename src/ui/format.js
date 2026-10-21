@@ -51,3 +51,7 @@ export function withRemoved(rows, selectedId, all) {
  * src/engine/splits.js). Every spending figure reads these; Net Worth reads S.entries.
  */
 export const spending = (S) => withShares(S.entries, S.splits ?? []);
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** The last month of an allowance spread from October: 12 months end in September, 9 in June. */
+export const spreadEnd = (n) => MONTH_NAMES[(9 + n - 1) % 12];
